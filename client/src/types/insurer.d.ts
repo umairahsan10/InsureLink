@@ -11,7 +11,7 @@ export interface InsurerBranding {
   logoText: string;
 }
 
-export interface Insurer {
+export interface InsurerEntity {
   id: string;
   name: string;
   address: string;

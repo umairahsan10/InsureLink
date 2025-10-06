@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import analyticsData from '@/data/analytics.json';
 
-export async function GET(_request: NextRequest) {
+export async function GET() {
   try {
     return NextResponse.json({
       success: true,

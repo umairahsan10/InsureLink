@@ -64,4 +64,10 @@ export interface Policy {
   beneficiaries?: string[];
 }
 
+// Re-export commonly used types with better names to avoid conflicts
+export type { CorporateEntity, InsurancePlan } from './corporate';
+export type { Employee } from './employee';
+export type { HospitalEntity } from './hospital';
+export type { InsurerEntity } from './insurer';
+
 

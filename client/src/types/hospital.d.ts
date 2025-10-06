@@ -1,4 +1,4 @@
-export interface Hospital {
+export interface HospitalEntity {
   id: string;
   name: string;
   address: string;

@@ -4,7 +4,7 @@ export interface CorporateContact {
   phone: string;
 }
 
-export interface Corporate {
+export interface CorporateEntity {
   id: string;
   name: string;
   hrContact: CorporateContact;
@@ -14,7 +14,7 @@ export interface Corporate {
   contractEnd: string;
 }
 
-export interface Plan {
+export interface InsurancePlan {
   id: string;
   name: string;
   corporateId: string;
