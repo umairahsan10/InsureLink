@@ -1,0 +1,27 @@
+[
+  {
+    "chatId": "chat-3001",
+    "claimId": "clm-0004",
+    "messages": [
+      {"id":"m-1","senderId":"emp-009","senderRole":"Employee","text":"I uploaded the bill — any update?","ts":"2025-09-27T08:00:00Z"},
+      {"id":"m-2","senderId":"ins-staff-002","senderRole":"Medical Officer","text":"We need the lab report for verification. Please upload.","ts":"2025-09-27T14:32:00Z"}
+    ]
+  },
+  {
+    "chatId": "chat-3002",
+    "claimId": "clm-0002",
+    "messages": [
+      {"id":"m-1","senderId":"emp-002","senderRole":"Employee","text":"Is my OPD bill sufficient?","ts":"2025-10-01T11:20:00Z"},
+      {"id":"m-2","senderId":"ins-staff-003","senderRole":"Claims Adjuster","text":"Yes — we've received the bill and started review.","ts":"2025-10-01T12:05:00Z"}
+    ]
+  },
+  {
+    "chatId": "chat-3003",
+    "claimId": "clm-0008",
+    "messages": [
+      {"id":"m-1","senderId":"emp-007","senderRole":"Employee","text":"When will payment be processed?","ts":"2025-09-03T09:00:00Z"},
+      {"id":"m-2","senderId":"ins-staff-001","senderRole":"Claims Manager","text":"Payment scheduled and processed on 2025-09-04.","ts":"2025-09-04T10:00:00Z"}
+    ]
+  }
+]
+

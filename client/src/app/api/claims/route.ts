@@ -4,13 +4,23 @@ import claimsData from '@/data/claims.json';
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
-    const userId = searchParams.get('userId');
+    const employeeId = searchParams.get('employeeId');
+    const corporateId = searchParams.get('corporateId');
+    const hospitalId = searchParams.get('hospitalId');
     const status = searchParams.get('status');
 
     let filteredClaims = claimsData;
 
-    if (userId) {
-      filteredClaims = filteredClaims.filter(claim => claim.patientId === userId);
+    if (employeeId) {
+      filteredClaims = filteredClaims.filter(claim => claim.employeeId === employeeId);
+    }
+
+    if (corporateId) {
+      filteredClaims = filteredClaims.filter(claim => claim.corporateId === corporateId);
+    }
+
+    if (hospitalId) {
+      filteredClaims = filteredClaims.filter(claim => claim.hospitalId === hospitalId);
     }
 
     if (status) {
@@ -37,7 +47,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
 
     // Validate required fields
-    if (!body.patientId || !body.hospitalId || !body.amount) {
+    if (!body.employeeId || !body.hospitalId || !body.amountClaimed) {
       return NextResponse.json(
         {
           success: false,
@@ -49,10 +59,26 @@ export async function POST(request: NextRequest) {
 
     // In a real app, this would save to database
     const newClaim = {
-      id: `CLM-${Date.now()}`,
+      id: `clm-${Date.now()}`,
+      claimNumber: `CLM-2025-${Date.now().toString().slice(-4)}`,
       ...body,
-      status: 'Pending',
-      date: new Date().toISOString().split('T')[0],
+      status: 'Submitted',
+      approvedAmount: 0,
+      documents: [],
+      events: [
+        {
+          ts: new Date().toISOString(),
+          actorName: body.employeeName || 'Employee',
+          actorRole: 'Employee',
+          action: 'Submitted claim',
+          from: null,
+          to: 'Submitted',
+        },
+      ],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      fraudRiskScore: 0,
+      priority: 'Normal',
     };
 
     return NextResponse.json({
@@ -70,4 +96,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-

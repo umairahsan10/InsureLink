@@ -1,28 +1,55 @@
-export type ClaimStatus = 'Approved' | 'Pending' | 'Rejected' | 'Under Review' | 'Processing';
+export type ClaimStatus = 
+  | 'Submitted' 
+  | 'DocumentsUploaded' 
+  | 'UnderReview' 
+  | 'MoreInfoRequested' 
+  | 'PendingApproval' 
+  | 'Approved' 
+  | 'Rejected' 
+  | 'Paid';
+
+export interface ClaimEvent {
+  ts: string;
+  actorName: string;
+  actorRole: string;
+  action: string;
+  from: ClaimStatus | null;
+  to: ClaimStatus;
+  note?: string;
+}
 
 export interface Claim {
   id: string;
-  patientId: string;
-  patientName: string;
+  claimNumber: string;
+  employeeId: string;
+  employeeName: string;
+  corporateId: string;
+  corporateName: string;
   hospitalId: string;
   hospitalName: string;
-  treatmentType: string;
-  amount: number;
-  date: string;
+  planId: string;
   status: ClaimStatus;
-  insurerId: string;
-  documents?: string[];
-  description?: string;
+  amountClaimed: number;
+  approvedAmount: number;
+  admissionDate: string;
+  dischargeDate: string;
+  documents: string[];
+  events: ClaimEvent[];
+  createdAt: string;
+  updatedAt: string;
+  fraudRiskScore: number;
+  priority: 'Normal' | 'High' | 'Low';
 }
 
 export interface ClaimFormData {
-  patientId: string;
+  employeeId: string;
   hospitalId: string;
-  treatmentType: string;
-  amount: number;
-  date: string;
+  planId: string;
+  amountClaimed: number;
+  admissionDate: string;
+  dischargeDate: string;
   documents: File[];
-  description?: string;
+  treatmentType?: string;
 }
 
 export interface ClaimStatistics {
@@ -34,3 +61,13 @@ export interface ClaimStatistics {
   approvalRate: number;
 }
 
+export interface ClaimDocument {
+  id: string;
+  claimId: string;
+  type: 'discharge-summary' | 'bill' | 'lab-report' | 'prescription' | 'other';
+  filename: string;
+  url: string;
+  uploadedByRole: string;
+  uploadedAt: string;
+  status: 'Uploaded' | 'Verified' | 'Rejected';
+}

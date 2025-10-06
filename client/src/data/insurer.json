@@ -1,28 +1,33 @@
-[
-  {
-    "id": "INS-001",
-    "companyName": "HealthGuard Insurance",
-    "licenseNumber": "INS-2020-8901",
-    "registrationNumber": "REG-12345-HG",
-    "address": "789 Insurance Plaza, Financial District, Metro City, MC 67890",
-    "phone": "+1 (800) 555-1234",
-    "email": "support@healthguard.com",
-    "website": "https://www.healthguard.com",
-    "availablePlans": ["Basic Coverage", "Comprehensive", "Premium", "Family Plans", "Corporate Group", "Senior Care"],
-    "maxCoverageLimit": 500000,
-    "claimProcessingTime": "2-3 business days",
-    "networkHospitals": 85,
-    "corporateClients": 142,
-    "activePolicyholders": 28500,
-    "monthlyStats": {
-      "claimsProcessed": 1247,
-      "approvalRate": 87,
-      "totalPayout": 2800000,
-      "pendingClaims": 83
+{
+  "id": "insurelink-001",
+  "name": "InsureLink Insurance",
+  "address": "Karachi, Pakistan",
+  "staff": [
+    {
+      "id": "ins-staff-001",
+      "name": "Ayesha Khan",
+      "role": "Claims Manager",
+      "email": "ayesha.khan@insurelink.com",
+      "phone": "+92-300-1234567"
     },
-    "status": "Active",
-    "operatingSince": "2020-01-15",
-    "licenseExpiry": "2028-12-31"
+    {
+      "id": "ins-staff-002",
+      "name": "Bilal Ahmed",
+      "role": "Medical Officer",
+      "email": "bilal.ahmed@insurelink.com",
+      "phone": "+92-300-7654321"
+    },
+    {
+      "id": "ins-staff-003",
+      "name": "Leena Shah",
+      "role": "Claims Adjuster",
+      "email": "leena.shah@insurelink.com",
+      "phone": "+92-300-3334445"
+    }
+  ],
+  "slaHours": 72,
+  "branding": {
+    "primaryColor": "#0B5FFF",
+    "logoText": "InsureLink"
   }
-]
-
+}

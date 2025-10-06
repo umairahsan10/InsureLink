@@ -64,12 +64,4 @@ export interface Policy {
   beneficiaries?: string[];
 }
 
-export interface Plan {
-  id: string;
-  name: string;
-  coverage: number;
-  premium: number;
-  features: string[];
-  description: string;
-}
 

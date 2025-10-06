@@ -1,18 +1,11 @@
-export type Role = "patient" | "hospital" | "insurer" | "corporate" | "admin";
-
-export type ApiError = {
-  message: string;
-  status?: number;
-  code?: string;
-};
-
-export type Paginated<T> = {
-  items: T[];
-  total: number;
-  page: number;
-  pageSize: number;
-};
-
-
-
-
+// Re-export all types from individual type files
+export * from './claims';
+export * from './user';
+export * from './common';
+export * from './employee';
+export * from './corporate';
+export * from './hospital';
+export * from './insurer';
+export * from './analytics';
+export * from './chat';
+export * from './transaction';
