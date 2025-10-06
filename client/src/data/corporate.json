@@ -1,0 +1,63 @@
+[
+  {
+    "id": "CORP-001",
+    "companyName": "Acme Corporation",
+    "industry": "Technology",
+    "address": "123 Business Ave, Suite 100, Tech City, TC 12345",
+    "phone": "+1 (555) 987-6543",
+    "email": "contact@acme.com",
+    "employeeCount": 250,
+    "activePolicies": 248,
+    "plans": [
+      {
+        "planId": "PLAN-BASIC",
+        "planName": "Basic Plan",
+        "coverage": 25000,
+        "employeesEnrolled": 50,
+        "monthlyPremium": 8500
+      },
+      {
+        "planId": "PLAN-COMP",
+        "planName": "Comprehensive Plan",
+        "coverage": 50000,
+        "employeesEnrolled": 150,
+        "monthlyPremium": 28000
+      },
+      {
+        "planId": "PLAN-PREM",
+        "planName": "Premium Plan",
+        "coverage": 100000,
+        "employeesEnrolled": 50,
+        "monthlyPremium": 18500
+      }
+    ],
+    "monthlyPremiumTotal": 45000,
+    "insurerId": "INS-001",
+    "status": "Active",
+    "memberSince": "2023-01-15"
+  },
+  {
+    "id": "CORP-002",
+    "companyName": "TechStart Inc.",
+    "industry": "Technology",
+    "address": "789 Innovation Blvd, Startup City, SC 67890",
+    "phone": "+1 (555) 456-7890",
+    "email": "hr@techstart.com",
+    "employeeCount": 120,
+    "activePolicies": 118,
+    "plans": [
+      {
+        "planId": "PLAN-PREM",
+        "planName": "Premium Plan",
+        "coverage": 100000,
+        "employeesEnrolled": 120,
+        "monthlyPremium": 38000
+      }
+    ],
+    "monthlyPremiumTotal": 38000,
+    "insurerId": "INS-001",
+    "status": "Active",
+    "memberSince": "2024-03-10"
+  }
+]
+

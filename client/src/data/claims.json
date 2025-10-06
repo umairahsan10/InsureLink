@@ -1,0 +1,42 @@
+[
+  {
+    "id": "CLM-001",
+    "patientId": "PAT-1234",
+    "patientName": "John Doe",
+    "hospitalId": "HSP-001",
+    "hospitalName": "City General Hospital",
+    "treatmentType": "General Checkup",
+    "amount": 1200,
+    "date": "2025-10-01",
+    "status": "Approved",
+    "insurerId": "INS-001",
+    "documents": ["prescription.pdf", "invoice.pdf"]
+  },
+  {
+    "id": "CLM-002",
+    "patientId": "PAT-1234",
+    "patientName": "John Doe",
+    "hospitalId": "HSP-002",
+    "hospitalName": "St. Mary's Medical Center",
+    "treatmentType": "X-Ray Scan",
+    "amount": 450,
+    "date": "2025-09-28",
+    "status": "Processing",
+    "insurerId": "INS-001",
+    "documents": ["xray-report.pdf"]
+  },
+  {
+    "id": "CLM-003",
+    "patientId": "PAT-5678",
+    "patientName": "Mary Johnson",
+    "hospitalId": "HSP-001",
+    "hospitalName": "City General Hospital",
+    "treatmentType": "Surgery",
+    "amount": 5200,
+    "date": "2025-09-15",
+    "status": "Under Review",
+    "insurerId": "INS-001",
+    "documents": ["surgery-report.pdf", "anesthesia.pdf"]
+  }
+]
+
