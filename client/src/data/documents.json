@@ -1,0 +1,18 @@
+[
+  {"id":"doc-1001","claimId":"clm-0001","type":"discharge-summary","filename":"discharge_clm1.pdf","url":"/mock/docs/discharge_clm1.pdf","uploadedByRole":"Hospital","uploadedAt":"2025-09-30T10:00:00Z","status":"Uploaded"},
+  {"id":"doc-1002","claimId":"clm-0001","type":"bill","filename":"bill_clm1.pdf","url":"/mock/docs/bill_clm1.pdf","uploadedByRole":"Hospital","uploadedAt":"2025-09-30T10:05:00Z","status":"Uploaded"},
+  {"id":"doc-1003","claimId":"clm-0002","type":"bill","filename":"bill_clm2.pdf","url":"/mock/docs/bill_clm2.pdf","uploadedByRole":"Hospital","uploadedAt":"2025-10-01T11:00:00Z","status":"Uploaded"},
+  {"id":"doc-1004","claimId":"clm-0003","type":"discharge-summary","filename":"discharge_clm3.pdf","url":"/mock/docs/discharge_clm3.pdf","uploadedByRole":"Hospital","uploadedAt":"2025-09-22T15:30:00Z","status":"Uploaded"},
+  {"id":"doc-1005","claimId":"clm-0003","type":"lab-report","filename":"lab_clm3.pdf","url":"/mock/docs/lab_clm3.pdf","uploadedByRole":"Hospital","uploadedAt":"2025-09-22T15:35:00Z","status":"Uploaded"},
+  {"id":"doc-1006","claimId":"clm-0004","type":"bill","filename":"bill_clm4.pdf","url":"/mock/docs/bill_clm4.pdf","uploadedByRole":"Hospital","uploadedAt":"2025-09-26T12:00:00Z","status":"Uploaded"},
+  {"id":"doc-1007","claimId":"clm-0005","type":"discharge-summary","filename":"discharge_clm5.pdf","url":"/mock/docs/discharge_clm5.pdf","uploadedByRole":"Hospital","uploadedAt":"2025-09-15T11:00:00Z","status":"Uploaded"},
+  {"id":"doc-1008","claimId":"clm-0005","type":"bill","filename":"bill_clm5.pdf","url":"/mock/docs/bill_clm5.pdf","uploadedByRole":"Hospital","uploadedAt":"2025-09-15T11:10:00Z","status":"Uploaded"},
+  {"id":"doc-1009","claimId":"clm-0006","type":"bill","filename":"bill_clm6.pdf","url":"/mock/docs/bill_clm6.pdf","uploadedByRole":"Hospital","uploadedAt":"2025-09-05T10:00:00Z","status":"Uploaded"},
+  {"id":"doc-1010","claimId":"clm-0007","type":"bill","filename":"bill_clm7.pdf","url":"/mock/docs/bill_clm7.pdf","uploadedByRole":"Hospital","uploadedAt":"2025-08-20T12:00:00Z","status":"Uploaded"},
+  {"id":"doc-1011","claimId":"clm-0008","type":"bill","filename":"bill_clm8_part1.pdf","url":"/mock/docs/bill_clm8_part1.pdf","uploadedByRole":"Hospital","uploadedAt":"2025-08-30T10:00:00Z","status":"Uploaded"},
+  {"id":"doc-1012","claimId":"clm-0008","type":"discharge-summary","filename":"discharge_clm8.pdf","url":"/mock/docs/discharge_clm8.pdf","uploadedByRole":"Hospital","uploadedAt":"2025-09-02T11:00:00Z","status":"Uploaded"},
+  {"id":"doc-1013","claimId":"clm-0009","type":"bill","filename":"bill_clm9.pdf","url":"/mock/docs/bill_clm9.pdf","uploadedByRole":"Hospital","uploadedAt":"2025-09-07T09:00:00Z","status":"Uploaded"},
+  {"id":"doc-1014","claimId":"clm-0010","type":"bill","filename":"bill_clm10.pdf","url":"/mock/docs/bill_clm10.pdf","uploadedByRole":"Hospital","uploadedAt":"2025-10-02T09:40:00Z","status":"Uploaded"},
+  {"id":"doc-1015","claimId":"clm-0011","type":"bill","filename":"bill_clm11.pdf","url":"/mock/docs/bill_clm11.pdf","uploadedByRole":"Hospital","uploadedAt":"2025-09-19T10:30:00Z","status":"Uploaded"}
+]
+

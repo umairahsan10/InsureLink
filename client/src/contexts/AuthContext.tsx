@@ -12,7 +12,7 @@ export const AuthContext = createContext<AuthContextValue | null>(null);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session>(getInitialSession());
 
-  const signIn = useCallback(async (email: string, password: string) => {
+  const signIn = useCallback(async (email: string, _password: string) => {
     // Placeholder: integrate with backend auth later
     const mockUser: SessionUser = {
       id: "u_1",
@@ -31,5 +31,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
+
+
 
 

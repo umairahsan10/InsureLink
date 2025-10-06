@@ -1,0 +1,33 @@
+{
+  "id": "insurelink-001",
+  "name": "InsureLink Insurance",
+  "address": "Karachi, Pakistan",
+  "staff": [
+    {
+      "id": "ins-staff-001",
+      "name": "Ayesha Khan",
+      "role": "Claims Manager",
+      "email": "ayesha.khan@insurelink.com",
+      "phone": "+92-300-1234567"
+    },
+    {
+      "id": "ins-staff-002",
+      "name": "Bilal Ahmed",
+      "role": "Medical Officer",
+      "email": "bilal.ahmed@insurelink.com",
+      "phone": "+92-300-7654321"
+    },
+    {
+      "id": "ins-staff-003",
+      "name": "Leena Shah",
+      "role": "Claims Adjuster",
+      "email": "leena.shah@insurelink.com",
+      "phone": "+92-300-3334445"
+    }
+  ],
+  "slaHours": 72,
+  "branding": {
+    "primaryColor": "#0B5FFF",
+    "logoText": "InsureLink"
+  }
+}

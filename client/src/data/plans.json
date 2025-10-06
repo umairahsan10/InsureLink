@@ -1,0 +1,75 @@
+[
+  {
+    "id": "plan-acme-gold-2025",
+    "name": "Acme Gold Group 2025",
+    "corporateId": "corp-001",
+    "sumInsured": 2000000,
+    "deductible": 0,
+    "copayPercent": 10,
+    "coveredServices": ["IPD", "OPD", "Maternity", "Diagnostics"],
+    "limits": {"OPDPerYear": 10000, "MaternityLimit": 250000},
+    "validFrom": "2025-01-01",
+    "validUntil": "2025-12-31"
+  },
+  {
+    "id": "plan-acme-basic-2025",
+    "name": "Acme Basic Group 2025",
+    "corporateId": "corp-001",
+    "sumInsured": 500000,
+    "deductible": 5000,
+    "copayPercent": 20,
+    "coveredServices": ["IPD", "OPD"],
+    "limits": {"OPDPerYear": 5000},
+    "validFrom": "2025-01-01",
+    "validUntil": "2025-12-31"
+  },
+  {
+    "id": "plan-beta-silver-2025",
+    "name": "Beta Silver Group 2025",
+    "corporateId": "corp-002",
+    "sumInsured": 1000000,
+    "deductible": 2000,
+    "copayPercent": 15,
+    "coveredServices": ["IPD", "OPD", "Diagnostics"],
+    "limits": {"OPDPerYear": 8000},
+    "validFrom": "2025-01-01",
+    "validUntil": "2025-12-31"
+  },
+  {
+    "id": "plan-beta-basic-2025",
+    "name": "Beta Basic 2025",
+    "corporateId": "corp-002",
+    "sumInsured": 400000,
+    "deductible": 5000,
+    "copayPercent": 25,
+    "coveredServices": ["IPD", "OPD"],
+    "limits": {"OPDPerYear": 4000},
+    "validFrom": "2025-01-01",
+    "validUntil": "2025-12-31"
+  },
+  {
+    "id": "plan-noor-gold-2025",
+    "name": "Noor Gold Group 2025",
+    "corporateId": "corp-003",
+    "sumInsured": 1500000,
+    "deductible": 0,
+    "copayPercent": 10,
+    "coveredServices": ["IPD", "OPD", "Maternity"],
+    "limits": {"OPDPerYear": 9000, "MaternityLimit": 200000},
+    "validFrom": "2025-02-01",
+    "validUntil": "2026-01-31"
+  },
+  {
+    "id": "plan-noor-basic-2025",
+    "name": "Noor Basic 2025",
+    "corporateId": "corp-003",
+    "sumInsured": 500000,
+    "deductible": 3000,
+    "copayPercent": 20,
+    "coveredServices": ["IPD", "OPD"],
+    "limits": {"OPDPerYear": 5000},
+    "validFrom": "2025-02-01",
+    "validUntil": "2026-01-31"
+  }
+]
+

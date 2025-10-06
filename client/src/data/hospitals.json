@@ -1,0 +1,48 @@
+[
+  {
+    "id": "hosp-001",
+    "name": "City General Hospital",
+    "address": "Block A, Main Street, Karachi",
+    "contact": "+92-21-5550001",
+    "panelStatus": "Panel",
+    "specialties": ["Cardiology", "Orthopedics"],
+    "acceptedPlans": ["plan-acme-gold-2025","plan-beta-silver-2025","plan-noor-gold-2025"]
+  },
+  {
+    "id": "hosp-002",
+    "name": "Eastside Medical Center",
+    "address": "Eastside Avenue, Karachi",
+    "contact": "+92-21-5550002",
+    "panelStatus": "Panel",
+    "specialties": ["General Surgery", "Gynecology"],
+    "acceptedPlans": ["plan-acme-basic-2025","plan-acme-gold-2025","plan-beta-basic-2025"]
+  },
+  {
+    "id": "hosp-003",
+    "name": "NorthCare Hospital",
+    "address": "North Road, Lahore",
+    "contact": "+92-42-5551003",
+    "panelStatus": "Non-Panel",
+    "specialties": ["Pediatrics", "ENT"],
+    "acceptedPlans": ["plan-beta-silver-2025","plan-noor-basic-2025"]
+  },
+  {
+    "id": "hosp-004",
+    "name": "Crescent Clinic",
+    "address": "Crescent Plaza, Islamabad",
+    "contact": "+92-51-5552004",
+    "panelStatus": "Panel",
+    "specialties": ["Diagnostics", "OPD"],
+    "acceptedPlans": ["plan-acme-gold-2025","plan-beta-silver-2025","plan-noor-gold-2025"]
+  },
+  {
+    "id": "hosp-005",
+    "name": "Lakeside Hospital",
+    "address": "Lakeside Rd, Karachi",
+    "contact": "+92-21-5550005",
+    "panelStatus": "Panel",
+    "specialties": ["Maternity", "Orthopedics"],
+    "acceptedPlans": ["plan-noor-gold-2025","plan-acme-basic-2025"]
+  }
+]
+

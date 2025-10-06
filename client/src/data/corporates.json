@@ -1,0 +1,42 @@
+[
+  {
+    "id": "corp-001",
+    "name": "Acme Ltd",
+    "hrContact": {
+      "name": "Sara Ahmed",
+      "email": "sara.ahmed@acme.com",
+      "phone": "+92-300-1111111"
+    },
+    "totalEmployees": 8,
+    "plans": ["plan-acme-gold-2025", "plan-acme-basic-2025"],
+    "contractStart": "2025-01-01",
+    "contractEnd": "2025-12-31"
+  },
+  {
+    "id": "corp-002",
+    "name": "Beta Systems",
+    "hrContact": {
+      "name": "Imran Shah",
+      "email": "imran.shah@beta.com",
+      "phone": "+92-300-2222222"
+    },
+    "totalEmployees": 7,
+    "plans": ["plan-beta-silver-2025", "plan-beta-basic-2025"],
+    "contractStart": "2025-01-01",
+    "contractEnd": "2025-12-31"
+  },
+  {
+    "id": "corp-003",
+    "name": "Noor Foods",
+    "hrContact": {
+      "name": "Fatima Noor",
+      "email": "fatima.noor@noorfoods.com",
+      "phone": "+92-300-3333333"
+    },
+    "totalEmployees": 5,
+    "plans": ["plan-noor-gold-2025", "plan-noor-basic-2025"],
+    "contractStart": "2025-02-01",
+    "contractEnd": "2026-01-31"
+  }
+]
+
