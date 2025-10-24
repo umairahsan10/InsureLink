@@ -1,6 +1,11 @@
+'use client';
+
+import DashboardLayout from '@/components/layouts/DashboardLayout';
+
 export default function InsurerCorporatesPage() {
   return (
-    <div className="p-8">
+    <DashboardLayout userRole="insurer" userName="HealthGuard Insurance">
+      <div className="p-8 bg-gray-50 min-h-screen">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold text-gray-900">Corporate Clients</h1>
         <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
@@ -94,7 +99,8 @@ export default function InsurerCorporatesPage() {
           </table>
         </div>
       </div>
-    </div>
+      </div>
+    </DashboardLayout>
   );
 }
 
