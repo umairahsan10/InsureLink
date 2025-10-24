@@ -1,7 +1,12 @@
+'use client';
+
+import DashboardLayout from '@/components/layouts/DashboardLayout';
+
 export default function InsurerClaimsPage() {
   return (
-    <div className="p-8">
-      <h1 className="text-3xl font-bold text-gray-900 mb-6">Claims Processing</h1>
+    <DashboardLayout userRole="insurer" userName="HealthGuard Insurance">
+      <div className="p-8 bg-gray-50 min-h-screen">
+        <h1 className="text-3xl font-bold text-gray-900 mb-6">Claims Processing</h1>
 
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
         <div className="bg-white rounded-lg shadow p-4">
@@ -111,7 +116,8 @@ export default function InsurerClaimsPage() {
           </table>
         </div>
       </div>
-    </div>
+      </div>
+    </DashboardLayout>
   );
 }
 

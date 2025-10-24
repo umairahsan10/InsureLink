@@ -1,63 +1,204 @@
+'use client';
+
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 
 interface SidebarProps {
   userRole: 'patient' | 'corporate' | 'hospital' | 'insurer';
 }
 
-const menuItems = {
+interface MenuItem {
+  name: string;
+  href: string;
+  icon: React.ReactNode;
+}
+
+// SVG Icons
+const DashboardIcon = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z" />
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5a2 2 0 012-2h4a2 2 0 012 2v6H8V5z" />
+  </svg>
+);
+
+const ClaimsIcon = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+  </svg>
+);
+
+const ProfileIcon = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+  </svg>
+);
+
+const HistoryIcon = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+  </svg>
+);
+
+const EmployeesIcon = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+  </svg>
+);
+
+const PlansIcon = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+  </svg>
+);
+
+const HospitalIcon = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+  </svg>
+);
+
+const PatientsIcon = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+  </svg>
+);
+
+const CorporatesIcon = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+  </svg>
+);
+
+const ShieldIcon = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+  </svg>
+);
+
+const menuItems: Record<string, MenuItem[]> = {
   patient: [
-    { name: 'Dashboard', href: '/patient/dashboard', icon: '📊' },
-    { name: 'My Claims', href: '/patient/claims', icon: '📋' },
-    { name: 'Profile', href: '/patient/profile', icon: '👤' },
-    { name: 'History', href: '/patient/history', icon: '📜' },
+    { name: 'Dashboard', href: '/patient/dashboard', icon: <DashboardIcon /> },
+    { name: 'My Claims', href: '/patient/claims', icon: <ClaimsIcon /> },
+    { name: 'Profile', href: '/patient/profile', icon: <ProfileIcon /> },
+    { name: 'History', href: '/patient/history', icon: <HistoryIcon /> },
   ],
   corporate: [
-    { name: 'Dashboard', href: '/corporate/dashboard', icon: '📊' },
-    { name: 'Claims', href: '/corporate/claims', icon: '📋' },
-    { name: 'Employees', href: '/corporate/employees', icon: '👥' },
-    { name: 'Plans', href: '/corporate/plans', icon: '📦' },
-    { name: 'Profile', href: '/corporate/profile', icon: '🏢' },
+    { name: 'Dashboard', href: '/corporate/dashboard', icon: <DashboardIcon /> },
+    { name: 'Claims', href: '/corporate/claims', icon: <ClaimsIcon /> },
+    { name: 'Employees', href: '/corporate/employees', icon: <EmployeesIcon /> },
+    { name: 'Plans', href: '/corporate/plans', icon: <PlansIcon /> },
+    { name: 'Profile', href: '/corporate/profile', icon: <ProfileIcon /> },
   ],
   hospital: [
-    { name: 'Dashboard', href: '/hospital/dashboard', icon: '📊' },
-    { name: 'Claims', href: '/hospital/claims', icon: '📋' },
-    { name: 'Patients', href: '/hospital/patients', icon: '🏥' },
-    { name: 'Profile', href: '/hospital/profile', icon: '⚕️' },
+    { name: 'Dashboard', href: '/hospital/dashboard', icon: <DashboardIcon /> },
+    { name: 'Claims', href: '/hospital/claims', icon: <ClaimsIcon /> },
+    { name: 'Patients', href: '/hospital/patients', icon: <PatientsIcon /> },
+    { name: 'Profile', href: '/hospital/profile', icon: <ProfileIcon /> },
   ],
   insurer: [
-    { name: 'Dashboard', href: '/insurer/dashboard', icon: '📊' },
-    { name: 'Claims', href: '/insurer/claims', icon: '📋' },
-    { name: 'Hospitals', href: '/insurer/hospitals', icon: '🏥' },
-    { name: 'Corporates', href: '/insurer/corporates', icon: '🏢' },
-    { name: 'Profile', href: '/insurer/profile', icon: '🛡️' },
+    { name: 'Dashboard', href: '/insurer/dashboard', icon: <DashboardIcon /> },
+    { name: 'Claims Review', href: '/insurer/claims', icon: <ClaimsIcon /> },
+    { name: 'Hospitals', href: '/insurer/hospitals', icon: <HospitalIcon /> },
+    { name: 'Corporates', href: '/insurer/corporates', icon: <CorporatesIcon /> },
+    { name: 'Profile', href: '/insurer/profile', icon: <ShieldIcon /> },
   ],
 };
 
+// Theme configurations for different roles
+const themes = {
+  patient: {
+    bgColor: 'bg-white',
+    borderColor: 'border-gray-200',
+    logoColor: 'text-blue-600',
+    textColor: 'text-gray-500',
+    itemTextColor: 'text-gray-700',
+    hoverBg: 'hover:bg-blue-50',
+    hoverText: 'hover:text-blue-600',
+    activeBg: 'bg-blue-100',
+    activeText: 'text-blue-700',
+  },
+  corporate: {
+    bgColor: 'bg-white',
+    borderColor: 'border-gray-200',
+    logoColor: 'text-purple-600',
+    textColor: 'text-gray-500',
+    itemTextColor: 'text-gray-700',
+    hoverBg: 'hover:bg-purple-50',
+    hoverText: 'hover:text-purple-600',
+    activeBg: 'bg-purple-100',
+    activeText: 'text-purple-700',
+  },
+  hospital: {
+    bgColor: 'bg-white',
+    borderColor: 'border-gray-200',
+    logoColor: 'text-green-600',
+    textColor: 'text-gray-500',
+    itemTextColor: 'text-gray-700',
+    hoverBg: 'hover:bg-green-50',
+    hoverText: 'hover:text-green-600',
+    activeBg: 'bg-green-100',
+    activeText: 'text-green-700',
+  },
+  insurer: {
+    bgColor: 'bg-red-50',
+    borderColor: 'border-red-100',
+    logoColor: 'text-red-500',
+    textColor: 'text-red-400',
+    itemTextColor: 'text-red-500',
+    hoverBg: 'hover:bg-red-50',
+    hoverText: 'hover:text-red-600',
+    activeBg: 'bg-red-100',
+    activeText: 'text-red-700',
+  },
+};
+
 export default function Sidebar({ userRole }: SidebarProps) {
+  const pathname = usePathname();
   const items = menuItems[userRole];
+  const theme = themes[userRole];
 
   return (
-    <aside className="w-64 bg-white shadow-lg min-h-screen">
-      <div className="p-6 border-b border-gray-200">
-        <h1 className="text-2xl font-bold text-blue-600">InsureLink</h1>
-        <p className="text-sm text-gray-500 capitalize">{userRole} Portal</p>
+    <aside className={`w-64 ${userRole === 'insurer' ? 'bg-red-50' : theme.bgColor} shadow-lg min-h-screen flex flex-col`}>
+      <div className={`p-6 border-b ${theme.borderColor}`}>
+        <h1 className={`text-2xl font-bold ${theme.logoColor}`}>InsureLink</h1>
+        <p className={`text-sm ${theme.textColor} capitalize`}>{userRole} Portal</p>
       </div>
 
-      <nav className="p-4">
+      <nav className="p-4 flex-1">
         <ul className="space-y-2">
-          {items.map((item) => (
-            <li key={item.name}>
-              <Link
-                href={item.href}
-                className="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
-              >
-                <span className="text-xl">{item.icon}</span>
-                <span className="font-medium">{item.name}</span>
-              </Link>
-            </li>
-          ))}
+          {items.map((item) => {
+            const isActive = pathname === item.href;
+            return (
+              <li key={item.name}>
+                <Link
+                  href={item.href}
+                  className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
+                    isActive
+                      ? `${theme.activeBg} ${theme.activeText}`
+                      : `${theme.itemTextColor} ${theme.hoverBg} ${theme.hoverText}`
+                  }`}
+                >
+                  <span className="flex-shrink-0">{item.icon}</span>
+                  <span className="font-medium">{item.name}</span>
+                </Link>
+              </li>
+            );
+          })}
         </ul>
       </nav>
+
+      {/* Back to Home Link */}
+      <div className="p-4">
+        <Link
+          href="/"
+          className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${theme.itemTextColor} ${theme.hoverBg} ${theme.hoverText}`}
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+          </svg>
+          <span className="font-medium">Back to Home</span>
+        </Link>
+      </div>
     </aside>
   );
 }
