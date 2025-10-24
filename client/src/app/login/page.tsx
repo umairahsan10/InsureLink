@@ -1,11 +1,11 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
 const userTypes = ['Insurer', 'Corporate', 'Hospital', 'Patient'];
 
-export default function LoginPage() {
+function LoginForm() {
   const [selectedUserType, setSelectedUserType] = useState('Patient');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -54,7 +54,7 @@ export default function LoginPage() {
           {nextUrl && (
             <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
               <p className="text-sm text-blue-800">
-                You'll be redirected to: <span className="font-medium">{nextUrl}</span>
+                You&apos;ll be redirected to: <span className="font-medium">{nextUrl}</span>
               </p>
             </div>
           )}
@@ -126,5 +126,13 @@ export default function LoginPage() {
         {/* This div will display the image on the right side */}
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <LoginForm />
+    </Suspense>
   );
 }

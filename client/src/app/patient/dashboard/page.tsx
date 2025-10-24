@@ -1,6 +1,5 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import Card from '@/components/shared/Card';
 import ClaimStatusBadge from '@/components/claims/ClaimStatusBadge';
 
@@ -70,8 +69,6 @@ const patientData = {
 };
 
 export default function PatientDashboardPage() {
-  const [data, setData] = useState(patientData);
-
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
       {/* Overview Cards */}
@@ -81,7 +78,7 @@ export default function PatientDashboardPage() {
           <div className="flex justify-between items-start">
             <div>
               <p className="text-sm font-medium text-gray-600 mb-1">Total Claims</p>
-              <p className="text-3xl font-bold text-gray-900">{data.totalClaims}</p>
+              <p className="text-3xl font-bold text-gray-900">{patientData.totalClaims}</p>
               <p className="text-sm text-gray-500 mt-1">This year</p>
             </div>
             <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
@@ -97,8 +94,8 @@ export default function PatientDashboardPage() {
           <div className="flex justify-between items-start">
             <div>
               <p className="text-sm font-medium text-gray-600 mb-1">Approved Claims</p>
-              <p className="text-3xl font-bold text-gray-900">{data.approvedClaims}</p>
-              <p className="text-sm text-gray-500 mt-1">{data.approvalRate}% approval rate</p>
+              <p className="text-3xl font-bold text-gray-900">{patientData.approvedClaims}</p>
+              <p className="text-sm text-gray-500 mt-1">{patientData.approvalRate}% approval rate</p>
             </div>
             <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
               <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -113,7 +110,7 @@ export default function PatientDashboardPage() {
           <div className="flex justify-between items-start">
             <div>
               <p className="text-sm font-medium text-gray-600 mb-1">Total Reimbursed</p>
-              <p className="text-3xl font-bold text-gray-900">Rs. {data.totalReimbursed}</p>
+              <p className="text-3xl font-bold text-gray-900">Rs. {patientData.totalReimbursed}</p>
               <p className="text-sm text-gray-500 mt-1">This year</p>
             </div>
             <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
@@ -129,7 +126,7 @@ export default function PatientDashboardPage() {
           <div className="flex justify-between items-start">
             <div>
               <p className="text-sm font-medium text-gray-600 mb-1">Pending Claims</p>
-              <p className="text-3xl font-bold text-gray-900">{data.pendingClaims}</p>
+              <p className="text-3xl font-bold text-gray-900">{patientData.pendingClaims}</p>
               <p className="text-sm text-gray-500 mt-1">Awaiting review</p>
             </div>
             <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
@@ -151,7 +148,7 @@ export default function PatientDashboardPage() {
           </div>
           
           <div className="space-y-4">
-            {data.recentClaims.map((claim) => (
+            {patientData.recentClaims.map((claim) => (
               <div key={claim.id} className="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg">
                 <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
                   claim.status === 'Paid' ? 'bg-green-100' :
@@ -189,7 +186,7 @@ export default function PatientDashboardPage() {
           </div>
           
           <div className="space-y-6">
-            {data.coverageBalance.map((coverage) => (
+            {patientData.coverageBalance.map((coverage) => (
               <div key={coverage.category}>
                 <div className="flex justify-between items-center mb-2">
                   <span className="text-sm font-medium text-gray-700">{coverage.category}</span>

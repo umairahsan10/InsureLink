@@ -2,11 +2,7 @@
 
 import { useRouter, usePathname } from 'next/navigation';
 
-interface HospitalSidebarProps {
-  currentPage?: string;
-}
-
-export default function HospitalSidebar({ currentPage }: HospitalSidebarProps) {
+export default function HospitalSidebar() {
   const router = useRouter();
   const pathname = usePathname();
 

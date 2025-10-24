@@ -1,13 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import ClaimStatusBadge from '@/components/claims/ClaimStatusBadge';
 import HospitalSidebar from '@/components/hospital/HospitalSidebar';
 
 // Import data
 import claimsData from '@/data/claims.json';
 import analyticsData from '@/data/analytics.json';
-import hospitalsData from '@/data/hospitals.json';
 
 export default function HospitalDashboardPage() {
   const [cnicNumber, setCnicNumber] = useState('');
@@ -227,7 +226,7 @@ export default function HospitalDashboardPage() {
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{claim.amount}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{claim.date}</td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <ClaimStatusBadge status={claim.status === 'Pending' ? 'Pending' : (claim.status as any)} />
+                        <ClaimStatusBadge status={claim.status === 'Pending' ? 'Pending' : (claim.status as 'Approved' | 'Rejected' | 'Under Review' | 'Paid' | 'Submitted' | 'DocumentsUploaded' | 'MoreInfoRequested' | 'PendingApproval')} />
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <div className="flex space-x-2">

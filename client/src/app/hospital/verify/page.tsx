@@ -1,15 +1,24 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import HospitalSidebar from '@/components/hospital/HospitalSidebar';
 
+interface Patient {
+  id: string;
+  name: string;
+  cnic: string;
+  phone: string;
+  policyNumber: string;
+  coverage: string;
+  expiryDate: string;
+  status: string;
+}
+
 export default function HospitalVerifyPage() {
-  const router = useRouter();
   const [searchTerm, setSearchTerm] = useState('');
-  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [searchResults, setSearchResults] = useState<Patient[]>([]);
   const [isSearching, setIsSearching] = useState(false);
-  const [selectedClaim, setSelectedClaim] = useState<any>(null);
+  const [selectedClaim, setSelectedClaim] = useState<Patient | null>(null);
 
   // Mock patient data for verification
   const mockPatients = [
@@ -62,7 +71,7 @@ export default function HospitalVerifyPage() {
     }, 1000);
   };
 
-  const handleVerifyPatient = (patient: any) => {
+  const handleVerifyPatient = (patient: Patient) => {
     setSelectedClaim(patient);
   };
 

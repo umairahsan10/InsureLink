@@ -215,7 +215,7 @@ export default function PatientHistoryPage() {
                     <div className="text-xs text-gray-500">Claimed Amount</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-center">
-                    <ClaimStatusBadge status={claim.status === 'Processing' ? 'Pending' : (claim.status as any)} />
+                    <ClaimStatusBadge status={claim.status === 'Processing' ? 'Pending' : (claim.status as 'Approved' | 'Rejected' | 'Under Review' | 'Paid' | 'Submitted' | 'DocumentsUploaded' | 'MoreInfoRequested' | 'PendingApproval')} />
                   </td>
                 </tr>
               ))}
