@@ -1,12 +1,41 @@
+'use client';
+
+import HospitalSidebar from '@/components/hospital/HospitalSidebar';
+
 export default function HospitalClaimsPage() {
   return (
-    <div className="p-8">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">Claims Management</h1>
-        <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
-          + Submit New Claim
-        </button>
-      </div>
+    <div className="min-h-screen bg-gray-50 flex">
+      {/* Left Sidebar */}
+      <HospitalSidebar />
+
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col">
+        {/* Top Header */}
+        <header className="bg-white shadow-sm border-b px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Claims Management</h1>
+              <p className="text-gray-600">Manage and track insurance claims</p>
+            </div>
+            <div className="flex items-center space-x-4">
+              <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+                + Submit New Claim
+              </button>
+              <div className="text-right">
+                <p className="text-sm font-medium text-gray-900">Dr. Sarah Ahmed</p>
+                <p className="text-sm text-gray-500">Chief Medical Officer</p>
+              </div>
+              <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        {/* Page Content */}
+        <main className="flex-1 p-6">
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <div className="bg-white rounded-lg shadow p-4">
@@ -23,7 +52,7 @@ export default function HospitalClaimsPage() {
         </div>
         <div className="bg-white rounded-lg shadow p-4">
           <p className="text-sm text-gray-500">Total Amount</p>
-          <p className="text-2xl font-bold text-blue-600">$45.2K</p>
+          <p className="text-2xl font-bold text-blue-600">Rs. 45.2K</p>
         </div>
       </div>
       
@@ -33,15 +62,15 @@ export default function HospitalClaimsPage() {
             <input
               type="text"
               placeholder="Search by claim ID or patient name..."
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg"
+              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-green-500 focus:border-transparent"
             />
-            <select className="px-4 py-2 border border-gray-300 rounded-lg">
+            <select className="px-4 py-2 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-green-500 focus:border-transparent">
               <option>All Status</option>
               <option>Pending</option>
               <option>Approved</option>
               <option>Rejected</option>
             </select>
-            <select className="px-4 py-2 border border-gray-300 rounded-lg">
+            <select className="px-4 py-2 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-green-500 focus:border-transparent">
               <option>All Insurers</option>
               <option>HealthGuard Insurance</option>
               <option>MediCare Plus</option>
@@ -65,10 +94,10 @@ export default function HospitalClaimsPage() {
             </thead>
             <tbody className="divide-y divide-gray-200">
               {[
-                { id: 'HCL-892', patient: 'John Doe', treatment: 'General Checkup', date: '2025-10-06', amount: '$250', status: 'Approved' },
-                { id: 'HCL-891', patient: 'Mary Johnson', treatment: 'X-Ray Scan', date: '2025-10-06', amount: '$450', status: 'Pending' },
-                { id: 'HCL-890', patient: 'Robert Smith', treatment: 'Blood Test', date: '2025-10-05', amount: '$120', status: 'Approved' },
-                { id: 'HCL-889', patient: 'Emily Davis', treatment: 'Surgery', date: '2025-10-05', amount: '$5,200', status: 'Pending' },
+                { id: 'HCL-892', patient: 'John Doe', treatment: 'General Checkup', date: '2025-10-06', amount: 'Rs. 250', status: 'Approved' },
+                { id: 'HCL-891', patient: 'Mary Johnson', treatment: 'X-Ray Scan', date: '2025-10-06', amount: 'Rs. 450', status: 'Pending' },
+                { id: 'HCL-890', patient: 'Robert Smith', treatment: 'Blood Test', date: '2025-10-05', amount: 'Rs. 120', status: 'Approved' },
+                { id: 'HCL-889', patient: 'Emily Davis', treatment: 'Surgery', date: '2025-10-05', amount: 'Rs. 5,200', status: 'Pending' },
               ].map((claim) => (
                 <tr key={claim.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 text-sm font-medium text-gray-900">{claim.id}</td>
@@ -91,6 +120,8 @@ export default function HospitalClaimsPage() {
             </tbody>
           </table>
         </div>
+      </div>
+        </main>
       </div>
     </div>
   );

@@ -21,7 +21,7 @@ export default function InsurerDashboard() {
         
         <div className="bg-white rounded-lg shadow p-6">
           <p className="text-sm text-gray-500 mb-2">Total Payout</p>
-          <p className="text-3xl font-bold text-purple-600">$2.8M</p>
+          <p className="text-3xl font-bold text-purple-600">Rs. 2.8M</p>
         </div>
       </div>
 
@@ -30,9 +30,9 @@ export default function InsurerDashboard() {
           <h2 className="text-xl font-semibold mb-4">High Priority Claims</h2>
           <div className="space-y-3">
             {[
-              { id: 'CLM-8921', patient: 'John Doe', amount: '$5,200', hospital: 'City General' },
-              { id: 'CLM-8920', patient: 'Mary Johnson', amount: '$3,100', hospital: 'St. Mary\'s' },
-              { id: 'CLM-8919', patient: 'Robert Smith', amount: '$4,800', hospital: 'County Hospital' },
+              { id: 'CLM-8921', patient: 'John Doe', amount: 'Rs. 5,200', hospital: 'City General' },
+              { id: 'CLM-8920', patient: 'Mary Johnson', amount: 'Rs. 3,100', hospital: 'St. Mary\'s' },
+              { id: 'CLM-8919', patient: 'Robert Smith', amount: 'Rs. 4,800', hospital: 'County Hospital' },
             ].map((claim) => (
               <div key={claim.id} className="p-3 bg-gray-50 rounded">
                 <div className="flex justify-between items-start mb-1">
