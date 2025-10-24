@@ -1,6 +1,6 @@
 export default function PatientClaimsPage() {
   return (
-    <div className="p-8">
+    <div className="p-6">
       <h1 className="text-3xl font-bold text-gray-900 mb-6">My Claims</h1>
       
       <div className="bg-white rounded-lg shadow p-6">
@@ -12,9 +12,9 @@ export default function PatientClaimsPage() {
 
         <div className="space-y-4">
           {[
-            { id: 'CLM-001', date: '2025-10-01', amount: '$1,200', status: 'Approved', color: 'green' },
-            { id: 'CLM-002', date: '2025-09-28', amount: '$450', status: 'Processing', color: 'yellow' },
-            { id: 'CLM-003', date: '2025-09-15', amount: '$2,800', status: 'Under Review', color: 'orange' },
+            { id: 'CLM-001', date: '2025-10-01', amount: 'Rs. 1,200', status: 'Approved', color: 'green' },
+            { id: 'CLM-002', date: '2025-09-28', amount: 'Rs. 450', status: 'Processing', color: 'yellow' },
+            { id: 'CLM-003', date: '2025-09-15', amount: 'Rs. 2,800', status: 'Under Review', color: 'orange' },
           ].map((claim) => (
             <div key={claim.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
               <div className="flex justify-between items-start">

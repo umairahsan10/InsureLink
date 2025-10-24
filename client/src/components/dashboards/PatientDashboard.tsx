@@ -12,13 +12,13 @@ export default function PatientDashboard() {
         
         <div className="bg-white rounded-lg shadow p-6">
           <p className="text-sm text-gray-500 mb-2">Total Coverage</p>
-          <p className="text-3xl font-bold text-green-600">$50,000</p>
+          <p className="text-3xl font-bold text-green-600">Rs. 50,000</p>
           <p className="text-sm text-gray-600 mt-2">Available this year</p>
         </div>
         
         <div className="bg-white rounded-lg shadow p-6">
           <p className="text-sm text-gray-500 mb-2">Used This Year</p>
-          <p className="text-3xl font-bold text-purple-600">$12,450</p>
+          <p className="text-3xl font-bold text-purple-600">Rs. 12,450</p>
           <p className="text-sm text-gray-600 mt-2">75% remaining</p>
         </div>
       </div>
@@ -28,8 +28,8 @@ export default function PatientDashboard() {
           <h2 className="text-xl font-semibold mb-4">Recent Claims</h2>
           <div className="space-y-3">
             {[
-              { id: 'CLM-001', date: '2025-10-01', amount: '$1,200', status: 'Approved' },
-              { id: 'CLM-002', date: '2025-09-28', amount: '$450', status: 'Processing' },
+              { id: 'CLM-001', date: '2025-10-01', amount: 'Rs. 1,200', status: 'Approved' },
+              { id: 'CLM-002', date: '2025-09-28', amount: 'Rs. 450', status: 'Processing' },
             ].map((claim) => (
               <div key={claim.id} className="flex justify-between items-center p-3 bg-gray-50 rounded">
                 <div>

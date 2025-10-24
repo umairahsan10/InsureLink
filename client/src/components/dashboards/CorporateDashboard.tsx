@@ -21,7 +21,7 @@ export default function CorporateDashboard() {
         
         <div className="bg-white rounded-lg shadow p-6">
           <p className="text-sm text-gray-500 mb-2">Monthly Premium</p>
-          <p className="text-3xl font-bold text-purple-600">$45K</p>
+          <p className="text-3xl font-bold text-purple-600">Rs. 45K</p>
         </div>
       </div>
 
@@ -30,9 +30,9 @@ export default function CorporateDashboard() {
           <h2 className="text-xl font-semibold mb-4">Recent Claims</h2>
           <div className="space-y-3">
             {[
-              { employee: 'Sarah Johnson', amount: '$1,800', status: 'Approved' },
-              { employee: 'Mike Davis', amount: '$920', status: 'Pending' },
-              { employee: 'Emily Chen', amount: '$2,400', status: 'Approved' },
+              { employee: 'Sarah Johnson', amount: 'Rs. 1,800', status: 'Approved' },
+              { employee: 'Mike Davis', amount: 'Rs. 920', status: 'Pending' },
+              { employee: 'Emily Chen', amount: 'Rs. 2,400', status: 'Approved' },
             ].map((claim, idx) => (
               <div key={idx} className="flex justify-between items-center p-3 bg-gray-50 rounded">
                 <p className="font-medium">{claim.employee}</p>

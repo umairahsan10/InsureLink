@@ -1,31 +1,34 @@
 'use client';
-import { useState } from 'react';
-import { useRouter } from 'next/navigation'; // Import useRouter for navigation
+import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
 const userTypes = ['Insurer', 'Corporate', 'Hospital', 'Patient'];
 
 export default function LoginPage() {
-  const [selectedUserType, setSelectedUserType] = useState('Insurer');
+  const [selectedUserType, setSelectedUserType] = useState('Patient');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const router = useRouter(); // Instantiate router
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const nextUrl = searchParams.get('next');
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Mock login (replace with actual backend logic later)
-    // Redirect user based on selected role
-    const rolePath = selectedUserType.toLowerCase(); // Convert role to lowercase for URL
-    router.push(`/${rolePath}/claims`); // Redirect to the respective dashboard
-
-    // Optionally, you can add a condition to check for email/password validation or API response here
+    // Mock authentication - set auth token cookie
+    document.cookie = `auth_token=mock_token_${Date.now()}; path=/; max-age=86400`; // 24 hours
+    
+    // Redirect to the intended page or default dashboard
+    const rolePath = selectedUserType.toLowerCase();
+    const redirectPath = nextUrl || `/${rolePath}/dashboard`;
+    router.push(redirectPath);
   };
 
   return (
-    <div className="flex overflow-hidden m-0 p-0" style={{ height: 'calc(100vh - 80px)' }}>
+    <div className="flex overflow-hidden m-0 p-0 h-screen w-screen">
       {/* Left Side – Login Form */}
-      <div className="w-1/2 flex flex-col items-center justify-center px-6 py-4 bg-gradient-to-br from-blue-50 to-indigo-100">
+      <div className="w-1/2 flex flex-col items-center justify-center px-6 py-4 bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
         <div className="max-w-lg w-full bg-white rounded-xl shadow-xl p-8">
           {/* User Type Tabs */}
           <div className="flex justify-between mb-6">
@@ -47,6 +50,14 @@ export default function LoginPage() {
           <h1 className="text-2xl font-bold text-gray-900 mb-6 text-center">
             Sign In as {selectedUserType}
           </h1>
+          
+          {nextUrl && (
+            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-sm text-blue-800">
+                You'll be redirected to: <span className="font-medium">{nextUrl}</span>
+              </p>
+            </div>
+          )}
 
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
@@ -111,7 +122,7 @@ export default function LoginPage() {
       </div>
 
       {/* Right Side – Image */}
-      <div className="w-1/2 bg-cover bg-center bg-no-repeat bg-blue-100" style={{ backgroundImage: "url('/images/abc.png')", backgroundSize: '80%' }}>
+      <div className="w-1/2 bg-cover bg-center bg-no-repeat bg-blue-100 min-h-screen" style={{ backgroundImage: "url('/images/abc.png')", backgroundSize: '80%' }}>
         {/* This div will display the image on the right side */}
       </div>
     </div>

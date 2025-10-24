@@ -21,7 +21,7 @@ export default function HospitalDashboard() {
         
         <div className="bg-white rounded-lg shadow p-6">
           <p className="text-sm text-gray-500 mb-2">Revenue Today</p>
-          <p className="text-3xl font-bold text-purple-600">$45.2K</p>
+          <p className="text-3xl font-bold text-purple-600">Rs. 45.2K</p>
         </div>
       </div>
 
@@ -30,9 +30,9 @@ export default function HospitalDashboard() {
           <h2 className="text-xl font-semibold mb-4">Recent Claims</h2>
           <div className="space-y-3">
             {[
-              { patient: 'John Doe', treatment: 'General Checkup', amount: '$250', status: 'Approved' },
-              { patient: 'Mary Johnson', treatment: 'X-Ray Scan', amount: '$450', status: 'Pending' },
-              { patient: 'Robert Smith', treatment: 'Blood Test', amount: '$120', status: 'Approved' },
+              { patient: 'John Doe', treatment: 'General Checkup', amount: 'Rs. 250', status: 'Approved' },
+              { patient: 'Mary Johnson', treatment: 'X-Ray Scan', amount: 'Rs. 450', status: 'Pending' },
+              { patient: 'Robert Smith', treatment: 'Blood Test', amount: 'Rs. 120', status: 'Approved' },
             ].map((claim, idx) => (
               <div key={idx} className="p-3 bg-gray-50 rounded">
                 <div className="flex justify-between items-start mb-1">
