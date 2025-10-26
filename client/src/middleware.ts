@@ -15,7 +15,12 @@ export function middleware(req: NextRequest) {
   if (!requiresAuth) return NextResponse.next();
 
   const token = req.cookies.get("auth_token")?.value;
-  if (!token) {
+  
+  // Allow access in development mode or if token exists
+  // For demo purposes, you can temporarily bypass auth
+  const isDevelopment = process.env.NODE_ENV === 'development';
+  
+  if (!token && !isDevelopment) {
     const url = req.nextUrl.clone();
     url.pathname = "/login";
     url.searchParams.set("next", pathname);
