@@ -34,7 +34,7 @@ export default function PatientLayout({ children }: { children: ReactNode }) {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="min-h-screen bg-gray-50">
       {/* Mobile Sidebar Overlay */}
       {sidebarOpen && (
         <div 
@@ -44,40 +44,44 @@ export default function PatientLayout({ children }: { children: ReactNode }) {
       )}
 
       {/* Sidebar */}
-      <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 ${
+      <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out lg:translate-x-0 ${
         sidebarOpen ? 'translate-x-0' : '-translate-x-full'
       }`}>
-        <div className="p-6 flex flex-col h-full">
-          <div className="flex items-center mb-8">
-            <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center mr-3">
-              <span className="text-white font-bold text-sm">N</span>
+        <div className="h-full flex flex-col">
+          <div className="p-6">
+            <div className="flex items-center mb-8">
+              <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center mr-3">
+                <span className="text-white font-bold text-sm">N</span>
+              </div>
+              <span className="text-xl font-bold text-gray-900">InsureLink</span>
             </div>
-            <span className="text-xl font-bold text-gray-900">InsureLink</span>
           </div>
           
-          <nav className="space-y-2 flex-1">
-            {navigation.map((item) => {
-              const isActive = pathname === item.href;
-              return (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  onClick={closeSidebar}
-                  className={`flex items-center px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
-                    isActive
-                      ? 'bg-blue-600 text-white'
-                      : 'text-gray-700 hover:bg-gray-100'
-                  }`}
-                >
-                  <span className="mr-3 text-lg">{item.icon}</span>
-                  {item.name}
-                </Link>
-              );
-            })}
+          <nav className="flex-1 px-6 overflow-y-auto">
+            <div className="space-y-2">
+              {navigation.map((item) => {
+                const isActive = pathname === item.href;
+                return (
+                  <Link
+                    key={item.name}
+                    href={item.href}
+                    onClick={closeSidebar}
+                    className={`flex items-center px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+                      isActive
+                        ? 'bg-blue-600 text-white'
+                        : 'text-gray-700 hover:bg-gray-100'
+                    }`}
+                  >
+                    <span className="mr-3 text-lg">{item.icon}</span>
+                    {item.name}
+                  </Link>
+                );
+              })}
+            </div>
           </nav>
 
           {/* Logout Button */}
-          <div className="mt-auto pt-4 border-t border-gray-200">
+          <div className="p-6 border-t border-gray-200">
             <button 
               onClick={handleLogout}
               className="flex items-center w-full px-4 py-3 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50 transition-colors"
@@ -92,7 +96,7 @@ export default function PatientLayout({ children }: { children: ReactNode }) {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col lg:ml-0">
+      <div className="flex flex-col ml-0 lg:ml-64">
         {/* Top Header */}
         <header className="bg-white shadow-sm border-b">
           <div className="px-4 sm:px-6 py-4 flex items-center justify-between">
@@ -117,7 +121,7 @@ export default function PatientLayout({ children }: { children: ReactNode }) {
         </header>
 
         {/* Page Content */}
-        <main className="flex-1">
+        <main className="flex-1 overflow-auto">
           {children}
         </main>
       </div>

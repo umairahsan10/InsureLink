@@ -3,12 +3,12 @@ import CorporateSidebar from '@/components/corporate/CorporateSidebar';
 
 export default function CorporateLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="min-h-screen bg-gray-50">
       {/* Sidebar */}
       <CorporateSidebar />
       
       {/* Main Content */}
-      <div className="flex-1 flex flex-col">
+      <div className="ml-64 flex flex-col">
         {/* Header */}
         <header className="bg-white border-b border-gray-200 px-6 py-4">
           <div className="flex justify-between items-center">

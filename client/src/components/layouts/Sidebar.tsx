@@ -158,7 +158,7 @@ export default function Sidebar({ userRole }: SidebarProps) {
   const theme = themes[userRole];
 
   return (
-    <aside className={`w-64 ${userRole === 'insurer' ? 'bg-red-50' : theme.bgColor} shadow-lg min-h-screen flex flex-col`}>
+    <aside className={`fixed left-0 top-0 h-screen w-64 ${userRole === 'insurer' ? 'bg-red-50' : theme.bgColor} shadow-lg flex flex-col`}>
       <div className={`p-6 border-b ${theme.borderColor}`}>
         <h1 className={`text-2xl font-bold ${theme.logoColor}`}>InsureLink</h1>
         <p className={`text-sm ${theme.textColor} capitalize`}>{userRole} Portal</p>
@@ -187,16 +187,16 @@ export default function Sidebar({ userRole }: SidebarProps) {
         </ul>
       </nav>
 
-      {/* Back to Home Link */}
-      <div className="p-4">
+      {/* Logout Link */}
+      <div className="p-4 border-t border-gray-200">
         <Link
-          href="/"
+          href="/login"
           className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${theme.itemTextColor} ${theme.hoverBg} ${theme.hoverText}`}
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
           </svg>
-          <span className="font-medium">Back to Home</span>
+          <span className="font-medium">Logout</span>
         </Link>
       </div>
     </aside>

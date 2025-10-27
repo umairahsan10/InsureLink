@@ -10,10 +10,10 @@ interface DashboardLayoutProps {
 
 export default function DashboardLayout({ children, userRole, userName }: DashboardLayoutProps) {
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50">
       <Sidebar userRole={userRole} />
       
-      <div className="flex-1 flex flex-col">
+      <div className="ml-64 flex flex-col">
         <Topbar userName={userName} userRole={userRole} />
         
         <main className="flex-1 overflow-auto">

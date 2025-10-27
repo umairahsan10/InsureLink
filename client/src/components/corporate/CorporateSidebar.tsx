@@ -14,7 +14,7 @@ export default function CorporateSidebar() {
   const pathname = usePathname();
 
   return (
-    <div className="w-64 bg-purple-100 min-h-screen flex flex-col">
+    <div className="fixed left-0 top-0 h-screen w-64 bg-purple-100 shadow-lg flex flex-col">
       {/* Logo */}
       <div className="p-6 border-b border-purple-200">
         <h1 className="text-2xl font-bold text-purple-800">InsureLink</h1>
@@ -22,7 +22,7 @@ export default function CorporateSidebar() {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 p-4">
+      <nav className="flex-1 p-4 overflow-y-auto">
         <ul className="space-y-2">
           {navigationItems.map((item) => {
             const isActive = pathname === item.href;
