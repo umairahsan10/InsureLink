@@ -1,246 +1,312 @@
 'use client';
 
-import { useState } from 'react';
-import ClaimStatusBadge from '@/components/claims/ClaimStatusBadge';
+import { useState, useMemo } from 'react';
+import claimsDataRaw from '@/data/claims.json';
+import ClaimDetailsModal from '@/components/patient/ClaimDetailsModal';
+import type { Claim } from '@/types/claims';
+
+const claimsData = claimsDataRaw as Claim[];
 
 export default function PatientHistoryPage() {
   const [searchTerm, setSearchTerm] = useState('');
-  const [timeFilter, setTimeFilter] = useState('All Time');
+  const [selectedStatus, setSelectedStatus] = useState('All Status');
+  const [selectedDateRange, setSelectedDateRange] = useState('All Time');
+  const [selectedClaim, setSelectedClaim] = useState<Claim | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const claims = [
-    { id: 'CLM-001', date: '2025-10-01', hospital: 'City General', amount: 'Rs. 1,200', status: 'Approved' },
-    { id: 'CLM-002', date: '2025-09-28', hospital: 'St. Mary\'s', amount: 'Rs. 450', status: 'Processing' },
-    { id: 'CLM-003', date: '2025-09-15', hospital: 'County Hospital', amount: 'Rs. 2,800', status: 'Approved' },
-    { id: 'CLM-004', date: '2025-08-22', hospital: 'Metro Clinic', amount: 'Rs. 650', status: 'Approved' },
-    { id: 'CLM-005', date: '2025-07-10', hospital: 'City General', amount: 'Rs. 3,200', status: 'Approved' },
-  ];
+  // Filter claims based on search term, status, and date range
+  const filteredClaims = useMemo(() => {
+    let filtered = claimsData;
 
-  const filteredClaims = claims.filter(claim => 
-    claim.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    claim.hospital.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+    // Filter by search term (claim ID or hospital name)
+    if (searchTerm) {
+      filtered = filtered.filter(claim =>
+        claim.claimNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        claim.hospitalName.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    // Filter by status
+    if (selectedStatus !== 'All Status') {
+      filtered = filtered.filter(claim => claim.status === selectedStatus);
+    }
+
+    // Filter by date range
+    if (selectedDateRange !== 'All Time') {
+      const now = new Date();
+      const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      const ninetyDaysAgo = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+      
+      filtered = filtered.filter(claim => {
+        const claimDate = new Date(claim.createdAt);
+        switch (selectedDateRange) {
+          case 'Last 30 Days':
+            return claimDate >= thirtyDaysAgo;
+          case 'Last 90 Days':
+            return claimDate >= ninetyDaysAgo;
+          case 'This Year':
+            return claimDate.getFullYear() === now.getFullYear();
+          default:
+            return true;
+        }
+      });
+    }
+
+    return filtered;
+  }, [searchTerm, selectedStatus, selectedDateRange]);
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'Approved':
+        return 'bg-green-100 text-green-800 border-green-200';
+      case 'Paid':
+        return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'UnderReview':
+        return 'bg-orange-100 text-orange-800 border-orange-200';
+      case 'DocumentsUploaded':
+        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'MoreInfoRequested':
+        return 'bg-purple-100 text-purple-800 border-purple-200';
+      case 'PendingApproval':
+        return 'bg-indigo-100 text-indigo-800 border-indigo-200';
+      case 'Rejected':
+        return 'bg-red-100 text-red-800 border-red-200';
+      case 'Submitted':
+        return 'bg-gray-100 text-gray-800 border-gray-200';
+      default:
+        return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
+  };
+
+  const getStatusDisplayName = (status: string) => {
+    switch (status) {
+      case 'UnderReview':
+        return 'Under Review';
+      case 'DocumentsUploaded':
+        return 'Documents Uploaded';
+      case 'MoreInfoRequested':
+        return 'More Info Requested';
+      case 'PendingApproval':
+        return 'Pending Approval';
+      default:
+        return status;
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
+
+  const formatAmount = (amount: number) => {
+    return `Rs. ${amount.toLocaleString()}`;
+  };
+
+  const handleViewDetails = (claim: Claim) => {
+    setSelectedClaim(claim as Claim);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedClaim(null);
+  };
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
-      {/* Header Section */}
-      <div className="mb-8">
-        <div className="flex items-center mb-2">
-          <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
-            <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-            </svg>
-          </div>
-          <h1 className="text-3xl font-bold text-gray-900">Claim History</h1>
-        </div>
-        <p className="text-gray-600 ml-13">Track and manage all your insurance claims</p>
-      </div>
-
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-          <div className="flex items-center">
-            <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-              <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Total Claims</p>
-              <p className="text-2xl font-bold text-gray-900">{claims.length}</p>
-            </div>
+    <div className="p-4 sm:p-6 bg-gray-50 min-h-screen">
+      <div className="max-w-6xl mx-auto">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-6">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Claim History</h1>
+            <p className="text-gray-600">Track and manage all your insurance claims</p>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-          <div className="flex items-center">
-            <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-              <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
+        {/* Statistics Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+            <p className="text-sm text-gray-500 mb-1">Total Claims</p>
+            <p className="text-2xl font-bold text-gray-900">{claimsData.length}</p>
             </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Approved</p>
-              <p className="text-2xl font-bold text-gray-900">{claims.filter(c => c.status === 'Approved').length}</p>
-            </div>
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+            <p className="text-sm text-gray-500 mb-1">Approved</p>
+            <p className="text-2xl font-bold text-green-600">
+              {claimsData.filter(claim => claim.status === 'Approved').length}
+            </p>
           </div>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-          <div className="flex items-center">
-            <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
-              <svg className="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Processing</p>
-              <p className="text-2xl font-bold text-gray-900">{claims.filter(c => c.status === 'Processing').length}</p>
-            </div>
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+            <p className="text-sm text-gray-500 mb-1">Pending</p>
+            <p className="text-2xl font-bold text-yellow-600">
+              {claimsData.filter(claim => 
+                ['UnderReview', 'DocumentsUploaded', 'MoreInfoRequested', 'PendingApproval'].includes(claim.status)
+              ).length}
+            </p>
           </div>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-          <div className="flex items-center">
-            <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-              <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-              </svg>
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Total Amount</p>
-              <p className="text-2xl font-bold text-gray-900">Rs. 8,300</p>
-            </div>
-          </div>
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+            <p className="text-sm text-gray-500 mb-1">Total Amount</p>
+            <p className="text-2xl font-bold text-blue-600">
+              Rs. {Math.round(claimsData.reduce((sum, claim) => sum + claim.amountClaimed, 0) / 1000)}K
+            </p>
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        {/* Search and Filter Section */}
-        <div className="p-6 border-b border-gray-200 bg-gray-50">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex-1 relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-              </div>
+        {/* Filters */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Search Claims</label>
               <input
                 type="text"
-                placeholder="Search claims by ID or hospital..."
+                placeholder="Search by claim ID or hospital..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900 placeholder-gray-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
-            <div className="sm:w-48">
-              <select 
-                value={timeFilter}
-                onChange={(e) => setTimeFilter(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900"
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
+              <select
+                value={selectedStatus}
+                onChange={(e) => setSelectedStatus(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
-                <option value="All Time">All Time</option>
-                <option value="This Year">This Year</option>
-                <option value="Last 6 Months">Last 6 Months</option>
-                <option value="Last 3 Months">Last 3 Months</option>
-                <option value="Last Month">Last Month</option>
+                <option>All Status</option>
+                <option>Submitted</option>
+                <option>DocumentsUploaded</option>
+                <option>UnderReview</option>
+                <option>MoreInfoRequested</option>
+                <option>PendingApproval</option>
+                <option>Approved</option>
+                <option>Paid</option>
+                <option>Rejected</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Date Range</label>
+              <select 
+                value={selectedDateRange}
+                onChange={(e) => setSelectedDateRange(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option>All Time</option>
+                <option>Last 30 Days</option>
+                <option>Last 90 Days</option>
+                <option>This Year</option>
               </select>
             </div>
           </div>
         </div>
 
-        {/* Table Section */}
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                  <div className="flex items-center">
-                    <svg className="w-4 h-4 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-                    </svg>
-                    Claim ID
+        {/* Claims List */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+          {filteredClaims.length > 0 ? (
+            <div className="divide-y divide-gray-200">
+              {filteredClaims.map((claim: Claim) => (
+                <div key={claim.id} className="p-4 sm:p-6 hover:bg-gray-50 transition-colors">
+                  <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start space-y-4 lg:space-y-0">
+                    {/* Left Section - Claim Info */}
+                    <div className="flex-1 space-y-2">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4">
+                        <h3 className="text-lg font-semibold text-gray-900">{claim.claimNumber}</h3>
+                        <span className={`inline-flex px-3 py-1 text-sm font-medium rounded-full border ${getStatusColor(claim.status)}`}>
+                          {getStatusDisplayName(claim.status)}
+                        </span>
                   </div>
-                </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                  <div className="flex items-center">
-                    <svg className="w-4 h-4 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                    Date
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm text-gray-600">
+                        <div>
+                          <span className="font-medium">Hospital:</span> {claim.hospitalName}
                   </div>
-                </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                  <div className="flex items-center">
-                    <svg className="w-4 h-4 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                    </svg>
-                    Hospital
+                        <div>
+                          <span className="font-medium">Date:</span> {formatDate(claim.createdAt)}
                   </div>
-                </th>
-                <th className="px-6 py-4 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                  <div className="flex items-center justify-end">
-                    <svg className="w-4 h-4 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-                    </svg>
-                    Amount
-                  </div>
-                </th>
-                <th className="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                  <div className="flex items-center justify-center">
-                    <svg className="w-4 h-4 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    Status
-                  </div>
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {filteredClaims.map((claim, index) => (
-                <tr key={claim.id} className="hover:bg-gray-50 transition-colors duration-150">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
-                        <span className="text-sm font-semibold text-blue-600">#{index + 1}</span>
+                        <div>
+                          <span className="font-medium">Amount Claimed:</span> {formatAmount(claim.amountClaimed)}
                       </div>
                       <div>
-                        <div className="text-sm font-semibold text-gray-900">{claim.id}</div>
-                        <div className="text-xs text-gray-500">Insurance Claim</div>
+                          <span className="font-medium">Approved Amount:</span> 
+                          <span className={claim.approvedAmount > 0 ? 'text-green-600 font-medium' : 'text-gray-500'}>
+                            {claim.approvedAmount > 0 ? formatAmount(claim.approvedAmount) : 'Pending'}
+                          </span>
+                        </div>
                       </div>
                     </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{claim.date}</div>
-                    <div className="text-xs text-gray-500">
-                      {new Date(claim.date).toLocaleDateString('en-US', { 
-                        weekday: 'short', 
-                        month: 'short', 
-                        day: 'numeric' 
-                      })}
+
+                    {/* Right Section - Actions */}
+                    <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 lg:ml-6">
+                      <button 
+                        onClick={() => handleViewDetails(claim)}
+                        className="px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
+                      >
+                        View Details
+                      </button>
+                      {claim.status === 'MoreInfoRequested' && (
+                        <button className="px-4 py-2 text-sm font-medium text-orange-600 bg-orange-50 hover:bg-orange-100 rounded-lg transition-colors">
+                          Provide Info
+                        </button>
+                      )}
+                      {claim.status === 'DocumentsUploaded' && (
+                        <button className="px-4 py-2 text-sm font-medium text-gray-600 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors">
+                          Track Progress
+                        </button>
+                      )}
                     </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center mr-3">
-                        <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                        </svg>
                       </div>
-                      <div className="text-sm font-medium text-gray-900">{claim.hospital}</div>
                     </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right">
-                    <div className="text-sm font-semibold text-gray-900">{claim.amount}</div>
-                    <div className="text-xs text-gray-500">Claimed Amount</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-center">
-                    <ClaimStatusBadge status={claim.status === 'Processing' ? 'Pending' : (claim.status as 'Approved' | 'Rejected' | 'Under Review' | 'Paid' | 'Submitted' | 'DocumentsUploaded' | 'MoreInfoRequested' | 'PendingApproval')} />
-                  </td>
-                </tr>
               ))}
-            </tbody>
-          </table>
+            </div>
+          ) : (
+            <div className="p-8 text-center">
+              <div className="text-gray-400 text-6xl mb-4">📋</div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No claims found</h3>
+              <p className="text-gray-500 mb-4">
+                {searchTerm || selectedStatus !== 'All Status' || selectedDateRange !== 'All Time'
+                  ? 'No claims match your current filters.'
+                  : 'You haven\'t submitted any claims yet.'
+                }
+              </p>
+              <button className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                Submit Your First Claim
+              </button>
+            </div>
+          )}
         </div>
 
-        {/* Footer */}
-        <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
-          <div className="flex items-center justify-between">
-            <div className="text-sm text-gray-500">
-              Showing {filteredClaims.length} of {claims.length} claims
-            </div>
-            <div className="flex items-center space-x-2">
-              <button className="px-3 py-1 text-sm text-gray-500 hover:text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50">
-                Previous
-              </button>
-              <button className="px-3 py-1 text-sm text-gray-500 hover:text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50">
+        {/* Pagination Info */}
+        {filteredClaims.length > 0 && (
+          <div className="mt-6 bg-white rounded-lg shadow-sm border border-gray-200 px-6 py-3">
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-gray-700">
+                Showing <span className="font-medium">1</span> to <span className="font-medium">{filteredClaims.length}</span> of{' '}
+                <span className="font-medium">{filteredClaims.length}</span> claims
+                {filteredClaims.length !== claimsData.length && (
+                  <span className="text-gray-500"> (filtered from {claimsData.length} total)</span>
+                )}
+              </p>
+              <div className="flex space-x-2">
+                <button className="px-3 py-1 text-sm text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50">
+                  Previous
+                </button>
+                <button className="px-3 py-1 text-sm text-white bg-blue-600 border border-blue-600 rounded-md">
+                  1
+                </button>
+                <button className="px-3 py-1 text-sm text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50">
                 Next
               </button>
             </div>
           </div>
         </div>
+        )}
       </div>
+
+      {/* Claim Details Modal */}
+      <ClaimDetailsModal
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        claim={selectedClaim}
+      />
     </div>
   );
 }
-

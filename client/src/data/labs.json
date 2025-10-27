@@ -1,0 +1,291 @@
+[
+  {
+    "id": "lab-001",
+    "name": "Burhani Hospital",
+    "address": "Gari Khata, Karachi",
+    "city": "Karachi",
+    "contact": "021-32631556",
+    "discount": "Variable Discount",
+    "type": "Laboratory"
+  },
+  {
+    "id": "lab-002",
+    "name": "Chughtai Laboratory",
+    "address": "Al-Khalij Tower Main Shaheed-e-Millat Road, Bihar Muslim cop. Housing Society, Karachi",
+    "city": "Karachi",
+    "contact": "03111-456-789",
+    "discount": "Variable Discount",
+    "type": "Laboratory"
+  },
+  {
+    "id": "lab-003",
+    "name": "Chughtai Laboratory",
+    "address": "Shop No. 2, Rafiqui Shaheed Road, Karachi",
+    "city": "Karachi",
+    "contact": "03111-456-789",
+    "discount": "Variable Discount",
+    "type": "Laboratory"
+  },
+  {
+    "id": "lab-004",
+    "name": "Chughtai Laboratory",
+    "address": "Shop #04, Floor Lane 4, Sehar Commercial Phase 7, DHA, Karachi",
+    "city": "Karachi",
+    "contact": "03111-456-789",
+    "discount": "Variable Discount",
+    "type": "Laboratory"
+  },
+  {
+    "id": "lab-005",
+    "name": "Chughtai Laboratory",
+    "address": "Shop# 04, Chappale Bright Homes, Opp. PSO Head Office, Main Teen Talwar, Block # 07, Clifton, Karachi",
+    "city": "Karachi",
+    "contact": "03111-456-789",
+    "discount": "Variable Discount",
+    "type": "Laboratory"
+  },
+  {
+    "id": "lab-006",
+    "name": "Chughtai Laboratory",
+    "address": "Shop#S-10, Ground Floor, Usman Garden, Gulistan-e-Johar, Block 13, Karachi",
+    "city": "Karachi",
+    "contact": "03111-456-789",
+    "discount": "Variable Discount",
+    "type": "Laboratory"
+  },
+  {
+    "id": "lab-007",
+    "name": "Chughtai Laboratory",
+    "address": "Fruit Break, University Road, Ashfaq Memorial Hospital, Gulshan e Iqbal, Karachi",
+    "city": "Karachi",
+    "contact": "03111-456-789",
+    "discount": "Variable Discount",
+    "type": "Laboratory"
+  },
+  {
+    "id": "lab-008",
+    "name": "Chughtai Laboratory",
+    "address": "Plot no B-64, BLOCK-L, North Nazimabad, Karachi",
+    "city": "Karachi",
+    "contact": "03111-456-789",
+    "discount": "Variable Discount",
+    "type": "Laboratory"
+  },
+  {
+    "id": "lab-009",
+    "name": "Chughtai Laboratory",
+    "address": "Shop No. 6, Darakhshan Society, Malir Township Colony, Karachi",
+    "city": "Karachi",
+    "contact": "03111-456-789",
+    "discount": "Variable Discount",
+    "type": "Laboratory"
+  },
+  {
+    "id": "lab-010",
+    "name": "Chughtai Laboratory",
+    "address": "Shop No 2, Block C (111-C10/9), Nazimabad, Karachi",
+    "city": "Karachi",
+    "contact": "03111-456-789",
+    "discount": "Variable Discount",
+    "type": "Laboratory"
+  },
+  {
+    "id": "lab-011",
+    "name": "Chughtai Laboratory",
+    "address": "Abbas Square, Ground Floor, Plot# P12/B ST-7/B Block-7, F.B Area (Near Dhamthal Sweets), Karachi",
+    "city": "Karachi",
+    "contact": "03111-456-789",
+    "discount": "Variable Discount",
+    "type": "Laboratory"
+  },
+  {
+    "id": "lab-012",
+    "name": "Al-Sehat Center",
+    "address": "Shop No. 2, Rafiqui Shaheed Road, Karachi",
+    "city": "Karachi",
+    "contact": "03111-456-789",
+    "discount": "Variable Discount",
+    "type": "Laboratory"
+  },
+  {
+    "id": "lab-013",
+    "name": "Chughtai Laboratory",
+    "address": "Al-Khalij Tower, Main Shaheed-e-Millat Road, Bihar Muslim cop. Housing Society, Karachi",
+    "city": "Karachi",
+    "contact": "03111-456-789",
+    "discount": "Variable Discount",
+    "type": "Laboratory"
+  },
+  {
+    "id": "lab-014",
+    "name": "Chughtai Laboratory",
+    "address": "Khaliq uz Zaman Road, Near Bacha Party Mall, Opposite TCS Office, Block 8, Clifton, Karachi",
+    "city": "Karachi",
+    "contact": "03111-456-789",
+    "discount": "Variable Discount",
+    "type": "Laboratory"
+  },
+  {
+    "id": "lab-015",
+    "name": "Chughtai Laboratory",
+    "address": "A 65A, Gate No 2, Sector Z, Gulshan-e-Maymar, Karachi",
+    "city": "Karachi",
+    "contact": "03111-456-789",
+    "discount": "Variable Discount",
+    "type": "Laboratory"
+  },
+  {
+    "id": "lab-016",
+    "name": "Chughtai Laboratory",
+    "address": "Plot No.2, Block 3, P.EC.H.S, Shaheed-e-Millat Road, Karachi",
+    "city": "Karachi",
+    "contact": "03111-456-789",
+    "discount": "Variable Discount",
+    "type": "Laboratory"
+  },
+  {
+    "id": "lab-017",
+    "name": "Chughtai Laboratory - Homecare",
+    "address": "Homecare KHI (191001)",
+    "city": "Karachi",
+    "contact": "03111-456-789",
+    "discount": "Variable Discount",
+    "type": "Home Care",
+    "services": ["Home Sampling"]
+  },
+  {
+    "id": "lab-018",
+    "name": "Chughtai Laboratory - Homecare Injection Services",
+    "address": "Homecare Injection Services KHI (191201)",
+    "city": "Karachi",
+    "contact": "03111-456-789",
+    "discount": "Variable Discount",
+    "type": "Home Care"
+  },
+  {
+    "id": "lab-019",
+    "name": "Chughtai Laboratory",
+    "address": "Karachi: Home Sampling",
+    "city": "Karachi",
+    "contact": "03111-456-789",
+    "discount": "Variable Discount",
+    "type": "Home Care"
+  },
+  {
+    "id": "lab-020",
+    "name": "Chughtai Laboratory - KHE CC",
+    "address": "KHE CC, Al-Khalij Tower, Karachi",
+    "city": "Karachi",
+    "contact": "03111-456-789",
+    "discount": "Variable Discount",
+    "type": "Laboratory"
+  },
+  {
+    "id": "lab-021",
+    "name": "Chughtai Laboratory",
+    "address": "Shop No 2, Near Ibank, Main 26 Street, Badar Commercial, Phase 5, DHA, Karachi",
+    "city": "Karachi",
+    "contact": "03111-456-789",
+    "discount": "Variable Discount",
+    "type": "Laboratory"
+  },
+  {
+    "id": "lab-022",
+    "name": "Chughtai Laboratory",
+    "address": "Shop No. B-41, Sector S-C-2, Ground Floor, North Karachi",
+    "city": "Karachi",
+    "contact": "03111-456-789",
+    "discount": "Variable Discount",
+    "type": "Laboratory"
+  },
+  {
+    "id": "lab-023",
+    "name": "Aga Khan Laboratory",
+    "address": "Stadium Road, Aga Khan University Hospital, Karachi",
+    "city": "Karachi",
+    "contact": "+92-21-34930000",
+    "discount": "Variable Discount",
+    "type": "Laboratory"
+  },
+  {
+    "id": "lab-024",
+    "name": "Shifa Laboratory",
+    "address": "Kashmir Highway, Pitras Bukhari Road, H-8/4, Islamabad",
+    "city": "Islamabad",
+    "contact": "+92-51-8464646",
+    "discount": "Variable Discount",
+    "type": "Laboratory"
+  },
+  {
+    "id": "lab-025",
+    "name": "Fatimid Laboratory",
+    "address": "Main Boulevard, F-8 Markaz, Islamabad",
+    "city": "Islamabad",
+    "contact": "+92-51-2212004",
+    "discount": "Variable Discount",
+    "type": "Laboratory"
+  },
+  {
+    "id": "lab-026",
+    "name": "Labs Direct",
+    "address": "Shadman, Near Mayo Hospital, Lahore",
+    "city": "Lahore",
+    "contact": "+92-42-99213350",
+    "discount": "Variable Discount",
+    "type": "Laboratory"
+  },
+  {
+    "id": "lab-027",
+    "name": "Shaukat Khanum Lab",
+    "address": "Johar Town, Lahore",
+    "city": "Lahore",
+    "contact": "+92-42-35944951",
+    "discount": "Variable Discount",
+    "type": "Laboratory"
+  },
+  {
+    "id": "lab-028",
+    "name": "Chughtai Laboratory",
+    "address": "MM Alam Road, Gulberg, Lahore",
+    "city": "Lahore",
+    "contact": "+92-42-35752220",
+    "discount": "Variable Discount",
+    "type": "Laboratory"
+  },
+  {
+    "id": "lab-029",
+    "name": "Chughtai Laboratory",
+    "address": "Main Boulevard, Johar Town, Lahore",
+    "city": "Lahore",
+    "contact": "+92-42-35752220",
+    "discount": "Variable Discount",
+    "type": "Laboratory"
+  },
+  {
+    "id": "lab-030",
+    "name": "Chughtai Laboratory",
+    "address": "Allama Iqbal Road, Lahore",
+    "city": "Lahore",
+    "contact": "+92-42-99203000",
+    "discount": "Variable Discount",
+    "type": "Laboratory"
+  },
+  {
+    "id": "lab-031",
+    "name": "AKU Diagnostic Lab",
+    "address": "Main Peshawar Road, Rawalpindi",
+    "city": "Rawalpindi",
+    "contact": "+92-51-9290801",
+    "discount": "Variable Discount",
+    "type": "Laboratory"
+  },
+  {
+    "id": "lab-032",
+    "name": "Shifa Lab",
+    "address": "Diamond Plaza, Blue Area, Islamabad",
+    "city": "Islamabad",
+    "contact": "+92-51-8464646",
+    "discount": "Variable Discount",
+    "type": "Laboratory"
+  }
+]

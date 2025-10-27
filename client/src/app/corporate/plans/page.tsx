@@ -7,17 +7,17 @@ export default function CorporatePlansPage() {
         {[
           {
             name: 'Basic Plan',
-            coverage: '$25,000',
+            coverage: 'Rs. 25,000',
             employees: 50,
-            premium: '$8,500/month',
+            premium: 'Rs. 8,500/month',
             features: ['Outpatient Care', 'Emergency Services', 'Prescription Drugs'],
             active: true,
           },
           {
             name: 'Comprehensive Plan',
-            coverage: '$50,000',
+            coverage: 'Rs. 50,000',
             employees: 150,
-            premium: '$28,000/month',
+            premium: 'Rs. 28,000/month',
             features: ['All Basic Features', 'Inpatient Care', 'Surgery Coverage', 'Dental & Vision'],
             active: true,
           },

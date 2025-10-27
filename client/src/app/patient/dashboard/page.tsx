@@ -70,9 +70,9 @@ const patientData = {
 
 export default function PatientDashboardPage() {
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
+    <div className="p-4 sm:p-6">
       {/* Overview Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
         {/* Total Claims Card */}
         <Card className="relative">
           <div className="flex justify-between items-start">
@@ -139,7 +139,7 @@ export default function PatientDashboardPage() {
       </div>
 
       {/* Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         {/* Recent Claims Section */}
         <Card>
           <div className="mb-4">
@@ -147,29 +147,31 @@ export default function PatientDashboardPage() {
             <p className="text-sm text-gray-600">Your latest claim submissions and their status</p>
           </div>
           
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             {patientData.recentClaims.map((claim) => (
-              <div key={claim.id} className="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg">
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                  claim.status === 'Paid' ? 'bg-green-100' :
-                  claim.status === 'Approved' ? 'bg-blue-100' :
-                  'bg-yellow-100'
-                }`}>
-                  <span className={`text-sm font-medium ${
-                    claim.status === 'Paid' ? 'text-green-600' :
-                    claim.status === 'Approved' ? 'text-blue-600' :
-                    'text-yellow-600'
+              <div key={claim.id} className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4 p-3 sm:p-4 bg-gray-50 rounded-lg">
+                <div className="flex items-center space-x-3 sm:space-x-4">
+                  <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center ${
+                    claim.status === 'Paid' ? 'bg-green-100' :
+                    claim.status === 'Approved' ? 'bg-blue-100' :
+                    'bg-yellow-100'
                   }`}>
-                    {claim.icon}
-                  </span>
+                    <span className={`text-xs sm:text-sm font-medium ${
+                      claim.status === 'Paid' ? 'text-green-600' :
+                      claim.status === 'Approved' ? 'text-blue-600' :
+                      'text-yellow-600'
+                    }`}>
+                      {claim.icon}
+                    </span>
+                  </div>
+                  
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-900 truncate">{claim.name}</p>
+                    <p className="text-xs sm:text-sm text-gray-500">{claim.claimNumber}</p>
+                  </div>
                 </div>
                 
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900 truncate">{claim.name}</p>
-                  <p className="text-sm text-gray-500">{claim.claimNumber}</p>
-                </div>
-                
-                <div className="text-right">
+                <div className="flex justify-between sm:flex-col sm:text-right sm:items-end">
                   <p className="text-sm font-medium text-gray-900">Rs. {claim.amount}</p>
                   <ClaimStatusBadge status={claim.status} />
                 </div>
@@ -185,12 +187,12 @@ export default function PatientDashboardPage() {
             <p className="text-sm text-gray-600">Your remaining coverage for this year</p>
           </div>
           
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             {patientData.coverageBalance.map((coverage) => (
               <div key={coverage.category}>
-                <div className="flex justify-between items-center mb-2">
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-2 space-y-1 sm:space-y-0">
                   <span className="text-sm font-medium text-gray-700">{coverage.category}</span>
-                  <span className="text-sm text-gray-600">
+                  <span className="text-xs sm:text-sm text-gray-600">
                     Rs. {coverage.used.toLocaleString()} / Rs. {coverage.total.toLocaleString()}
                   </span>
                 </div>
