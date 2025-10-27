@@ -6,7 +6,8 @@
     "type": "reimbursable",
     "specialties": ["Emergency", "Cardiology", "Orthopedics", "General Surgery"],
     "contact": "+92-51-1234567",
-    "address": "Main Boulevard, Sector F-7, Islamabad"
+    "address": "Main Boulevard, Sector F-7, Islamabad",
+    "acceptedPlans": ["plan-acme-gold-2025", "plan-acme-basic-2025", "plan-beta-silver-2025", "plan-beta-basic-2025", "plan-noor-gold-2025", "plan-noor-basic-2025"]
   },
   {
     "id": "hosp-002",
@@ -15,7 +16,8 @@
     "type": "reimbursable",
     "specialties": ["Oncology", "Neurology", "Pediatrics", "Cardiology"],
     "contact": "+92-42-2345678",
-    "address": "MM Alam Road, Gulberg, Lahore"
+    "address": "MM Alam Road, Gulberg, Lahore",
+    "acceptedPlans": ["plan-acme-gold-2025", "plan-acme-basic-2025", "plan-beta-silver-2025", "plan-beta-basic-2025", "plan-noor-gold-2025", "plan-noor-basic-2025"]
   },
   {
     "id": "hosp-003",
@@ -24,7 +26,8 @@
     "type": "reimbursable",
     "specialties": ["Multi-specialty", "Advanced Surgery", "Cancer Treatment", "Maternity"],
     "contact": "+92-21-34930000",
-    "address": "Stadium Road, Karachi"
+    "address": "Stadium Road, Karachi",
+    "acceptedPlans": ["plan-acme-gold-2025", "plan-acme-basic-2025", "plan-beta-silver-2025", "plan-beta-basic-2025", "plan-noor-gold-2025", "plan-noor-basic-2025"]
   },
   {
     "id": "hosp-004",
@@ -33,7 +36,8 @@
     "type": "reimbursable",
     "specialties": ["Emergency", "Surgery", "Internal Medicine", "Radiology"],
     "contact": "+92-42-99211101",
-    "address": "Shahrah-e-Abbas, Lahore"
+    "address": "Shahrah-e-Abbas, Lahore",
+    "acceptedPlans": ["plan-acme-gold-2025", "plan-acme-basic-2025", "plan-beta-silver-2025", "plan-beta-basic-2025", "plan-noor-gold-2025", "plan-noor-basic-2025"]
   },
   {
     "id": "hosp-005",
@@ -42,7 +46,8 @@
     "type": "reimbursable",
     "specialties": ["Emergency Care", "Surgery", "Cardiology", "Orthopedics"],
     "contact": "+92-42-99203000",
-    "address": "Allama Iqbal Road, Lahore"
+    "address": "Allama Iqbal Road, Lahore",
+    "acceptedPlans": ["plan-acme-gold-2025", "plan-acme-basic-2025", "plan-beta-silver-2025", "plan-beta-basic-2025", "plan-noor-gold-2025", "plan-noor-basic-2025"]
   },
   {
     "id": "hosp-006",
@@ -51,7 +56,8 @@
     "type": "reimbursable",
     "specialties": ["General Medicine", "Surgery", "Pediatrics", "Gynecology"],
     "contact": "+92-21-99215700",
-    "address": "Block 17, Gulshan-e-Iqbal, Karachi"
+    "address": "Block 17, Gulshan-e-Iqbal, Karachi",
+    "acceptedPlans": ["plan-acme-gold-2025", "plan-acme-basic-2025", "plan-beta-silver-2025", "plan-beta-basic-2025", "plan-noor-gold-2025", "plan-noor-basic-2025"]
   },
   {
     "id": "hosp-007",
@@ -60,7 +66,8 @@
     "type": "reimbursable",
     "specialties": ["General Medicine", "Surgery", "Pediatrics", "Maternity"],
     "contact": "+92-51-9290801",
-    "address": "Mall Road, Rawalpindi"
+    "address": "Mall Road, Rawalpindi",
+    "acceptedPlans": ["plan-acme-gold-2025", "plan-acme-basic-2025", "plan-beta-silver-2025", "plan-beta-basic-2025", "plan-noor-gold-2025", "plan-noor-basic-2025"]
   },
   {
     "id": "hosp-008",
@@ -69,7 +76,8 @@
     "type": "reimbursable",
     "specialties": ["General Medicine", "Surgery", "Cardiology"],
     "contact": "+92-51-111146327",
-    "address": "G-9 Markaz, Islamabad"
+    "address": "G-9 Markaz, Islamabad",
+    "acceptedPlans": ["plan-acme-gold-2025", "plan-acme-basic-2025", "plan-beta-silver-2025", "plan-beta-basic-2025", "plan-noor-gold-2025", "plan-noor-basic-2025"]
   },
   {
     "id": "hosp-009",
@@ -78,7 +86,8 @@
     "type": "reimbursable",
     "specialties": ["Multi-specialty", "Heart Center", "Oncology", "Neurosurgery"],
     "contact": "+92-51-8464646",
-    "address": "Kashmir Highway, Pitras Bukhari Road, H-8/4, Islamabad"
+    "address": "Kashmir Highway, Pitras Bukhari Road, H-8/4, Islamabad",
+    "acceptedPlans": ["plan-acme-gold-2025", "plan-acme-basic-2025", "plan-beta-silver-2025", "plan-beta-basic-2025", "plan-noor-gold-2025", "plan-noor-basic-2025"]
   },
   {
     "id": "hosp-010",
@@ -87,7 +96,8 @@
     "type": "reimbursable",
     "specialties": ["General Medicine", "Surgery", "Pediatrics", "Dermatology"],
     "contact": "+92-42-99213350",
-    "address": "Shadman, Lahore"
+    "address": "Shadman, Lahore",
+    "acceptedPlans": ["plan-acme-gold-2025", "plan-acme-basic-2025", "plan-beta-silver-2025", "plan-beta-basic-2025", "plan-noor-gold-2025", "plan-noor-basic-2025"]
   },
   {
     "id": "hosp-011",
@@ -96,7 +106,8 @@
     "type": "reimbursable",
     "specialties": ["Emergency", "Surgery", "Pediatrics", "Orthopedics"],
     "contact": "+92-91-9211243",
-    "address": "Qissa Khawani Bazaar, Peshawar"
+    "address": "Qissa Khawani Bazaar, Peshawar",
+    "acceptedPlans": ["plan-acme-gold-2025", "plan-acme-basic-2025", "plan-beta-silver-2025", "plan-beta-basic-2025", "plan-noor-gold-2025", "plan-noor-basic-2025"]
   },
   {
     "id": "hosp-012",
@@ -105,7 +116,8 @@
     "type": "reimbursable",
     "specialties": ["General Medicine", "Surgery", "Maternity", "Pediatrics"],
     "contact": "+92-81-9201291",
-    "address": "Brewery Road, Quetta"
+    "address": "Brewery Road, Quetta",
+    "acceptedPlans": ["plan-acme-gold-2025", "plan-acme-basic-2025", "plan-beta-silver-2025", "plan-beta-basic-2025", "plan-noor-gold-2025", "plan-noor-basic-2025"]
   },
   {
     "id": "hosp-013",
@@ -114,7 +126,8 @@
     "type": "non-reimbursable",
     "specialties": ["General Medicine"],
     "contact": "N/A",
-    "address": "Islamabad"
+    "address": "Islamabad",
+    "acceptedPlans": ["plan-acme-gold-2025", "plan-acme-basic-2025", "plan-beta-silver-2025", "plan-beta-basic-2025", "plan-noor-gold-2025", "plan-noor-basic-2025"]
   },
   {
     "id": "hosp-014",
@@ -123,7 +136,8 @@
     "type": "non-reimbursable",
     "specialties": ["General Medicine"],
     "contact": "N/A",
-    "address": "Gojra"
+    "address": "Gojra",
+    "acceptedPlans": ["plan-acme-gold-2025", "plan-acme-basic-2025", "plan-beta-silver-2025", "plan-beta-basic-2025", "plan-noor-gold-2025", "plan-noor-basic-2025"]
   },
   {
     "id": "hosp-015",
@@ -132,7 +146,8 @@
     "type": "non-reimbursable",
     "specialties": ["General Medicine"],
     "contact": "N/A",
-    "address": "Karachi"
+    "address": "Karachi",
+    "acceptedPlans": ["plan-acme-gold-2025", "plan-acme-basic-2025", "plan-beta-silver-2025", "plan-beta-basic-2025", "plan-noor-gold-2025", "plan-noor-basic-2025"]
   },
   {
     "id": "hosp-016",
@@ -141,7 +156,8 @@
     "type": "non-reimbursable",
     "specialties": ["General Medicine"],
     "contact": "N/A",
-    "address": "Karachi"
+    "address": "Karachi",
+    "acceptedPlans": ["plan-acme-gold-2025", "plan-acme-basic-2025", "plan-beta-silver-2025", "plan-beta-basic-2025", "plan-noor-gold-2025", "plan-noor-basic-2025"]
   },
   {
     "id": "hosp-017",
@@ -150,7 +166,8 @@
     "type": "non-reimbursable",
     "specialties": ["General Medicine"],
     "contact": "N/A",
-    "address": "Karachi"
+    "address": "Karachi",
+    "acceptedPlans": ["plan-acme-gold-2025", "plan-acme-basic-2025", "plan-beta-silver-2025", "plan-beta-basic-2025", "plan-noor-gold-2025", "plan-noor-basic-2025"]
   },
   {
     "id": "hosp-018",
@@ -159,7 +176,8 @@
     "type": "non-reimbursable",
     "specialties": ["General Medicine"],
     "contact": "N/A",
-    "address": "Karachi"
+    "address": "Karachi",
+    "acceptedPlans": ["plan-acme-gold-2025", "plan-acme-basic-2025", "plan-beta-silver-2025", "plan-beta-basic-2025", "plan-noor-gold-2025", "plan-noor-basic-2025"]
   },
   {
     "id": "hosp-019",
@@ -168,7 +186,8 @@
     "type": "non-reimbursable",
     "specialties": ["General Medicine"],
     "contact": "N/A",
-    "address": "Karachi"
+    "address": "Karachi",
+    "acceptedPlans": ["plan-acme-gold-2025", "plan-acme-basic-2025", "plan-beta-silver-2025", "plan-beta-basic-2025", "plan-noor-gold-2025", "plan-noor-basic-2025"]
   },
   {
     "id": "hosp-020",
@@ -177,7 +196,8 @@
     "type": "non-reimbursable",
     "specialties": ["General Medicine"],
     "contact": "N/A",
-    "address": "Karachi"
+    "address": "Karachi",
+    "acceptedPlans": ["plan-acme-gold-2025", "plan-acme-basic-2025", "plan-beta-silver-2025", "plan-beta-basic-2025", "plan-noor-gold-2025", "plan-noor-basic-2025"]
   },
   {
     "id": "hosp-021",
@@ -186,7 +206,8 @@
     "type": "non-reimbursable",
     "specialties": ["General Medicine"],
     "contact": "N/A",
-    "address": "Karachi"
+    "address": "Karachi",
+    "acceptedPlans": ["plan-acme-gold-2025", "plan-acme-basic-2025", "plan-beta-silver-2025", "plan-beta-basic-2025", "plan-noor-gold-2025", "plan-noor-basic-2025"]
   },
   {
     "id": "hosp-022",
@@ -195,7 +216,8 @@
     "type": "non-reimbursable",
     "specialties": ["Plastic Surgery"],
     "contact": "N/A",
-    "address": "Karachi"
+    "address": "Karachi",
+    "acceptedPlans": ["plan-acme-gold-2025", "plan-acme-basic-2025", "plan-beta-silver-2025", "plan-beta-basic-2025", "plan-noor-gold-2025", "plan-noor-basic-2025"]
   },
   {
     "id": "hosp-023",
@@ -204,7 +226,8 @@
     "type": "non-reimbursable",
     "specialties": ["General Medicine"],
     "contact": "N/A",
-    "address": "Karachi"
+    "address": "Karachi",
+    "acceptedPlans": ["plan-acme-gold-2025", "plan-acme-basic-2025", "plan-beta-silver-2025", "plan-beta-basic-2025", "plan-noor-gold-2025", "plan-noor-basic-2025"]
   },
   {
     "id": "hosp-024",
@@ -213,7 +236,8 @@
     "type": "non-reimbursable",
     "specialties": ["Urgent Care"],
     "contact": "N/A",
-    "address": "Karachi"
+    "address": "Karachi",
+    "acceptedPlans": ["plan-acme-gold-2025", "plan-acme-basic-2025", "plan-beta-silver-2025", "plan-beta-basic-2025", "plan-noor-gold-2025", "plan-noor-basic-2025"]
   },
   {
     "id": "hosp-025",
@@ -222,7 +246,8 @@
     "type": "non-reimbursable",
     "specialties": ["General Medicine"],
     "contact": "N/A",
-    "address": "Karachi"
+    "address": "Karachi",
+    "acceptedPlans": ["plan-acme-gold-2025", "plan-acme-basic-2025", "plan-beta-silver-2025", "plan-beta-basic-2025", "plan-noor-gold-2025", "plan-noor-basic-2025"]
   },
   {
     "id": "hosp-026",
@@ -231,7 +256,8 @@
     "type": "non-reimbursable",
     "specialties": ["General Medicine"],
     "contact": "N/A",
-    "address": "Multan"
+    "address": "Multan",
+    "acceptedPlans": ["plan-acme-gold-2025", "plan-acme-basic-2025", "plan-beta-silver-2025", "plan-beta-basic-2025", "plan-noor-gold-2025", "plan-noor-basic-2025"]
   },
   {
     "id": "hosp-027",
@@ -240,7 +266,8 @@
     "type": "non-reimbursable",
     "specialties": ["General Medicine"],
     "contact": "N/A",
-    "address": "Multan"
+    "address": "Multan",
+    "acceptedPlans": ["plan-acme-gold-2025", "plan-acme-basic-2025", "plan-beta-silver-2025", "plan-beta-basic-2025", "plan-noor-gold-2025", "plan-noor-basic-2025"]
   },
   {
     "id": "hosp-028",
@@ -249,7 +276,8 @@
     "type": "non-reimbursable",
     "specialties": ["General Medicine"],
     "contact": "N/A",
-    "address": "Karachi"
+    "address": "Karachi",
+    "acceptedPlans": ["plan-acme-gold-2025", "plan-acme-basic-2025", "plan-beta-silver-2025", "plan-beta-basic-2025", "plan-noor-gold-2025", "plan-noor-basic-2025"]
   },
   {
     "id": "hosp-029",
@@ -258,7 +286,8 @@
     "type": "non-reimbursable",
     "specialties": ["Eye Care"],
     "contact": "N/A",
-    "address": "Karachi"
+    "address": "Karachi",
+    "acceptedPlans": ["plan-acme-gold-2025", "plan-acme-basic-2025", "plan-beta-silver-2025", "plan-beta-basic-2025", "plan-noor-gold-2025", "plan-noor-basic-2025"]
   },
   {
     "id": "hosp-030",
@@ -267,7 +296,8 @@
     "type": "non-reimbursable",
     "specialties": ["General Medicine"],
     "contact": "N/A",
-    "address": "Lahore"
+    "address": "Lahore",
+    "acceptedPlans": ["plan-acme-gold-2025", "plan-acme-basic-2025", "plan-beta-silver-2025", "plan-beta-basic-2025", "plan-noor-gold-2025", "plan-noor-basic-2025"]
   },
   {
     "id": "hosp-031",
@@ -276,7 +306,8 @@
     "type": "non-reimbursable",
     "specialties": ["General Medicine"],
     "contact": "N/A",
-    "address": "Lahore"
+    "address": "Lahore",
+    "acceptedPlans": ["plan-acme-gold-2025", "plan-acme-basic-2025", "plan-beta-silver-2025", "plan-beta-basic-2025", "plan-noor-gold-2025", "plan-noor-basic-2025"]
   },
   {
     "id": "hosp-032",
@@ -285,7 +316,8 @@
     "type": "non-reimbursable",
     "specialties": ["General Medicine"],
     "contact": "N/A",
-    "address": "Karachi"
+    "address": "Karachi",
+    "acceptedPlans": ["plan-acme-gold-2025", "plan-acme-basic-2025", "plan-beta-silver-2025", "plan-beta-basic-2025", "plan-noor-gold-2025", "plan-noor-basic-2025"]
   },
   {
     "id": "hosp-033",
@@ -294,7 +326,8 @@
     "type": "non-reimbursable",
     "specialties": ["General Medicine"],
     "contact": "N/A",
-    "address": "Karachi"
+    "address": "Karachi",
+    "acceptedPlans": ["plan-acme-gold-2025", "plan-acme-basic-2025", "plan-beta-silver-2025", "plan-beta-basic-2025", "plan-noor-gold-2025", "plan-noor-basic-2025"]
   },
   {
     "id": "hosp-034",
@@ -303,7 +336,8 @@
     "type": "non-reimbursable",
     "specialties": ["General Medicine"],
     "contact": "N/A",
-    "address": "Lahore"
+    "address": "Lahore",
+    "acceptedPlans": ["plan-acme-gold-2025", "plan-acme-basic-2025", "plan-beta-silver-2025", "plan-beta-basic-2025", "plan-noor-gold-2025", "plan-noor-basic-2025"]
   },
   {
     "id": "hosp-035",
@@ -312,7 +346,8 @@
     "type": "non-reimbursable",
     "specialties": ["General Medicine"],
     "contact": "N/A",
-    "address": "Lahore"
+    "address": "Lahore",
+    "acceptedPlans": ["plan-acme-gold-2025", "plan-acme-basic-2025", "plan-beta-silver-2025", "plan-beta-basic-2025", "plan-noor-gold-2025", "plan-noor-basic-2025"]
   },
   {
     "id": "hosp-036",
@@ -321,7 +356,8 @@
     "type": "non-reimbursable",
     "specialties": ["Surgery"],
     "contact": "N/A",
-    "address": "Lodhran"
+    "address": "Lodhran",
+    "acceptedPlans": ["plan-acme-gold-2025", "plan-acme-basic-2025", "plan-beta-silver-2025", "plan-beta-basic-2025", "plan-noor-gold-2025", "plan-noor-basic-2025"]
   },
   {
     "id": "hosp-037",
@@ -330,7 +366,8 @@
     "type": "non-reimbursable",
     "specialties": ["General Medicine"],
     "contact": "N/A",
-    "address": "Jacobabad"
+    "address": "Jacobabad",
+    "acceptedPlans": ["plan-acme-gold-2025", "plan-acme-basic-2025", "plan-beta-silver-2025", "plan-beta-basic-2025", "plan-noor-gold-2025", "plan-noor-basic-2025"]
   },
   {
     "id": "hosp-038",
@@ -339,7 +376,8 @@
     "type": "non-reimbursable",
     "specialties": ["General Medicine"],
     "contact": "N/A",
-    "address": "Jhelum"
+    "address": "Jhelum",
+    "acceptedPlans": ["plan-acme-gold-2025", "plan-acme-basic-2025", "plan-beta-silver-2025", "plan-beta-basic-2025", "plan-noor-gold-2025", "plan-noor-basic-2025"]
   },
   {
     "id": "hosp-039",
@@ -348,7 +386,8 @@
     "type": "non-reimbursable",
     "specialties": ["Pain Management"],
     "contact": "N/A",
-    "address": "Peshawar"
+    "address": "Peshawar",
+    "acceptedPlans": ["plan-acme-gold-2025", "plan-acme-basic-2025", "plan-beta-silver-2025", "plan-beta-basic-2025", "plan-noor-gold-2025", "plan-noor-basic-2025"]
   },
   {
     "id": "hosp-040",
@@ -357,6 +396,7 @@
     "type": "non-reimbursable",
     "specialties": ["General Medicine"],
     "contact": "N/A",
-    "address": "Karachi"
+    "address": "Karachi",
+    "acceptedPlans": ["plan-acme-gold-2025", "plan-acme-basic-2025", "plan-beta-silver-2025", "plan-beta-basic-2025", "plan-noor-gold-2025", "plan-noor-basic-2025"]
   }
 ]

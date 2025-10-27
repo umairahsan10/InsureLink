@@ -1,14 +1,17 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import claimsData from '@/data/claims.json';
+import claimsDataRaw from '@/data/claims.json';
 import ClaimDetailsModal from '@/components/patient/ClaimDetailsModal';
+import type { Claim } from '@/types/claims';
+
+const claimsData = claimsDataRaw as Claim[];
 
 export default function PatientHistoryPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('All Status');
   const [selectedDateRange, setSelectedDateRange] = useState('All Time');
-  const [selectedClaim, setSelectedClaim] = useState(null);
+  const [selectedClaim, setSelectedClaim] = useState<Claim | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Filter claims based on search term, status, and date range
@@ -102,8 +105,8 @@ export default function PatientHistoryPage() {
     return `Rs. ${amount.toLocaleString()}`;
   };
 
-  const handleViewDetails = (claim: any) => {
-    setSelectedClaim(claim);
+  const handleViewDetails = (claim: Claim) => {
+    setSelectedClaim(claim as Claim);
     setIsModalOpen(true);
   };
 
@@ -201,7 +204,7 @@ export default function PatientHistoryPage() {
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
           {filteredClaims.length > 0 ? (
             <div className="divide-y divide-gray-200">
-              {filteredClaims.map((claim) => (
+              {filteredClaims.map((claim: Claim) => (
                 <div key={claim.id} className="p-4 sm:p-6 hover:bg-gray-50 transition-colors">
                   <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start space-y-4 lg:space-y-0">
                     {/* Left Section - Claim Info */}

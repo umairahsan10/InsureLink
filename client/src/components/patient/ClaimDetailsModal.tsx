@@ -1,11 +1,12 @@
 'use client';
 
 import { useEffect } from 'react';
+import type { Claim, ClaimEvent } from '@/types/claims';
 
 interface ClaimDetailsModalProps {
   isOpen: boolean;
   onClose: () => void;
-  claim: any; // We'll use the claim data from the JSON
+  claim: Claim | null;
 }
 
 export default function ClaimDetailsModal({ isOpen, onClose, claim }: ClaimDetailsModalProps) {
@@ -211,7 +212,7 @@ export default function ClaimDetailsModal({ isOpen, onClose, claim }: ClaimDetai
           <div>
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Claim Timeline</h3>
             <div className="space-y-4">
-              {claim.events.map((event: any, index: number) => (
+              {claim.events.map((event: ClaimEvent, index: number) => (
                 <div key={index} className="flex items-start space-x-3">
                   <div className="flex-shrink-0 w-2 h-2 bg-blue-600 rounded-full mt-2"></div>
                   <div className="flex-1">
@@ -222,7 +223,7 @@ export default function ClaimDetailsModal({ isOpen, onClose, claim }: ClaimDetai
                           {event.actorName} ({event.actorRole})
                         </p>
                         {event.note && (
-                          <p className="text-sm text-gray-500 mt-1 italic">"{event.note}"</p>
+                          <p className="text-sm text-gray-500 mt-1 italic">&ldquo;{event.note}&rdquo;</p>
                         )}
                       </div>
                       <span className="text-sm text-gray-500">

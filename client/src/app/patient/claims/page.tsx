@@ -22,7 +22,7 @@ export default function PatientClaimsPage() {
     description: '',
     documents: []
   });
-  const [errors, setErrors] = useState<Partial<ClaimFormData>>({});
+  const [errors, setErrors] = useState<Partial<Record<keyof ClaimFormData, string>>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const hospitals = [
@@ -35,7 +35,7 @@ export default function PatientClaimsPage() {
   ];
 
   const validate = () => {
-    const newErrors: Partial<ClaimFormData> = {};
+    const newErrors: Partial<Record<keyof ClaimFormData, string>> = {};
     
     if (!formData.hospitalName) newErrors.hospitalName = 'Hospital selection is required';
     if (!formData.hospitalId) newErrors.hospitalId = 'Hospital ID is required';
