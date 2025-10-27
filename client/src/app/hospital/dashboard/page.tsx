@@ -42,12 +42,12 @@ export default function HospitalDashboardPage() {
   }));
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="min-h-screen bg-gray-50">
       {/* Left Sidebar */}
       <HospitalSidebar />
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col">
+      <div className="ml-64 flex flex-col">
         {/* Top Header */}
         <header className="bg-white shadow-sm border-b px-6 py-4">
           <div className="flex items-center justify-between">

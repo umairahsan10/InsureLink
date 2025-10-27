@@ -16,7 +16,7 @@ export default function HospitalSidebar() {
   };
 
   return (
-    <div className="w-64 bg-green-600 shadow-lg relative">
+    <div className="fixed left-0 top-0 h-screen w-64 bg-green-600 shadow-lg flex flex-col">
       <div className="p-6">
         <div className="flex items-center">
           <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center">
@@ -31,7 +31,7 @@ export default function HospitalSidebar() {
         </div>
       </div>
 
-      <nav className="mt-8">
+      <nav className="mt-8 flex-1 overflow-y-auto">
         <div className="px-6">
           <button
             onClick={() => router.push('/hospital/dashboard')}
@@ -105,10 +105,10 @@ export default function HospitalSidebar() {
         </div>
       </nav>
 
-      <div className="absolute bottom-6 left-6 right-6 z-10">
+      <div className="p-6 border-t border-green-700">
         <button
           onClick={handleLogout}
-          className="flex items-center w-full px-4 py-3 text-green-100 hover:bg-red-600 hover:text-white rounded-lg transition-colors bg-opacity-0 hover:bg-opacity-100"
+          className="flex items-center w-full px-4 py-3 text-green-100 hover:bg-red-600 hover:text-white rounded-lg transition-colors"
         >
           <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
