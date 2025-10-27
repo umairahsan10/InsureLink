@@ -1,5 +1,11 @@
 InsureLink Frontend (Phase 1 – Demo-Focused Development)
 
+---
+
+> **📋 Current Status:** This document describes the original plan. Current focus: Preparing demo frontend for insurer provider meeting. Plans may evolve based on stakeholder feedback.
+
+---
+
 This repo represents the frontend-first implementation of InsureLink with a focus on:
 
 ✅ Landing & Explore Dashboards (mock/demo mode)

@@ -27,7 +27,7 @@ export default function HospitalDashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-semibold mb-4">Recent Claims</h2>
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">Recent Claims</h2>
           <div className="space-y-3">
             {[
               { patient: 'John Doe', treatment: 'General Checkup', amount: 'Rs. 250', status: 'Approved' },
@@ -53,7 +53,7 @@ export default function HospitalDashboard() {
         </div>
 
         <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-semibold mb-4">Department Status</h2>
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">Department Status</h2>
           <div className="space-y-3">
             {[
               { name: 'Emergency', patients: 12, status: 'busy' },

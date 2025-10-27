@@ -68,7 +68,7 @@ export default function CorporatePlansPage() {
       </div>
 
       <div className="mt-8 bg-white rounded-lg shadow p-6">
-        <h2 className="text-xl font-semibold mb-4">Plan Comparison</h2>
+        <h2 className="text-xl font-semibold text-gray-900 mb-4">Plan Comparison</h2>
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
