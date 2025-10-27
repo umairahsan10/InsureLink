@@ -39,11 +39,11 @@ const getStatusDot = (status: string) => {
 
 export default function RecentClaimsOverview({ claims }: RecentClaimsOverviewProps) {
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-8">
-      <div className="p-6 border-b border-gray-200">
-        <div className="flex justify-between items-center">
-          <h2 className="text-xl font-semibold text-gray-900">Recent Claims Overview</h2>
-          <button className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
+    <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6 md:mb-8">
+      <div className="p-5 md:p-6 border-b border-gray-200">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+          <h2 className="text-xl md:text-xl font-semibold text-gray-900">Recent Claims Overview</h2>
+          <button className="flex items-center space-x-2 px-4 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors whitespace-nowrap">
             <span>📄</span>
             <span>Export Report</span>
           </button>
@@ -51,25 +51,25 @@ export default function RecentClaimsOverview({ claims }: RecentClaimsOverviewPro
       </div>
       
       <div className="overflow-x-auto">
-        <table className="w-full">
+        <table className="w-full min-w-[800px]">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-4 md:px-6 py-3 md:py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
                 Employee
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-4 md:px-6 py-3 md:py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
                 Claim ID
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-4 md:px-6 py-3 md:py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
                 Amount
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-4 md:px-6 py-3 md:py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
                 Hospital
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-4 md:px-6 py-3 md:py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
                 Date
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-4 md:px-6 py-3 md:py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
                 Status
               </th>
             </tr>
@@ -77,25 +77,25 @@ export default function RecentClaimsOverview({ claims }: RecentClaimsOverviewPro
           <tbody className="bg-white divide-y divide-gray-200">
             {claims.map((claim, index) => (
               <tr key={index} className="hover:bg-gray-50">
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                <td className="px-4 md:px-6 py-4 md:py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                   {claim.employee}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                <td className="px-4 md:px-6 py-4 md:py-4 whitespace-nowrap text-sm text-gray-500">
                   {claim.claimId}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                <td className="px-4 md:px-6 py-4 md:py-4 whitespace-nowrap text-sm text-gray-500">
                   {claim.amount}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                <td className="px-4 md:px-6 py-4 md:py-4 whitespace-nowrap text-sm text-gray-500 truncate max-w-[150px] md:max-w-none">
                   {claim.hospital}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                <td className="px-4 md:px-6 py-4 md:py-4 whitespace-nowrap text-sm text-gray-500">
                   {claim.date}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
+                <td className="px-4 md:px-6 py-4 md:py-4 whitespace-nowrap">
                   <div className="flex items-center">
-                    <span className="mr-2">{getStatusDot(claim.status)}</span>
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(claim.status)}`}>
+                    <span className="mr-2 text-base">{getStatusDot(claim.status)}</span>
+                    <span className={`inline-flex px-2.5 py-1.5 text-sm font-semibold rounded-full ${getStatusColor(claim.status)}`}>
                       {claim.status}
                     </span>
                   </div>

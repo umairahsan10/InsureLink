@@ -58,7 +58,7 @@ const sampleClaimsData = [
 
 export default function CorporateDashboard() {
   return (
-    <div className="p-8">
+    <div className="p-5 md:p-6 lg:p-8">
       {/* Key Metrics Cards */}
       <KeyMetrics
         totalEmployees={248}

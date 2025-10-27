@@ -57,19 +57,19 @@ export default function CorporateEmployeesPage() {
   };
 
   return (
-    <div className="p-8">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">Employees</h1>
-        <div className="flex gap-2">
+    <div className="p-4 md:p-8">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Employees</h1>
+        <div className="flex gap-2 w-full sm:w-auto">
           <button 
             onClick={() => setIsAddModalOpen(true)}
-            className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors"
+            className="flex-1 sm:flex-initial bg-purple-600 text-white px-3 py-2 md:px-4 md:py-2 rounded-lg hover:bg-purple-700 transition-colors text-sm md:text-base"
           >
             + Add Employee
           </button>
           <button
             onClick={() => setIsRemoveMode(prev => !prev)}
-            className={`px-4 py-2 rounded-lg transition-colors ${
+            className={`flex-1 sm:flex-initial px-3 py-2 md:px-4 md:py-2 rounded-lg transition-colors text-sm md:text-base ${
               isRemoveMode ? 'bg-red-600 text-white hover:bg-red-700' : 'bg-black text-white hover:bg-gray-800'
             }`}
           >
@@ -84,35 +84,35 @@ export default function CorporateEmployeesPage() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-6">
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
           <p className="text-sm text-gray-500">Total Employees</p>
-          <p className="text-2xl font-bold text-gray-900">{employees.length}</p>
+          <p className="text-xl md:text-2xl font-bold text-gray-900">{employees.length}</p>
         </div>
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
           <p className="text-sm text-gray-500">Active Policies</p>
-          <p className="text-2xl font-bold text-green-600">{employees.length}</p>
+          <p className="text-xl md:text-2xl font-bold text-green-600">{employees.length}</p>
         </div>
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
           <p className="text-sm text-gray-500">Pending Enrollment</p>
-          <p className="text-2xl font-bold text-orange-600">0</p>
+          <p className="text-xl md:text-2xl font-bold text-orange-600">0</p>
         </div>
       </div>
 
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
         <div className="p-4 border-b border-gray-200">
-          <div className="flex gap-4">
+          <div className="flex flex-col sm:flex-row gap-4">
             <input
               type="text"
               placeholder="Search employees..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-sm md:text-base text-gray-900 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
             />
             <select 
               value={selectedDepartment}
               onChange={(e) => setSelectedDepartment(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="px-4 py-2 border border-gray-300 rounded-lg text-sm md:text-base text-gray-900 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
             >
               <option>All Departments</option>
               <option>R&D</option>
@@ -131,34 +131,34 @@ export default function CorporateEmployeesPage() {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full min-w-[800px]">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Employee ID</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Department</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Designation</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Policy Status</th>
-                {isRemoveMode && <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Remove</th>}
+                <th className="px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                <th className="px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Employee ID</th>
+                <th className="px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Department</th>
+                <th className="px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Designation</th>
+                <th className="px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                <th className="px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Policy Status</th>
+                {isRemoveMode && <th className="px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Remove</th>}
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {displayedEmployees.length > 0 ? (
                 displayedEmployees.map((employee) => (
                   <tr key={employee.employeeNumber} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{employee.name}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{employee.employeeNumber}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{employee.department}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{employee.designation}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{employee.email}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                    <td className="px-4 md:px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{employee.name}</td>
+                    <td className="px-4 md:px-6 py-4 whitespace-nowrap text-sm text-gray-500">{employee.employeeNumber}</td>
+                    <td className="px-4 md:px-6 py-4 whitespace-nowrap text-sm text-gray-500">{employee.department}</td>
+                    <td className="px-4 md:px-6 py-4 whitespace-nowrap text-sm text-gray-500">{employee.designation}</td>
+                    <td className="px-4 md:px-6 py-4 whitespace-nowrap text-sm text-gray-500">{employee.email}</td>
+                    <td className="px-4 md:px-6 py-4 whitespace-nowrap text-sm">
                       <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
                         Active
                       </span>
                     </td>
                     {isRemoveMode && (
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-4 md:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         <button
                           onClick={() => handleRemoveClick(employee)}
                           title="Remove Employee"
@@ -172,7 +172,7 @@ export default function CorporateEmployeesPage() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={isRemoveMode ? 7 : 6} className="px-6 py-8 text-center text-gray-500">
+                  <td colSpan={isRemoveMode ? 7 : 6} className="px-4 md:px-6 py-8 text-center text-gray-500">
                     No employees found matching your criteria.
                   </td>
                 </tr>
@@ -182,8 +182,8 @@ export default function CorporateEmployeesPage() {
         </div>
 
         {/* Pagination */}
-        <div className="px-6 py-3 bg-gray-50 border-t border-gray-200 flex items-center justify-between">
-          <p className="text-sm text-gray-700">
+        <div className="px-4 md:px-6 py-3 bg-gray-50 border-t border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <p className="text-xs md:text-sm text-gray-700 text-center sm:text-left">
             Showing <span className="font-medium">{(currentPage - 1) * pageSize + 1}</span> to <span className="font-medium">{Math.min(currentPage * pageSize, filteredEmployees.length)}</span> of{' '}
             <span className="font-medium">{filteredEmployees.length}</span> employees
             {filteredEmployees.length !== employees.length && (
@@ -194,29 +194,31 @@ export default function CorporateEmployeesPage() {
             <button
               onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
               disabled={currentPage === 1}
-              className="px-3 py-1 text-sm text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50"
+              className="px-2 md:px-3 py-1 text-xs md:text-sm text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50"
             >
               Previous
             </button>
 
-            {Array.from({ length: totalPages }, (_, i) => (
-              <button
-                key={i + 1}
-                onClick={() => setCurrentPage(i + 1)}
-                className={`px-3 py-1 text-sm rounded-md ${
-                  currentPage === i + 1
-                    ? 'bg-purple-600 text-white border border-purple-600'
-                    : 'bg-white text-gray-500 border border-gray-300 hover:bg-gray-50'
-                }`}
-              >
-                {i + 1}
-              </button>
-            ))}
+            <div className="hidden sm:flex space-x-1">
+              {Array.from({ length: totalPages }, (_, i) => (
+                <button
+                  key={i + 1}
+                  onClick={() => setCurrentPage(i + 1)}
+                  className={`px-2 md:px-3 py-1 text-xs md:text-sm rounded-md ${
+                    currentPage === i + 1
+                      ? 'bg-purple-600 text-white border border-purple-600'
+                      : 'bg-white text-gray-500 border border-gray-300 hover:bg-gray-50'
+                  }`}
+                >
+                  {i + 1}
+                </button>
+              ))}
+            </div>
 
             <button
               onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
               disabled={currentPage === totalPages}
-              className="px-3 py-1 text-sm text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50"
+              className="px-2 md:px-3 py-1 text-xs md:text-sm text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50"
             >
               Next
             </button>

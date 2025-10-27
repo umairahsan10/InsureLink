@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useEffect } from 'react';
 
 interface SidebarProps {
   userRole: 'patient' | 'corporate' | 'hospital' | 'insurer';
@@ -157,49 +158,121 @@ export default function Sidebar({ userRole }: SidebarProps) {
   const items = menuItems[userRole];
   const theme = themes[userRole];
 
+  useEffect(() => {
+    const sidebarToggle = document.getElementById('sidebar-toggle');
+    const sidebar = document.getElementById('sidebar');
+    const sidebarOverlay = document.getElementById('sidebar-overlay');
+    const sidebarClose = document.getElementById('sidebar-close');
+
+    const openSidebar = () => {
+      if (sidebar && sidebarOverlay && sidebarToggle) {
+        sidebar.classList.remove('-translate-x-full');
+        sidebar.classList.add('translate-x-0');
+        sidebarOverlay.classList.remove('hidden');
+        sidebarToggle.style.display = 'none';
+      }
+    };
+
+    const closeSidebar = () => {
+      if (sidebar && sidebarOverlay && sidebarToggle) {
+        sidebar.classList.add('-translate-x-full');
+        sidebar.classList.remove('translate-x-0');
+        sidebarOverlay.classList.add('hidden');
+        sidebarToggle.style.display = 'block';
+      }
+    };
+
+    const handleNavClick = (e: Event) => {
+      const target = e.target as HTMLElement;
+      const link = target.closest('a');
+      if (link) {
+        const isMobile = window.innerWidth < 768;
+        if (isMobile && sidebar && !sidebar.classList.contains('-translate-x-full')) {
+          setTimeout(closeSidebar, 100);
+        }
+      }
+    };
+
+    sidebarToggle?.addEventListener('click', openSidebar);
+    sidebarClose?.addEventListener('click', closeSidebar);
+    sidebarOverlay?.addEventListener('click', closeSidebar);
+    document.addEventListener('click', handleNavClick);
+
+    return () => {
+      sidebarToggle?.removeEventListener('click', openSidebar);
+      sidebarClose?.removeEventListener('click', closeSidebar);
+      sidebarOverlay?.removeEventListener('click', closeSidebar);
+      document.removeEventListener('click', handleNavClick);
+    };
+  }, [pathname]);
+
   return (
-    <aside className={`fixed left-0 top-0 h-screen w-64 ${userRole === 'insurer' ? 'bg-red-50' : theme.bgColor} shadow-lg flex flex-col`}>
-      <div className={`p-6 border-b ${theme.borderColor}`}>
-        <h1 className={`text-2xl font-bold ${theme.logoColor}`}>InsureLink</h1>
-        <p className={`text-sm ${theme.textColor} capitalize`}>{userRole} Portal</p>
-      </div>
+    <>
+      <div className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-40 hidden" id="sidebar-overlay"></div>
+      
+      <aside id="sidebar" className={`fixed left-0 top-0 h-screen w-64 ${userRole === 'insurer' ? 'bg-red-50' : theme.bgColor} shadow-lg flex flex-col transform -translate-x-full md:translate-x-0 transition-transform duration-300 z-50`}>
+        <div className={`p-4 md:p-6 border-b ${theme.borderColor}`}>
+          <div className="flex items-center justify-between mb-2">
+            <div>
+              <h1 className={`text-xl md:text-2xl font-bold ${theme.logoColor}`}>InsureLink</h1>
+              <p className={`text-xs md:text-sm ${theme.textColor} capitalize`}>{userRole} Portal</p>
+            </div>
+            <button className="md:hidden text-gray-700 hover:text-gray-900 text-2xl font-bold" id="sidebar-close">✕</button>
+          </div>
+        </div>
 
-      <nav className="p-4 flex-1">
-        <ul className="space-y-2">
-          {items.map((item) => {
-            const isActive = pathname === item.href;
-            return (
-              <li key={item.name}>
-                <Link
-                  href={item.href}
-                  className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
-                    isActive
-                      ? `${theme.activeBg} ${theme.activeText}`
-                      : `${theme.itemTextColor} ${theme.hoverBg} ${theme.hoverText}`
-                  }`}
-                >
-                  <span className="flex-shrink-0">{item.icon}</span>
-                  <span className="font-medium">{item.name}</span>
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
-      </nav>
+        <nav className="p-2 md:p-4 flex-1">
+          <ul className="space-y-1 md:space-y-2">
+            {items.map((item) => {
+              const isActive = pathname === item.href;
+              return (
+                <li key={item.name}>
+                  <Link
+                    href={item.href}
+                    className={`flex items-center space-x-2 md:space-x-3 px-3 md:px-4 py-2 md:py-3 rounded-lg transition-colors text-sm md:text-base ${
+                      isActive
+                        ? `${theme.activeBg} ${theme.activeText}`
+                        : `${theme.itemTextColor} ${theme.hoverBg} ${theme.hoverText}`
+                    }`}
+                  >
+                    <span className="flex-shrink-0">{item.icon}</span>
+                    <span className="font-medium">{item.name}</span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </nav>
 
-      {/* Logout Link */}
-      <div className="p-4 border-t border-gray-200">
-        <Link
-          href="/login"
-          className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${theme.itemTextColor} ${theme.hoverBg} ${theme.hoverText}`}
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-          </svg>
-          <span className="font-medium">Logout</span>
-        </Link>
-      </div>
-    </aside>
+        {/* Logout Link */}
+        <div className="p-2 md:p-4 border-t border-gray-200">
+          <Link
+            href="/login"
+            className={`flex items-center space-x-2 md:space-x-3 px-3 md:px-4 py-2 md:py-3 rounded-lg transition-colors text-sm md:text-base ${theme.itemTextColor} ${theme.hoverBg} ${theme.hoverText}`}
+          >
+            <svg className="w-4 md:w-5 h-4 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+            <span className="font-medium">Logout</span>
+          </Link>
+        </div>
+      </aside>
+      
+      <button 
+        className={`md:hidden fixed top-3 left-3 z-50 text-white p-2 rounded-lg shadow-lg transition-colors ${
+          userRole === 'insurer' 
+            ? 'bg-red-600 hover:bg-red-700' 
+            : userRole === 'corporate'
+            ? 'bg-purple-600 hover:bg-purple-700'
+            : userRole === 'hospital'
+            ? 'bg-green-600 hover:bg-green-700'
+            : 'bg-blue-600 hover:bg-blue-700'
+        }`}
+        id="sidebar-toggle"
+      >
+        <span className="text-lg font-bold">☰</span>
+      </button>
+    </>
   );
 }
 
