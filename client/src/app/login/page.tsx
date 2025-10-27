@@ -26,17 +26,17 @@ function LoginForm() {
   };
 
   return (
-    <div className="flex overflow-hidden m-0 p-0 h-screen w-screen">
+    <div className="flex flex-col md:flex-row overflow-hidden m-0 p-0 min-h-screen w-screen">
       {/* Left Side – Login Form */}
-      <div className="w-1/2 flex flex-col items-center justify-center px-6 py-4 bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
-        <div className="max-w-lg w-full bg-white rounded-xl shadow-xl p-8">
+      <div className="w-full md:w-1/2 flex flex-col items-center justify-center px-4 py-6 md:px-6 md:py-4 bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
+        <div className="max-w-lg w-full bg-white rounded-xl shadow-xl p-6 md:p-8">
           {/* User Type Tabs */}
-          <div className="flex justify-between mb-6">
+          <div className="grid grid-cols-2 md:flex gap-2 mb-6">
             {userTypes.map((type) => (
               <button
                 key={type}
                 onClick={() => setSelectedUserType(type)}
-                className={`flex-1 py-3 mx-1 rounded-lg font-semibold text-center transition text-sm ${
+                className={`px-3 py-2.5 md:flex-1 md:py-3 md:mx-1 rounded-lg font-semibold text-center transition text-xs md:text-sm ${
                   selectedUserType === type
                     ? 'bg-blue-600 text-white'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -47,14 +47,14 @@ function LoginForm() {
             ))}
           </div>
 
-          <h1 className="text-2xl font-bold text-gray-900 mb-6 text-center">
+          <h1 className="text-xl md:text-2xl font-bold text-gray-900 mb-4 md:mb-6 text-center">
             Sign In as {selectedUserType}
           </h1>
           
           {nextUrl && (
             <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
               <p className="text-sm text-blue-800">
-                You&apos;ll be redirected to: <span className="font-medium">{nextUrl}</span>
+                You&apos;ll be redirected to: <span className="font-medium break-all">{nextUrl}</span>
               </p>
             </div>
           )}
@@ -88,7 +88,7 @@ function LoginForm() {
               />
             </div>
 
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
               <label className="flex items-center">
                 <input type="checkbox" className="rounded border-gray-300 text-blue-600" />
                 <span className="ml-2 text-sm text-gray-600">Remember me</span>
@@ -122,7 +122,7 @@ function LoginForm() {
       </div>
 
       {/* Right Side – Image */}
-      <div className="w-1/2 bg-cover bg-center bg-no-repeat bg-blue-100 min-h-screen" style={{ backgroundImage: "url('/images/abc.png')", backgroundSize: '80%' }}>
+      <div className="hidden md:flex w-full md:w-1/2 bg-cover bg-center bg-no-repeat bg-blue-100 min-h-screen" style={{ backgroundImage: "url('/images/abc.png')", backgroundSize: '80%' }}>
         {/* This div will display the image on the right side */}
       </div>
     </div>

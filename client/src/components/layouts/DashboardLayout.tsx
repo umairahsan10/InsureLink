@@ -13,7 +13,7 @@ export default function DashboardLayout({ children, userRole, userName }: Dashbo
     <div className="min-h-screen bg-gray-50">
       <Sidebar userRole={userRole} />
       
-      <div className="ml-64 flex flex-col">
+      <div className="md:ml-64 flex flex-col pt-12 md:pt-0">
         <Topbar userName={userName} userRole={userRole} />
         
         <main className="flex-1 overflow-auto">
