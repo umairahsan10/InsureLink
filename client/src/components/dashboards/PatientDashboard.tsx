@@ -25,7 +25,7 @@ export default function PatientDashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-semibold mb-4">Recent Claims</h2>
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">Recent Claims</h2>
           <div className="space-y-3">
             {[
               { id: 'CLM-001', date: '2025-10-01', amount: 'Rs. 1,200', status: 'Approved' },
@@ -48,7 +48,7 @@ export default function PatientDashboard() {
         </div>
 
         <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-semibold mb-4">Policy Information</h2>
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">Policy Information</h2>
           <div className="space-y-3">
             <div className="flex justify-between">
               <span className="text-gray-600">Policy Number</span>

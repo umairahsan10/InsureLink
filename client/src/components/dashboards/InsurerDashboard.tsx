@@ -27,7 +27,7 @@ export default function InsurerDashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-semibold mb-4">High Priority Claims</h2>
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">High Priority Claims</h2>
           <div className="space-y-3">
             {[
               { id: 'CLM-8921', patient: 'John Doe', amount: 'Rs. 5,200', hospital: 'City General' },
@@ -49,7 +49,7 @@ export default function InsurerDashboard() {
         </div>
 
         <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-semibold mb-4">Network Summary</h2>
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">Network Summary</h2>
           <div className="space-y-4">
             <div className="p-3 bg-blue-50 rounded">
               <div className="flex justify-between items-center">
