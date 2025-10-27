@@ -1,10 +1,21 @@
 'use client';
 
 import { useRouter, usePathname } from 'next/navigation';
+import { useState } from 'react';
 
-export default function HospitalSidebar() {
+interface HospitalSidebarProps {
+  sidebarOpen?: boolean;
+  setSidebarOpen?: (open: boolean) => void;
+}
+
+export default function HospitalSidebar({ sidebarOpen: externalSidebarOpen, setSidebarOpen: externalSetSidebarOpen }: HospitalSidebarProps) {
   const router = useRouter();
   const pathname = usePathname();
+  const [internalSidebarOpen, setInternalSidebarOpen] = useState(false);
+  
+  // Use external state if provided, otherwise use internal state
+  const sidebarOpen = externalSidebarOpen !== undefined ? externalSidebarOpen : internalSidebarOpen;
+  const setSidebarOpen = externalSetSidebarOpen || setInternalSidebarOpen;
 
   const isActive = (path: string) => {
     return pathname === path;
@@ -16,7 +27,19 @@ export default function HospitalSidebar() {
   };
 
   return (
-    <div className="fixed left-0 top-0 h-screen w-64 bg-green-600 shadow-lg flex flex-col">
+    <>
+      {/* Overlay for mobile */}
+      {sidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      {/* Sidebar */}
+      <div className={`fixed left-0 top-0 h-screen w-64 bg-green-600 shadow-lg flex flex-col z-40 transform transition-transform duration-300 ease-in-out ${
+        sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+      }`}>
       <div className="p-6">
         <div className="flex items-center">
           <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center">
@@ -116,6 +139,7 @@ export default function HospitalSidebar() {
           Logout
         </button>
       </div>
-    </div>
+      </div>
+    </>
   );
 }
