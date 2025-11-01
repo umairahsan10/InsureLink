@@ -2,9 +2,40 @@
 
 import { useState } from 'react';
 import HospitalSidebar from '@/components/hospital/HospitalSidebar';
+import MessageButton from '@/components/messaging/MessageButton';
+import { useClaimsMessaging } from '@/contexts/ClaimsMessagingContext';
 
 export default function HospitalClaimsPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('All Status');
+  const [insurerFilter, setInsurerFilter] = useState('All Insurers');
+  const { hasUnreadAlert } = useClaimsMessaging();
+
+  const allClaims = [
+    { id: 'CLM-8921', patient: 'John Doe', treatment: 'General Checkup', date: '2025-10-06', amount: '$1,250', status: 'Pending' },
+    { id: 'CLM-8920', patient: 'Mary Johnson', treatment: 'X-Ray Scan', date: '2025-10-06', amount: '$450', status: 'Under Review' },
+    { id: 'CLM-8919', patient: 'Robert Smith', treatment: 'Surgery', date: '2025-10-05', amount: '$5,200', status: 'Approved' },
+    { id: 'CLM-8918', patient: 'Emily Davis', treatment: 'Blood Test', date: '2025-10-05', amount: '$820', status: 'Approved' },
+    { id: 'CLM-8917', patient: 'Michael Wilson', treatment: 'Emergency Care', date: '2025-10-04', amount: '$3,100', status: 'Rejected' },
+  ];
+
+  // Filter claims based on search and filters
+  const filteredClaims = allClaims.filter((claim) => {
+    // Search filter - matches claim ID or patient name
+    const matchesSearch = 
+      searchQuery === '' ||
+      claim.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      claim.patient.toLowerCase().includes(searchQuery.toLowerCase());
+
+    // Status filter
+    const matchesStatus = 
+      statusFilter === 'All Status' ||
+      claim.status === statusFilter ||
+      (statusFilter === 'Under Review' && claim.status === 'Under Review');
+
+    return matchesSearch && matchesStatus;
+  });
   
   return (
     <div className="min-h-screen bg-gray-50">
@@ -74,15 +105,26 @@ export default function HospitalClaimsPage() {
             <input
               type="text"
               placeholder="Search by claim ID or patient name..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
               className="flex-1 px-3 lg:px-4 py-2 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm lg:text-base"
             />
-            <select className="px-3 lg:px-4 py-2 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm lg:text-base">
+            <select 
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="px-3 lg:px-4 py-2 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm lg:text-base"
+            >
               <option>All Status</option>
               <option>Pending</option>
+              <option>Under Review</option>
               <option>Approved</option>
               <option>Rejected</option>
             </select>
-            <select className="px-3 lg:px-4 py-2 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm lg:text-base">
+            <select 
+              value={insurerFilter}
+              onChange={(e) => setInsurerFilter(e.target.value)}
+              className="px-3 lg:px-4 py-2 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm lg:text-base"
+            >
               <option>All Insurers</option>
               <option>HealthGuard Insurance</option>
               <option>MediCare Plus</option>
@@ -102,33 +144,48 @@ export default function HospitalClaimsPage() {
                 <th className="px-3 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
                 <th className="px-3 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
                 <th className="px-3 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                <th className="px-3 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Message</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {[
-                { id: 'HCL-892', patient: 'John Doe', treatment: 'General Checkup', date: '2025-10-06', amount: 'Rs. 250', status: 'Approved' },
-                { id: 'HCL-891', patient: 'Mary Johnson', treatment: 'X-Ray Scan', date: '2025-10-06', amount: 'Rs. 450', status: 'Pending' },
-                { id: 'HCL-890', patient: 'Robert Smith', treatment: 'Blood Test', date: '2025-10-05', amount: 'Rs. 120', status: 'Approved' },
-                { id: 'HCL-889', patient: 'Emily Davis', treatment: 'Surgery', date: '2025-10-05', amount: 'Rs. 5,200', status: 'Pending' },
-              ].map((claim) => (
-                <tr key={claim.id} className="hover:bg-gray-50">
-                  <td className="px-3 lg:px-6 py-4 text-xs lg:text-sm font-medium text-gray-900">{claim.id}</td>
-                  <td className="px-3 lg:px-6 py-4 text-xs lg:text-sm text-gray-900">{claim.patient}</td>
-                  <td className="hidden md:table-cell px-3 lg:px-6 py-4 text-xs lg:text-sm text-gray-500">{claim.treatment}</td>
-                  <td className="hidden sm:table-cell px-3 lg:px-6 py-4 text-xs lg:text-sm text-gray-500">{claim.date}</td>
-                  <td className="px-3 lg:px-6 py-4 text-xs lg:text-sm text-gray-900">{claim.amount}</td>
-                  <td className="px-3 lg:px-6 py-4 text-xs lg:text-sm">
-                    <span className={`inline-block px-2 py-1 text-xs rounded-full ${
-                      claim.status === 'Approved' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                    }`}>
-                      {claim.status}
-                    </span>
-                  </td>
-                  <td className="px-3 lg:px-6 py-4 text-xs lg:text-sm">
-                    <button className="text-blue-600 hover:text-blue-800">View</button>
+              {filteredClaims.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="px-6 py-8 text-center text-gray-500">
+                    No claims found matching your search criteria.
                   </td>
                 </tr>
-              ))}
+              ) : (
+                filteredClaims.map((claim) => {
+                const hasAlert = hasUnreadAlert(claim.id, 'hospital');
+                return (
+                  <tr
+                    key={claim.id}
+                    className={`hover:bg-gray-50 ${hasAlert ? 'border-l-4 border-red-500' : ''}`}
+                  >
+                    <td className="px-3 lg:px-6 py-4 text-xs lg:text-sm font-medium text-gray-900">{claim.id}</td>
+                    <td className="px-3 lg:px-6 py-4 text-xs lg:text-sm text-gray-900">{claim.patient}</td>
+                    <td className="hidden md:table-cell px-3 lg:px-6 py-4 text-xs lg:text-sm text-gray-500">{claim.treatment}</td>
+                    <td className="hidden sm:table-cell px-3 lg:px-6 py-4 text-xs lg:text-sm text-gray-500">{claim.date}</td>
+                    <td className="px-3 lg:px-6 py-4 text-xs lg:text-sm text-gray-900">{claim.amount}</td>
+                    <td className="px-3 lg:px-6 py-4 text-xs lg:text-sm">
+                      <span className={`inline-block px-2 py-1 text-xs rounded-full ${
+                        claim.status === 'Approved' ? 'bg-green-100 text-green-800' :
+                        claim.status === 'Rejected' ? 'bg-red-100 text-red-800' :
+                        claim.status === 'Under Review' ? 'bg-blue-100 text-blue-800' :
+                        'bg-yellow-100 text-yellow-800'
+                      }`}>
+                        {claim.status}
+                      </span>
+                    </td>
+                    <td className="px-3 lg:px-6 py-4 text-xs lg:text-sm">
+                      <button className="text-blue-600 hover:text-blue-800">View</button>
+                    </td>
+                    <td className="px-3 lg:px-6 py-4 text-xs lg:text-sm">
+                      <MessageButton claimId={claim.id} userRole="hospital" />
+                    </td>
+                  </tr>
+                );
+              }))}
             </tbody>
           </table>
         </div>

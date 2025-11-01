@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import DashboardLayout from '@/components/layouts/DashboardLayout';
+import MessageButton from '@/components/messaging/MessageButton';
+import { useClaimsMessaging } from '@/contexts/ClaimsMessagingContext';
 
 interface Claim {
   id: string;
@@ -15,35 +17,36 @@ interface Claim {
 }
 
 export default function InsurerDashboardPage() {
+  const { hasUnreadAlert } = useClaimsMessaging();
   const [claims] = useState<Claim[]>([
     {
-      id: 'CLM-201',
-      claimNumber: 'CLM-201',
-      patient: 'Ali Hassan',
-      hospital: 'City General Hospital',
-      amount: 'Rs. 45,000',
-      date: '2024-01-16',
+      id: 'CLM-8921',
+      claimNumber: 'CLM-8921',
+      patient: 'John Doe',
+      hospital: 'City General',
+      amount: '$1,250',
+      date: '2025-10-06',
       priority: 'High',
       status: 'Pending'
     },
     {
-      id: 'CLM-202',
-      claimNumber: 'CLM-202',
-      patient: 'Fatima Sheikh',
-      hospital: 'Metro Medical Center',
-      amount: 'Rs. 22,000',
-      date: '2024-01-15',
+      id: 'CLM-8920',
+      claimNumber: 'CLM-8920',
+      patient: 'Mary Johnson',
+      hospital: 'St. Mary\'s',
+      amount: '$450',
+      date: '2025-10-06',
       priority: 'Medium',
       status: 'Pending'
     },
     {
-      id: 'CLM-203',
-      claimNumber: 'CLM-203',
-      patient: 'Omar Malik',
-      hospital: 'District Hospital',
-      amount: 'Rs. 18,000',
-      date: '2024-01-14',
-      priority: 'Low',
+      id: 'CLM-8919',
+      claimNumber: 'CLM-8919',
+      patient: 'Robert Smith',
+      hospital: 'County Hospital',
+      amount: '$5,200',
+      date: '2025-10-05',
+      priority: 'High',
       status: 'Pending'
     }
   ]);
@@ -211,50 +214,60 @@ export default function InsurerDashboardPage() {
                   <th className="px-4 md:px-6 py-3 text-left text-xs md:text-sm font-medium text-gray-500 uppercase tracking-wider">Date</th>
                   <th className="px-4 md:px-6 py-3 text-left text-xs md:text-sm font-medium text-gray-500 uppercase tracking-wider">Priority</th>
                   <th className="px-4 md:px-6 py-3 text-left text-xs md:text-sm font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                  <th className="px-4 md:px-6 py-3 text-left text-xs md:text-sm font-medium text-gray-500 uppercase tracking-wider">Message</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {claims.map((claim) => (
-                  <tr key={claim.id} className="hover:bg-gray-50">
-                    <td className="px-4 md:px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {claim.claimNumber}
-                    </td>
-                    <td className="px-4 md:px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {claim.patient}
-                    </td>
-                    <td className="px-4 md:px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {claim.hospital}
-                    </td>
-                    <td className="px-4 md:px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {claim.amount}
-                    </td>
-                    <td className="px-4 md:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {claim.date}
-                    </td>
-                    <td className="px-4 md:px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex items-center px-2 md:px-2.5 py-0.5 rounded-full text-xs font-medium border ${getPriorityColor(claim.priority)}`}>
-                        <span className={`w-2 h-2 rounded-full mr-1.5 ${getPriorityDot(claim.priority)}`}></span>
-                        {claim.priority}
-                      </span>
-                    </td>
-                    <td className="px-4 md:px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div className="flex space-x-1 md:space-x-2">
-                        <button
-                          onClick={() => handleApprove(claim.id)}
-                          className="px-2 md:px-3 py-1 text-xs md:text-sm bg-green-100 text-green-700 rounded-md hover:bg-green-200 transition-colors"
-                        >
-                          Approve
-                        </button>
-                        <button
-                          onClick={() => handleReject(claim.id)}
-                          className="px-2 md:px-3 py-1 text-xs md:text-sm bg-red-100 text-red-700 rounded-md hover:bg-red-200 transition-colors"
-                        >
-                          Reject
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                {claims.map((claim) => {
+                  const hasAlert = hasUnreadAlert(claim.id, 'insurer');
+                  return (
+                    <tr
+                      key={claim.id}
+                      className={`hover:bg-gray-50 ${hasAlert ? 'border-l-4 border-red-500' : ''}`}
+                    >
+                      <td className="px-4 md:px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        {claim.claimNumber}
+                      </td>
+                      <td className="px-4 md:px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {claim.patient}
+                      </td>
+                      <td className="px-4 md:px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {claim.hospital}
+                      </td>
+                      <td className="px-4 md:px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {claim.amount}
+                      </td>
+                      <td className="px-4 md:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {claim.date}
+                      </td>
+                      <td className="px-4 md:px-6 py-4 whitespace-nowrap">
+                        <span className={`inline-flex items-center px-2 md:px-2.5 py-0.5 rounded-full text-xs font-medium border ${getPriorityColor(claim.priority)}`}>
+                          <span className={`w-2 h-2 rounded-full mr-1.5 ${getPriorityDot(claim.priority)}`}></span>
+                          {claim.priority}
+                        </span>
+                      </td>
+                      <td className="px-4 md:px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <div className="flex space-x-1 md:space-x-2">
+                          <button
+                            onClick={() => handleApprove(claim.id)}
+                            className="px-2 md:px-3 py-1 text-xs md:text-sm bg-green-100 text-green-700 rounded-md hover:bg-green-200 transition-colors"
+                          >
+                            Approve
+                          </button>
+                          <button
+                            onClick={() => handleReject(claim.id)}
+                            className="px-2 md:px-3 py-1 text-xs md:text-sm bg-red-100 text-red-700 rounded-md hover:bg-red-200 transition-colors"
+                          >
+                            Reject
+                          </button>
+                        </div>
+                      </td>
+                      <td className="px-4 md:px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <MessageButton claimId={claim.id} userRole="insurer" />
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

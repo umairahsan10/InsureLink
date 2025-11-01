@@ -3,14 +3,16 @@
 import { useState } from 'react';
 import ClaimStatusBadge from '@/components/claims/ClaimStatusBadge';
 import HospitalSidebar from '@/components/hospital/HospitalSidebar';
+import MessageButton from '@/components/messaging/MessageButton';
+import { useClaimsMessaging } from '@/contexts/ClaimsMessagingContext';
 
 // Import data
-import claimsData from '@/data/claims.json';
 import analyticsData from '@/data/analytics.json';
 
 export default function HospitalDashboardPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [cnicNumber, setCnicNumber] = useState('');
+  const { hasUnreadAlert } = useClaimsMessaging();
 
   const handleVerifyPatient = () => {
     // Handle patient verification logic
@@ -25,22 +27,41 @@ export default function HospitalDashboardPage() {
     approvedToday: analyticsData.claimsByStatus.Approved + analyticsData.claimsByStatus.Paid
   };
 
-  // Get recent claims for hospital (filter by hospital if needed)
-  const recentClaims = claimsData.slice(0, 4).map(claim => ({
-    id: claim.claimNumber,
-    patientName: claim.employeeName,
-    cnic: `42401-${claim.employeeId.replace('emp-', '').padStart(7, '0')}-${Math.floor(Math.random() * 10)}`,
-    amount: `Rs. ${claim.amountClaimed.toLocaleString()}`,
-    date: new Date(claim.createdAt).toLocaleDateString('en-GB'),
-    status: claim.status === 'Submitted' ? 'Pending' : 
-            claim.status === 'DocumentsUploaded' ? 'Pending' :
-            claim.status === 'UnderReview' ? 'Pending' :
-            claim.status === 'MoreInfoRequested' ? 'Pending' :
-            claim.status === 'PendingApproval' ? 'Pending' :
-            claim.status === 'Approved' ? 'Approved' :
-            claim.status === 'Rejected' ? 'Rejected' :
-            claim.status === 'Paid' ? 'Paid' : 'Pending'
-  }));
+  // Get recent claims for hospital - using same claim IDs as insurer
+  const recentClaims = [
+    {
+      id: 'CLM-8921',
+      patientName: 'John Doe',
+      cnic: '42401-1234567-8',
+      amount: '$1,250',
+      date: '2025-10-06',
+      status: 'Pending'
+    },
+    {
+      id: 'CLM-8920',
+      patientName: 'Mary Johnson',
+      cnic: '42401-2345678-9',
+      amount: '$450',
+      date: '2025-10-06',
+      status: 'Under Review'
+    },
+    {
+      id: 'CLM-8919',
+      patientName: 'Robert Smith',
+      cnic: '42401-3456789-0',
+      amount: '$5,200',
+      date: '2025-10-05',
+      status: 'Approved'
+    },
+    {
+      id: 'CLM-8918',
+      patientName: 'Emily Davis',
+      cnic: '42401-4567890-1',
+      amount: '$820',
+      date: '2025-10-05',
+      status: 'Approved'
+    }
+  ];
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -216,29 +237,45 @@ export default function HospitalDashboardPage() {
                     <th className="hidden sm:table-cell px-3 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
                     <th className="px-3 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                     <th className="px-3 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    <th className="px-3 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Message</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {recentClaims.map((claim) => (
-                    <tr key={claim.id} className="hover:bg-gray-50">
-                      <td className="px-3 lg:px-6 py-4 whitespace-nowrap text-xs lg:text-sm font-medium text-gray-900">{claim.id}</td>
-                      <td className="px-3 lg:px-6 py-4 whitespace-nowrap text-xs lg:text-sm text-gray-900">{claim.patientName}</td>
-                      <td className="hidden md:table-cell px-3 lg:px-6 py-4 whitespace-nowrap text-xs lg:text-sm text-gray-500">{claim.cnic}</td>
-                      <td className="px-3 lg:px-6 py-4 whitespace-nowrap text-xs lg:text-sm text-gray-900">{claim.amount}</td>
-                      <td className="hidden sm:table-cell px-3 lg:px-6 py-4 whitespace-nowrap text-xs lg:text-sm text-gray-500">{claim.date}</td>
-                      <td className="px-3 lg:px-6 py-4 whitespace-nowrap text-xs lg:text-sm">
-                        <ClaimStatusBadge status={claim.status === 'Pending' ? 'Pending' : (claim.status as 'Approved' | 'Rejected' | 'Under Review' | 'Paid' | 'Submitted' | 'DocumentsUploaded' | 'MoreInfoRequested' | 'PendingApproval')} />
-                      </td>
-                      <td className="px-3 lg:px-6 py-4 whitespace-nowrap text-xs lg:text-sm font-medium">
-                        <div className="flex space-x-1 lg:space-x-2">
-                          <button className="text-gray-500 hover:text-gray-700">View</button>
-                          {claim.status === 'Pending' && (
-                            <button className="text-blue-600 hover:text-blue-800">Edit</button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                  {recentClaims.map((claim) => {
+                    const hasAlert = hasUnreadAlert(claim.id, 'hospital');
+                    return (
+                      <tr
+                        key={claim.id}
+                        className={`hover:bg-gray-50 ${hasAlert ? 'border-l-4 border-red-500' : ''}`}
+                      >
+                        <td className="px-3 lg:px-6 py-4 whitespace-nowrap text-xs lg:text-sm font-medium text-gray-900">{claim.id}</td>
+                        <td className="px-3 lg:px-6 py-4 whitespace-nowrap text-xs lg:text-sm text-gray-900">{claim.patientName}</td>
+                        <td className="hidden md:table-cell px-3 lg:px-6 py-4 whitespace-nowrap text-xs lg:text-sm text-gray-500">{claim.cnic}</td>
+                        <td className="px-3 lg:px-6 py-4 whitespace-nowrap text-xs lg:text-sm text-gray-900">{claim.amount}</td>
+                        <td className="hidden sm:table-cell px-3 lg:px-6 py-4 whitespace-nowrap text-xs lg:text-sm text-gray-500">{claim.date}</td>
+                        <td className="px-3 lg:px-6 py-4 whitespace-nowrap text-xs lg:text-sm">
+                          <ClaimStatusBadge status={
+                            claim.status === 'Pending' ? 'Pending' :
+                            claim.status === 'Under Review' ? 'Under Review' :
+                            claim.status === 'Approved' ? 'Approved' :
+                            claim.status === 'Rejected' ? 'Rejected' :
+                            'Pending'
+                          } />
+                        </td>
+                        <td className="px-3 lg:px-6 py-4 whitespace-nowrap text-xs lg:text-sm font-medium">
+                          <div className="flex space-x-1 lg:space-x-2">
+                            <button className="text-gray-500 hover:text-gray-700">View</button>
+                            {claim.status === 'Pending' && (
+                              <button className="text-blue-600 hover:text-blue-800">Edit</button>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-3 lg:px-6 py-4 whitespace-nowrap text-xs lg:text-sm font-medium">
+                          <MessageButton claimId={claim.id} userRole="hospital" />
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
