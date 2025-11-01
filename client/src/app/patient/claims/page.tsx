@@ -126,7 +126,7 @@ export default function PatientClaimsPage() {
         documents: []
       });
       
-    } catch (error) {
+    } catch {
       alert('Failed to submit claim. Please try again.');
     } finally {
       setIsSubmitting(false);

@@ -12,7 +12,9 @@ export const AuthContext = createContext<AuthContextValue | null>(null);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session>(getInitialSession());
 
-  const signIn = useCallback(async (email: string, _password: string) => {
+  const signIn = useCallback(async (email: string, password: string) => {
+    // password parameter reserved for future backend integration
+    void password;
     // Placeholder: integrate with backend auth later
     const mockUser: SessionUser = {
       id: "u_1",
