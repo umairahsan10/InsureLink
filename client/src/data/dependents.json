@@ -1,0 +1,55 @@
+[
+  {
+    "id": "dep-001",
+    "employeeId": "emp-001",
+    "employeeName": "Ali Raza",
+    "corporateId": "corp-001",
+    "name": "Sarah Raza",
+    "relationship": "Spouse",
+    "dateOfBirth": "1995-03-15",
+    "gender": "Female",
+    "cnic": "42101-1234567-8",
+    "phoneNumber": "+92-300-1234567",
+    "status": "Approved",
+    "requestedAt": "2025-01-01T10:00:00Z",
+    "reviewedAt": "2025-01-02T14:30:00Z",
+    "reviewedBy": "HR Manager",
+    "documents": ["cnic-copy.pdf", "marriage-certificate.pdf"],
+    "coverageStartDate": "2025-01-15"
+  },
+  {
+    "id": "dep-002",
+    "employeeId": "emp-001",
+    "employeeName": "Ali Raza",
+    "corporateId": "corp-001",
+    "name": "Usman Ali",
+    "relationship": "Son",
+    "dateOfBirth": "2017-05-20",
+    "gender": "Male",
+    "cnic": "42101-7654321-2",
+    "phoneNumber": "",
+    "status": "Approved",
+    "requestedAt": "2025-01-01T10:00:00Z",
+    "reviewedAt": "2025-01-02T14:30:00Z",
+    "reviewedBy": "HR Manager",
+    "documents": ["cnic-copy.pdf", "birth-certificate.pdf"],
+    "coverageStartDate": "2025-01-15"
+  },
+  {
+    "id": "dep-003",
+    "employeeId": "emp-001",
+    "employeeName": "Ali Raza",
+    "corporateId": "corp-001",
+    "name": "Ahmed Raza",
+    "relationship": "Son",
+    "dateOfBirth": "2020-08-10",
+    "gender": "Male",
+    "cnic": "",
+    "phoneNumber": "",
+    "status": "Pending",
+    "requestedAt": "2025-11-01T10:30:00Z",
+    "documents": ["birth-certificate.pdf"],
+    "coverageStartDate": "2025-11-15"
+  }
+]
+

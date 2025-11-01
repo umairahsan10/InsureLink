@@ -1,4 +1,46 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { getDependentsByEmployee, getDependentsFromStorage } from '@/utils/dependentHelpers';
+import { Dependent } from '@/types/dependent';
+import DependentsList from '@/components/patient/DependentsList';
+import AddDependentModal from '@/components/patient/AddDependentModal';
+import dependentsData from '@/data/dependents.json';
+
 export default function PatientProfilePage() {
+  const [dependents, setDependents] = useState<Dependent[]>([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  
+  // Mock current user - in real app, this would come from auth context
+  const currentEmployee = {
+    id: 'emp-001',
+    name: 'Ali Raza',
+    corporateId: 'corp-001'
+  };
+
+  // Initialize localStorage with seed data on first load
+  useEffect(() => {
+    const existing = getDependentsFromStorage();
+    if (existing.length === 0) {
+      localStorage.setItem('insurelink_dependents', JSON.stringify(dependentsData));
+      setDependents(dependentsData as Dependent[]);
+    } else {
+      setDependents(existing);
+    }
+  }, []);
+
+  // Load dependents for current employee
+  useEffect(() => {
+    const employeeDependents = getDependentsByEmployee(currentEmployee.id);
+    setDependents(employeeDependents);
+  }, [isModalOpen]);
+
+  const handleSuccess = () => {
+    setIsModalOpen(false);
+    const employeeDependents = getDependentsByEmployee(currentEmployee.id);
+    setDependents(employeeDependents);
+  };
+
   return (
     <div className="p-4 sm:p-6 bg-gray-50 min-h-screen">
       <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-4 sm:mb-6">My Profile</h1>
@@ -67,6 +109,24 @@ export default function PatientProfilePage() {
           </div>
         </div>
       </div>
+
+      {/* Dependents Section */}
+      <div className="mt-6">
+        <DependentsList 
+          dependents={dependents} 
+          onRequestAdd={() => setIsModalOpen(true)} 
+        />
+      </div>
+
+      {/* Add Dependent Modal */}
+      <AddDependentModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        employeeId={currentEmployee.id}
+        employeeName={currentEmployee.name}
+        corporateId={currentEmployee.corporateId}
+        onSuccess={handleSuccess}
+      />
     </div>
   );
 }
