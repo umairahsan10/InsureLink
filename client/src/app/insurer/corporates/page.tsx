@@ -1,8 +1,25 @@
 'use client';
 
+import { useState } from 'react';
 import DashboardLayout from '@/components/layouts/DashboardLayout';
+import CorporateEmployeesModal from '@/components/insurer/CorporateEmployeesModal';
+import corporatesData from '@/data/corporates.json';
 
 export default function InsurerCorporatesPage() {
+  const [selectedCorporate, setSelectedCorporate] = useState<{id: string, name: string} | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
+
+  const handleViewClick = (corporateId: string, corporateName: string) => {
+    setSelectedCorporate({ id: corporateId, name: corporateName });
+    setIsModalOpen(true);
+    setOpenDropdownId(null);
+  };
+
+  const toggleDropdown = (corporateId: string) => {
+    setOpenDropdownId(openDropdownId === corporateId ? null : corporateId);
+  };
+
   return (
     <DashboardLayout userRole="insurer" userName="HealthGuard Insurance">
       <div className="p-8 bg-gray-50 min-h-screen">
@@ -70,28 +87,50 @@ export default function InsurerCorporatesPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {[
-                { name: 'Acme Corporation', industry: 'Technology', employees: 250, plan: 'Comprehensive', premium: '$45K', status: 'Active' },
-                { name: 'TechStart Inc.', industry: 'Technology', employees: 120, plan: 'Premium', premium: '$38K', status: 'Active' },
-                { name: 'Finance Global LLC', industry: 'Finance', employees: 480, plan: 'Premium', premium: '$125K', status: 'Active' },
-                { name: 'HealthCare Solutions', industry: 'Healthcare', employees: 340, plan: 'Comprehensive', premium: '$68K', status: 'Active' },
-                { name: 'Manufacturing Co.', industry: 'Manufacturing', employees: 580, plan: 'Basic', premium: '$85K', status: 'Renewal Due' },
-              ].map((corporate) => (
-                <tr key={corporate.name} className="hover:bg-gray-50">
+              {corporatesData.map((corporate) => (
+                <tr key={corporate.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 text-sm font-medium text-gray-900">{corporate.name}</td>
-                  <td className="px-6 py-4 text-sm text-gray-500">{corporate.industry}</td>
-                  <td className="px-6 py-4 text-sm text-gray-900">{corporate.employees}</td>
-                  <td className="px-6 py-4 text-sm text-gray-500">{corporate.plan}</td>
-                  <td className="px-6 py-4 text-sm text-gray-900">{corporate.premium}</td>
+                  <td className="px-6 py-4 text-sm text-gray-500">Technology</td>
+                  <td className="px-6 py-4 text-sm text-gray-900">{corporate.totalEmployees}</td>
+                  <td className="px-6 py-4 text-sm text-gray-500">Comprehensive</td>
+                  <td className="px-6 py-4 text-sm text-gray-900">$45K</td>
                   <td className="px-6 py-4 text-sm">
-                    <span className={`inline-block px-2 py-1 text-xs rounded-full ${
-                      corporate.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800'
-                    }`}>
-                      {corporate.status}
+                    <span className="inline-block px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">
+                      Active
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-sm">
-                    <button className="text-blue-600 hover:text-blue-800">View</button>
+                  <td className="px-6 py-4 text-sm relative">
+                    <div className="relative">
+                      <button 
+                        onClick={() => toggleDropdown(corporate.id)}
+                        className="text-blue-600 hover:text-blue-800 flex items-center"
+                      >
+                        Actions
+                        <svg className="ml-1 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </button>
+                      
+                      {openDropdownId === corporate.id && (
+                        <>
+                          <div 
+                            className="fixed inset-0 z-10" 
+                            onClick={() => setOpenDropdownId(null)}
+                          ></div>
+                          <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-20 border border-gray-200">
+                            <button
+                              onClick={() => handleViewClick(corporate.id, corporate.name)}
+                              className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+                            >
+                              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                              </svg>
+                              View Employees
+                            </button>
+                          </div>
+                        </>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -100,6 +139,19 @@ export default function InsurerCorporatesPage() {
         </div>
       </div>
       </div>
+
+      {/* Corporate Employees Modal */}
+      {selectedCorporate && (
+        <CorporateEmployeesModal
+          isOpen={isModalOpen}
+          onClose={() => {
+            setIsModalOpen(false);
+            setSelectedCorporate(null);
+          }}
+          corporateId={selectedCorporate.id}
+          corporateName={selectedCorporate.name}
+        />
+      )}
     </DashboardLayout>
   );
 }
