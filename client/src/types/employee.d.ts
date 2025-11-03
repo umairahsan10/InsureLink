@@ -10,6 +10,8 @@ export interface Employee {
   coverageEnd: string;
   designation: string;
   department: string;
+  importStatus?: 'valid' | 'invalid' | 'duplicate';
+  importErrors?: string[];
 }
 
 export interface EmployeeFormData {

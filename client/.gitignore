@@ -39,3 +39,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Office temporary lock files and local test artifacts
+~$*.xls*
+*.tmp.xlsx
+*.tmp.xls
+public/test-data/~$*.xls*
