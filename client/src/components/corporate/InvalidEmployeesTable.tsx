@@ -22,7 +22,7 @@ export default function InvalidEmployeesTable({ invalidEmployees, existingEmploy
       name: emp.name,
       email: emp.email,
       mobile: emp.mobile,
-      cnic: (emp as any).cnic || '',
+      cnic: '',
       planId: emp.planId,
       designation: emp.designation || '',
       department: emp.department || '',

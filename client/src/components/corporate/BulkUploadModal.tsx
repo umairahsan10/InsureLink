@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { parseFile } from '@/utils/fileParser';
-import { mapHeaders, createManualColumnMap, getFieldDisplayName, ColumnMap, getRowValue } from '@/utils/columnMapper';
+import { mapHeaders, createManualColumnMap, getFieldDisplayName, ColumnMap } from '@/utils/columnMapper';
 import { validateEmployeeRow, parseEmployeeRow, ParsedEmployee, toEmployee, ValidationResult } from '@/utils/employeeValidator';
 import { Employee } from '@/types/employee';
 
@@ -142,18 +142,19 @@ export default function BulkUploadModal({
     const importBatchEmployees: ParsedEmployee[] = [];
 
     // First pass: parse all employees
-    rows.forEach((row, index) => {
+    rows.forEach((row) => {
       const employee = parseEmployeeRow(row, map);
       importBatchEmployees.push(employee);
     });
 
-    // Second pass: validate with duplicate detection
+    // Second pass: validate with duplicate detection (exclude self by index)
     rows.forEach((row, index) => {
       const validation = validateEmployeeRow(
         row,
         map,
         existingEmployees,
-        importBatchEmployees
+        importBatchEmployees,
+        index
       );
       validations.push({
         rowIndex: index + 2, // +2 because row 1 is header, data starts at row 2

@@ -32,7 +32,15 @@ export async function parseFile(file: File): Promise<string[][]> {
         }
 
         // Parse the file using xlsx
-        const workbook = XLSX.read(data, { type: 'array', raw: false });
+        // Use appropriate type based on source
+        const workbook = XLSX.read(
+          data as ArrayBuffer | string,
+          {
+            // For CSV we read as text; for Excel we read as array buffer
+            type: fileExtension === 'csv' ? 'string' : 'array',
+            raw: false,
+          }
+        );
         
         // Get the first sheet (most common use case)
         const firstSheetName = workbook.SheetNames[0];

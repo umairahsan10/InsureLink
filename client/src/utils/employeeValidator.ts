@@ -56,18 +56,78 @@ function isValidCNIC(cnic: string): boolean {
 /**
  * Check if date is valid format (YYYY-MM-DD)
  */
+// Try to normalize a variety of common date formats to ISO (YYYY-MM-DD)
+function normalizeDateString(input: string): string | null {
+  if (!input) return null;
+  const str = String(input).trim();
+
+  // Already ISO YYYY-MM-DD
+  const iso = /^\d{4}-\d{2}-\d{2}$/;
+  if (iso.test(str)) return str;
+
+  // DD/MM/YYYY or D/M/YYYY
+  const dmy = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/;
+  const dmyMatch = str.match(dmy);
+  if (dmyMatch) {
+    const d = dmyMatch[1].padStart(2, '0');
+    const m = dmyMatch[2].padStart(2, '0');
+    const y = dmyMatch[3];
+    const isoCandidate = `${y}-${m}-${d}`;
+    const dt = new Date(isoCandidate);
+    if (!isNaN(dt.getTime())) return isoCandidate;
+  }
+
+  // MM/DD/YYYY or M/D/YYYY
+  const mdy = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/;
+  const mdyMatch = str.match(mdy);
+  if (mdyMatch) {
+    const m = mdyMatch[1].padStart(2, '0');
+    const d = mdyMatch[2].padStart(2, '0');
+    const y = mdyMatch[3];
+    const isoCandidate = `${y}-${m}-${d}`;
+    const dt = new Date(isoCandidate);
+    if (!isNaN(dt.getTime())) return isoCandidate;
+  }
+
+  // Excel serialized date number
+  if (/^\d+$/.test(str)) {
+    const serial = parseInt(str, 10);
+    const excelEpoch = new Date(Date.UTC(1899, 11, 30));
+    const ms = serial * 24 * 60 * 60 * 1000;
+    const dt = new Date(excelEpoch.getTime() + ms);
+    if (!isNaN(dt.getTime())) {
+      const y = dt.getUTCFullYear();
+      const m = String(dt.getUTCMonth() + 1).padStart(2, '0');
+      const d = String(dt.getUTCDate()).padStart(2, '0');
+      return `${y}-${m}-${d}`;
+    }
+  }
+
+  // Last resort: Date.parse on known patterns
+  const parsed = new Date(str);
+  if (!isNaN(parsed.getTime())) {
+    const y = parsed.getFullYear();
+    const m = String(parsed.getMonth() + 1).padStart(2, '0');
+    const d = String(parsed.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }
+
+  return null;
+}
+
 function isValidDate(dateStr: string): boolean {
-  if (!dateStr) return false;
-  const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-  if (!dateRegex.test(dateStr)) return false;
-  const date = new Date(dateStr);
-  return !isNaN(date.getTime());
+  return normalizeDateString(dateStr) !== null;
 }
 
 /**
  * Parse a row into an employee object using column map
  */
 export function parseEmployeeRow(row: string[], columnMap: ColumnMap): ParsedEmployee {
+  const coverageStartRaw = getRowValue(row, columnMap.coverageStart);
+  const coverageEndRaw = getRowValue(row, columnMap.coverageEnd);
+  const normalizedStart = normalizeDateString(coverageStartRaw) || coverageStartRaw;
+  const normalizedEnd = normalizeDateString(coverageEndRaw) || coverageEndRaw;
+
   return {
     employeeNumber: getRowValue(row, columnMap.employeeNumber),
     name: getRowValue(row, columnMap.fullName),
@@ -77,8 +137,8 @@ export function parseEmployeeRow(row: string[], columnMap: ColumnMap): ParsedEmp
     planId: getRowValue(row, columnMap.planId),
     designation: getRowValue(row, columnMap.designation) || '',
     department: getRowValue(row, columnMap.department) || '',
-    coverageStart: getRowValue(row, columnMap.coverageStart) || '2025-01-01',
-    coverageEnd: getRowValue(row, columnMap.coverageEnd) || '2025-12-31',
+    coverageStart: normalizedStart || '2025-01-01',
+    coverageEnd: normalizedEnd || '2025-12-31',
   };
 }
 
@@ -93,7 +153,8 @@ export function validateEmployeeRow(
   row: string[],
   columnMap: ColumnMap,
   existingEmployees: Employee[],
-  importBatchEmployees: ParsedEmployee[] = []
+  importBatchEmployees: ParsedEmployee[] = [],
+  currentIndex?: number
 ): ValidationResult {
   const errors: string[] = [];
   const warnings: string[] = [];
@@ -162,23 +223,21 @@ export function validateEmployeeRow(
     }
   }
 
-  // Duplicate detection - check against current import batch
+  // Duplicate detection - check against current import batch (exclude current index)
   if (employee.employeeNumber.trim()) {
-    const batchDuplicate = importBatchEmployees.find(
-      emp => emp.employeeNumber.toLowerCase() === employee.employeeNumber.toLowerCase() &&
-             emp !== employee // Don't compare with self
+    const hasBatchDuplicate = importBatchEmployees.some((emp, idx) =>
+      idx !== currentIndex && emp.employeeNumber.toLowerCase() === employee.employeeNumber.toLowerCase()
     );
-    if (batchDuplicate) {
+    if (hasBatchDuplicate) {
       errors.push('Duplicate Employee Number in upload file');
     }
   }
 
   if (employee.email.trim()) {
-    const batchDuplicateEmail = importBatchEmployees.find(
-      emp => emp.email.toLowerCase() === employee.email.toLowerCase() &&
-             emp !== employee
+    const hasBatchDuplicateEmail = importBatchEmployees.some((emp, idx) =>
+      idx !== currentIndex && emp.email.toLowerCase() === employee.email.toLowerCase()
     );
-    if (batchDuplicateEmail) {
+    if (hasBatchDuplicateEmail) {
       errors.push('Duplicate Email in upload file');
     }
   }
