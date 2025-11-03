@@ -1,0 +1,13 @@
+Emp No,Employee Name,Email Address,Phone Number,CNIC Number,Plan Code,Job Title,Dept,Start Date,End Date
+E-2001,Valid User,valid.user@acme.com,+92-300-1234567,12345-1234567-1,plan-acme-gold-2025,Engineer,Engineering,2025-01-01,2025-12-31
+E-2002,Missing CNIC,missing.cnic@acme.com,+92-300-1234567,,plan-acme-gold-2025,Engineer,Engineering,2025-01-01,2025-12-31
+E-2003,Invalid Email,invalid-email,03XX-1234567,12345-1234567-1,plan-acme-gold-2025,Engineer,Engineering,2025-01-01,2025-12-31
+E-2004,Invalid Mobile,valid.mail@acme.com,0312-12345,12345-1234567-1,plan-acme-gold-2025,Engineer,Engineering,2025-01-01,2025-12-31
+E-2005,Invalid CNIC,valid.mail2@acme.com,+92-301-7654321,12341-1223212-2,plan-acme-gold-2025,Engineer,Engineering,2025-01-01,2025-12-31
+E-2006,Duplicate EmpNo A,dup.emp1@acme.com,03XX-7654321,12345-1234567-2,plan-acme-gold-2025,Engineer,Engineering,2025-01-01,2025-12-31
+E-2006,Duplicate EmpNo B,dup.emp2@acme.com,+92-302-1111111,12345-1234567-3,plan-acme-gold-2025,Engineer,Engineering,2025-01-01,2025-12-31
+E-2007,Duplicate Email A,dup.email@acme.com,+92-303-2222222,12345-1234567-4,plan-acme-gold-2025,Engineer,Engineering,2025-01-01,2025-12-31
+E-2008,Duplicate Email B,dup.email@acme.com,03XX-3333333,12345-1234567-5,plan-acme-gold-2025,Engineer,Engineering,2025-01-01,2025-12-31
+E-2009,Invalid Dept,invalid.dept@acme.com,+92-304-4444444,12345-1234567-6,plan-acme-gold-2025,Engineer,UnknownDept,2025-01-01,2025-12-31
+E-2010,Missing Plan,missing.plan@acme.com,+92-305-5555555,12345-1234567-7,,Engineer,Engineering,2025-01-01,2025-12-31
+E-2011,Optional Fields Empty,optional.empty@acme.com,03XX-6666666,12345-1234567-8,plan-acme-gold-2025,, ,2025-01-01,2025-12-31

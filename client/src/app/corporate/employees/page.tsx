@@ -10,6 +10,8 @@ import EmployeeDependentsModal from '@/components/corporate/EmployeeDependentsMo
 import { getDependentsFromStorage, getPendingDependentRequests, getDependentsByEmployee } from '@/utils/dependentHelpers';
 import { Dependent } from '@/types/dependent';
 import dependentsData from '@/data/dependents.json';
+import BulkUploadModal from '@/components/corporate/BulkUploadModal';
+import InvalidEmployeesTable from '@/components/corporate/InvalidEmployeesTable';
 
 export default function CorporateEmployeesPage() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -21,7 +23,11 @@ export default function CorporateEmployeesPage() {
   const [removedEmployeeMessage, setRemovedEmployeeMessage] = useState<string | null>(null);
   
   // Tab state
-  const [activeTab, setActiveTab] = useState<'employees' | 'requests'>('employees');
+  const [activeTab, setActiveTab] = useState<'employees' | 'requests' | 'invalid'>('employees');
+  
+  // Bulk upload state
+  const [isBulkUploadOpen, setIsBulkUploadOpen] = useState(false);
+  const [invalidEmployees, setInvalidEmployees] = useState<Employee[]>([]);
   
   // Dependent management state
   const [pendingRequests, setPendingRequests] = useState<Dependent[]>([]);
@@ -101,10 +107,7 @@ export default function CorporateEmployeesPage() {
             + Add Employee
           </button>
           <button 
-            onClick={() => {
-              // Redirect to bulk upload functionality - for now simple placeholder
-              alert('Bulk Upload coming soon! Use the + Add Employee button for now.');
-            }}
+            onClick={() => setIsBulkUploadOpen(true)}
             className="flex-1 sm:flex-initial bg-green-600 text-white px-3 py-2 md:px-4 md:py-2 rounded-lg hover:bg-green-700 transition-colors text-sm md:text-base"
           >
             📤 Bulk Upload
@@ -166,6 +169,21 @@ export default function CorporateEmployeesPage() {
             {pendingRequests.length > 0 && (
               <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
                 {pendingRequests.length}
+              </span>
+            )}
+          </button>
+          <button
+            onClick={() => setActiveTab('invalid')}
+            className={`py-4 px-1 border-b-2 font-medium text-sm relative ${
+              activeTab === 'invalid'
+                ? 'border-purple-600 text-purple-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            Invalid Employees
+            {invalidEmployees.length > 0 && (
+              <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                {invalidEmployees.length}
               </span>
             )}
           </button>
@@ -274,7 +292,7 @@ export default function CorporateEmployeesPage() {
               </table>
             </div>
           </>
-        ) : (
+        ) : activeTab === 'requests' ? (
           <div className="p-4">
             <DependentRequestsTable
               requests={pendingRequests}
@@ -283,6 +301,35 @@ export default function CorporateEmployeesPage() {
                 setIsReviewModalOpen(true);
               }}
             />
+          </div>
+        ) : (
+          <div className="p-4">
+            {invalidEmployees.length === 0 ? (
+              <div className="text-center py-12">
+                <p className="text-gray-500">No invalid employees. All imported employees are valid.</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                  <p className="text-sm text-yellow-800">
+                    <strong>{invalidEmployees.length}</strong> employee(s) were imported with validation errors. 
+                    Please review and fix them below.
+                  </p>
+                </div>
+                <InvalidEmployeesTable
+                  invalidEmployees={invalidEmployees}
+                  existingEmployees={employees}
+                  onResolve={(resolved) => {
+                    // move to valid list
+                    setEmployees(prev => [...prev, resolved]);
+                    setInvalidEmployees(prev => prev.filter(e => e.id !== resolved.id));
+                  }}
+                  onUpdateInvalid={(updated) => {
+                    setInvalidEmployees(prev => prev.map(e => e.id === updated.id ? updated : e));
+                  }}
+                />
+              </div>
+            )}
           </div>
         )}
         
@@ -332,6 +379,28 @@ export default function CorporateEmployeesPage() {
           </div>
         )}
       </div>
+
+      {/* Bulk Upload Modal */}
+      <BulkUploadModal
+        isOpen={isBulkUploadOpen}
+        onClose={() => setIsBulkUploadOpen(false)}
+        existingEmployees={employees}
+        onImport={(validEmployees, invalidEmployeesList) => {
+          // Add valid employees to main list
+          setEmployees(prev => [...prev, ...validEmployees]);
+          
+          // Store invalid employees separately
+          setInvalidEmployees(prev => [...prev, ...invalidEmployeesList]);
+          
+          // Show success message
+          alert(`${validEmployees.length} employees imported successfully. ${invalidEmployeesList.length} rows skipped (see Invalid Employees tab).`);
+          
+          // Switch to invalid tab if there are invalid employees
+          if (invalidEmployeesList.length > 0) {
+            setActiveTab('invalid');
+          }
+        }}
+      />
 
       {/* Add Employee Modal */}
       <AddEmployeeModal
