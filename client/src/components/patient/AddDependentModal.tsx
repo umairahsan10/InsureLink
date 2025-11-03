@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { DependentFormData, Relationship, Gender } from '@/types/dependent';
+import { DependentFormData } from '@/types/dependent';
 import { addDependentRequest, generateDependentId, calculateAge } from '@/utils/dependentHelpers';
 
 interface AddDependentModalProps {
@@ -187,7 +187,7 @@ export default function AddDependentModal({
       });
       
       onClose();
-    } catch (error) {
+    } catch {
       alert('Failed to submit request. Please try again.');
     } finally {
       setIsSubmitting(false);

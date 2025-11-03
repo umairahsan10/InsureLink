@@ -33,7 +33,7 @@ export default function PatientProfilePage() {
   useEffect(() => {
     const employeeDependents = getDependentsByEmployee(currentEmployee.id);
     setDependents(employeeDependents);
-  }, [isModalOpen]);
+  }, [isModalOpen, currentEmployee.id]);
 
   const handleSuccess = () => {
     setIsModalOpen(false);

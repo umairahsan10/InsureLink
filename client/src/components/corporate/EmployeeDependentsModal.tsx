@@ -34,7 +34,7 @@ export default function EmployeeDependentsModal({
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-xl font-bold text-gray-900">
-                {employeeName}'s Dependents
+                {employeeName}&apos;s Dependents
               </h2>
               <p className="text-sm text-gray-600 mt-1">
                 {dependents.length} {dependents.length === 1 ? 'dependent' : 'dependents'} registered

@@ -3,11 +3,11 @@
 import { useState, useMemo, useEffect } from 'react';
 import employeesData from '@/data/employees.json';
 import AddEmployeeModal from '@/components/corporate/AddEmployeeModal';
-import { EmployeeFormData } from '@/components/forms/EmployeeForm';
+import { Employee } from '@/types/employee';
 import DependentRequestsTable from '@/components/corporate/DependentRequestsTable';
 import DependentReviewModal from '@/components/corporate/DependentReviewModal';
 import EmployeeDependentsModal from '@/components/corporate/EmployeeDependentsModal';
-import { getDependentsFromStorage, getPendingDependentRequests, getDependentsByEmployee, getDependentCount } from '@/utils/dependentHelpers';
+import { getDependentsFromStorage, getPendingDependentRequests, getDependentsByEmployee } from '@/utils/dependentHelpers';
 import { Dependent } from '@/types/dependent';
 import dependentsData from '@/data/dependents.json';
 
@@ -16,8 +16,8 @@ export default function CorporateEmployeesPage() {
   const [selectedDepartment, setSelectedDepartment] = useState('All Departments');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isRemoveMode, setIsRemoveMode] = useState(false);
-  const [employees, setEmployees] = useState<EmployeeFormData[]>(employeesData);
-  const [employeeToRemove, setEmployeeToRemove] = useState<EmployeeFormData | null>(null);
+  const [employees, setEmployees] = useState<Employee[]>(employeesData as Employee[]);
+  const [employeeToRemove, setEmployeeToRemove] = useState<Employee | null>(null);
   const [removedEmployeeMessage, setRemovedEmployeeMessage] = useState<string | null>(null);
   
   // Tab state
@@ -85,7 +85,7 @@ export default function CorporateEmployeesPage() {
     setCurrentPage(1);
   }, [searchTerm, selectedDepartment, employees]);
 
-  const handleRemoveClick = (employee: EmployeeFormData) => {
+  const handleRemoveClick = (employee: Employee) => {
     setEmployeeToRemove(employee);
   };
 
@@ -222,7 +222,7 @@ export default function CorporateEmployeesPage() {
                 <tbody className="bg-white divide-y divide-gray-200">
                   {displayedEmployees.length > 0 ? (
                     displayedEmployees.map((employee) => {
-                      const employeeId = employee.id || employee.employeeNumber;
+                      const employeeId = employee.id;
                       const dependents = getDependentsByEmployee(employeeId);
                       const dependentCount = dependents.length;
                       
@@ -338,7 +338,15 @@ export default function CorporateEmployeesPage() {
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
         onAddEmployee={(employeeData) => {
-          setEmployees(prev => [...prev, employeeData]);
+          // Generate ID for new employee
+          const newEmployee: Employee = {
+            ...employeeData,
+            id: `emp-${Date.now()}`,
+            coverageStart: '2025-01-01',
+            coverageEnd: '2025-12-31',
+            corporateId: 'corp-001'
+          };
+          setEmployees(prev => [...prev, newEmployee]);
           alert(`Employee ${employeeData.name} added successfully!`);
         }}
       />

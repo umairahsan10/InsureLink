@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import employeesData from '@/data/employees.json';
-import { getDependentsByEmployee, getApprovedDependents } from '@/utils/dependentHelpers';
+import { getApprovedDependents } from '@/utils/dependentHelpers';
 import EmployeeDependentsModal from '@/components/corporate/EmployeeDependentsModal';
 import { Dependent } from '@/types/dependent';
 
