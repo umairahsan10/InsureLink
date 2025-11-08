@@ -1,0 +1,39 @@
+[
+  {
+    "id": "corp-notif-001",
+    "title": "High Claim Spend Alert",
+    "message": "Claims submitted by Ahmed Khan have reached 90% of his annual limit. Review utilization with HR.",
+    "severity": "critical",
+    "category": "claims",
+    "timestamp": "2025-11-07T08:20:00Z",
+    "isRead": false
+  },
+  {
+    "id": "corp-notif-002",
+    "title": "Plan Renewal Reminder",
+    "message": "HealthGuard Insurance renewal meeting is pending. Finalize updated coverage tiers before 12 Nov.",
+    "severity": "warning",
+    "category": "policies",
+    "timestamp": "2025-11-06T17:05:00Z",
+    "isRead": false
+  },
+  {
+    "id": "corp-notif-003",
+    "title": "Pending Dependent Approvals",
+    "message": "Four dependent requests from Marketing remain unverified. Complete HR checks within 48 hours.",
+    "severity": "info",
+    "category": "dependents",
+    "timestamp": "2025-11-05T12:45:00Z",
+    "isRead": false
+  },
+  {
+    "id": "corp-notif-004",
+    "title": "Quarterly Audit Pending",
+    "message": "Coverage audit for Q4 is due this week. Export the claims summary and share with finance.",
+    "severity": "info",
+    "category": "compliance",
+    "timestamp": "2025-11-04T10:15:00Z",
+    "isRead": false
+  }
+]
+

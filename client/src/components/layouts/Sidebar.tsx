@@ -85,7 +85,6 @@ const menuItems: Record<string, MenuItem[]> = {
   ],
   corporate: [
     { name: 'Dashboard', href: '/corporate/dashboard', icon: <DashboardIcon /> },
-    { name: 'Claims', href: '/corporate/claims', icon: <ClaimsIcon /> },
     { name: 'Employees', href: '/corporate/employees', icon: <EmployeesIcon /> },
     { name: 'Plans', href: '/corporate/plans', icon: <PlansIcon /> },
     { name: 'Profile', href: '/corporate/profile', icon: <ProfileIcon /> },
