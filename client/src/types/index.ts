@@ -9,3 +9,4 @@ export * from './insurer';
 export * from './analytics';
 export * from './chat';
 export * from './transaction';
+export * from './notification';

@@ -1,9 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/layouts/DashboardLayout';
 import MessageButton from '@/components/messaging/MessageButton';
 import { useClaimsMessaging } from '@/contexts/ClaimsMessagingContext';
+import notificationsData from '@/data/insurerNotifications.json';
+import { AlertNotification } from '@/types';
 
 interface Claim {
   id: string;
@@ -18,6 +21,11 @@ interface Claim {
 
 export default function InsurerDashboardPage() {
   const { hasUnreadAlert } = useClaimsMessaging();
+  const insurerNotifications = useMemo(
+    () => notificationsData as AlertNotification[],
+    []
+  );
+  const router = useRouter();
   const [claims] = useState<Claim[]>([
     {
       id: 'CLM-8921',
@@ -88,7 +96,16 @@ export default function InsurerDashboardPage() {
   };
 
   return (
-    <DashboardLayout userRole="insurer" userName="HealthGuard Insurance">
+    <DashboardLayout
+      userRole="insurer"
+      userName="HealthGuard Insurance"
+      notifications={insurerNotifications}
+      onNotificationSelect={(notification) => {
+        if (notification.category === 'messaging') {
+          router.push('/insurer/claims');
+        }
+      }}
+    >
       <div className="p-4 md:p-8 bg-gray-50 min-h-screen">
         {/* Header */}
         <div className="mb-6 md:mb-8">

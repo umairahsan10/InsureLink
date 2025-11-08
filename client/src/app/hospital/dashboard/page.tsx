@@ -1,10 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import ClaimStatusBadge from '@/components/claims/ClaimStatusBadge';
 import HospitalSidebar from '@/components/hospital/HospitalSidebar';
 import MessageButton from '@/components/messaging/MessageButton';
+import NotificationPanel from '@/components/notifications/NotificationPanel';
 import { useClaimsMessaging } from '@/contexts/ClaimsMessagingContext';
+import notificationsData from '@/data/hospitalNotifications.json';
+import { AlertNotification } from '@/types';
 
 // Import data
 import analyticsData from '@/data/analytics.json';
@@ -12,11 +16,43 @@ import analyticsData from '@/data/analytics.json';
 export default function HospitalDashboardPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [cnicNumber, setCnicNumber] = useState('');
+  const [isPanelOpen, setIsPanelOpen] = useState(false);
+  const [notifications, setNotifications] = useState<AlertNotification[]>(
+    notificationsData as AlertNotification[]
+  );
   const { hasUnreadAlert } = useClaimsMessaging();
+  const unreadCount = useMemo(
+    () => notifications.filter((notification) => !notification.isRead).length,
+    [notifications]
+  );
 
   const handleVerifyPatient = () => {
     // Handle patient verification logic
     console.log('Verifying patient with CNIC:', cnicNumber);
+  };
+
+  const router = useRouter();
+
+  const handleTogglePanel = () => {
+    if (!isPanelOpen) {
+      setNotifications((current) =>
+        current.map((notification) =>
+          notification.isRead ? notification : { ...notification, isRead: true }
+        )
+      );
+    }
+    setIsPanelOpen((prev) => !prev);
+  };
+
+  const handleDismissNotification = (id: string) => {
+    setNotifications((current) => current.filter((notification) => notification.id !== id));
+  };
+
+  const handleSelectNotification = (notification: AlertNotification) => {
+    if (notification.category === 'messaging') {
+      router.push('/hospital/claims');
+      setIsPanelOpen(false);
+    }
   };
 
   // Calculate hospital-specific statistics
@@ -91,10 +127,34 @@ export default function HospitalDashboardPage() {
             
             <div className="flex items-center space-x-2 lg:space-x-4">
               <div className="relative">
-                <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-5 5v-5zM4.5 19.5a3 3 0 01-3-3V5a3 3 0 013-3h4a3 3 0 013 3v1" />
-                </svg>
-                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">3</span>
+                <button
+                  type="button"
+                  onClick={handleTogglePanel}
+                  className="relative p-2 rounded-full hover:bg-gray-100 transition-colors"
+                  aria-label="Toggle notifications"
+                >
+                  <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M15 17h5l-5 5v-5zM4.5 19.5a3 3 0 01-3-3V5a3 3 0 013-3h4a3 3 0 013 3v1"
+                    />
+                  </svg>
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-xs font-semibold rounded-full w-5 h-5 flex items-center justify-center">
+                      {unreadCount}
+                    </span>
+                  )}
+                </button>
+
+                <NotificationPanel
+                  notifications={notifications}
+                  isOpen={isPanelOpen}
+                  onDismiss={handleDismissNotification}
+                  onClose={() => setIsPanelOpen(false)}
+                  onSelect={handleSelectNotification}
+                />
               </div>
             </div>
           </div>

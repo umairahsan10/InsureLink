@@ -1,0 +1,39 @@
+[
+  {
+    "id": "notif-001",
+    "title": "High-Value Claim Submitted",
+    "message": "Claim CLM-9021 exceeds the approval threshold by 35%. Immediate review required.",
+    "severity": "critical",
+    "category": "claims",
+    "timestamp": "2025-11-06T09:15:00Z",
+    "isRead": false
+  },
+  {
+    "id": "notif-002",
+    "title": "Policy Near Expiry",
+    "message": "Corporate policy for Horizon Labs expires in 5 days. Contact insurer to renew.",
+    "severity": "warning",
+    "category": "policies",
+    "timestamp": "2025-11-05T16:42:00Z",
+    "isRead": false
+  },
+  {
+    "id": "notif-003",
+    "title": "Pending Dependent Requests",
+    "message": "Three dependent coverage requests are awaiting hospital verification.",
+    "severity": "info",
+    "category": "dependents",
+    "timestamp": "2025-11-04T13:20:00Z",
+    "isRead": false
+  },
+  {
+    "id": "notif-004",
+    "title": "Unread Message",
+    "message": "You have an unread message from insurer support regarding claim CLM-8976.",
+    "severity": "info",
+    "category": "messaging",
+    "timestamp": "2025-11-03T08:05:00Z",
+    "isRead": true
+  }
+]
+

@@ -1,0 +1,39 @@
+[
+  {
+    "id": "ins-notif-001",
+    "title": "High-Value Claim Flagged",
+    "message": "Claim CLM-9104 from City General exceeds ₹750,000 and requires fraud review.",
+    "severity": "critical",
+    "category": "claims",
+    "timestamp": "2025-11-07T11:30:00Z",
+    "isRead": false
+  },
+  {
+    "id": "ins-notif-002",
+    "title": "Policy Renewal Pending",
+    "message": "Corporate policy for Skyline Logistics expires in 3 days. Awaiting rate confirmation.",
+    "severity": "warning",
+    "category": "policies",
+    "timestamp": "2025-11-06T18:45:00Z",
+    "isRead": false
+  },
+  {
+    "id": "ins-notif-003",
+    "title": "Dependent Verification Delay",
+    "message": "Five dependent additions from Horizon Labs remain unverified for over 48 hours.",
+    "severity": "info",
+    "category": "dependents",
+    "timestamp": "2025-11-05T09:10:00Z",
+    "isRead": false
+  },
+  {
+    "id": "ins-notif-004",
+    "title": "Unread Message",
+    "message": "New message from hospital billing regarding negotiated rates for claim CLM-9088.",
+    "severity": "info",
+    "category": "messaging",
+    "timestamp": "2025-11-04T14:05:00Z",
+    "isRead": true
+  }
+]
+
