@@ -22,7 +22,10 @@ interface Claim {
 export default function InsurerDashboardPage() {
   const { hasUnreadAlert } = useClaimsMessaging();
   const insurerNotifications = useMemo(
-    () => notificationsData as AlertNotification[],
+    () =>
+      (notificationsData as AlertNotification[]).map((notification) => ({
+        ...notification,
+      })),
     []
   );
   const router = useRouter();

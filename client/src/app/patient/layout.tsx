@@ -1,7 +1,10 @@
 'use client';
-import { ReactNode, useState } from 'react';
+import { ReactNode, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
+import NotificationPanel from '@/components/notifications/NotificationPanel';
+import notificationsData from '@/data/patientNotifications.json';
+import { AlertNotification } from '@/types';
 
 const navigation = [
   { name: 'Dashboard Overview', href: '/patient/dashboard', icon: '🏠' },
@@ -17,6 +20,15 @@ export default function PatientLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isPanelOpen, setIsPanelOpen] = useState(false);
+  const [notifications, setNotifications] = useState<AlertNotification[]>(
+    notificationsData as AlertNotification[]
+  );
+
+  const unreadCount = useMemo(
+    () => notifications.filter((notification) => !notification.isRead).length,
+    [notifications]
+  );
 
   const handleLogout = () => {
     // Clear auth token cookie
@@ -31,6 +43,30 @@ export default function PatientLayout({ children }: { children: ReactNode }) {
 
   const closeSidebar = () => {
     setSidebarOpen(false);
+  };
+
+  const handleTogglePanel = () => {
+    if (!isPanelOpen) {
+      setNotifications((current) =>
+        current.map((notification) =>
+          notification.isRead ? notification : { ...notification, isRead: true }
+        )
+      );
+    }
+    setIsPanelOpen((prev) => !prev);
+  };
+
+  const handleDismissNotification = (id: string) => {
+    setNotifications((current) => current.filter((notification) => notification.id !== id));
+  };
+
+  const handleSelectNotification = (notification: AlertNotification) => {
+    if (notification.category === 'claims') {
+      router.push('/patient/claims');
+    } else if (notification.category === 'benefits') {
+      router.push('/patient/profile');
+    }
+    setIsPanelOpen(false);
   };
 
   return (
@@ -113,9 +149,40 @@ export default function PatientLayout({ children }: { children: ReactNode }) {
             </div>
             
             <div className="flex items-center">
-              <button className="bg-blue-600 text-white px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium">
-                Patient
-              </button>
+              <div className="relative flex items-center space-x-2 sm:space-x-3">
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={handleTogglePanel}
+                    className="relative p-2 text-yellow-500 hover:text-yellow-600 rounded-full hover:bg-yellow-50 transition-colors"
+                    aria-label="Toggle notifications"
+                  >
+                    <span className="text-xl">🔔</span>
+                    {unreadCount > 0 && (
+                      <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-semibold rounded-full h-4 w-4 flex items-center justify-center">
+                        {unreadCount}
+                      </span>
+                    )}
+                  </button>
+
+                  <NotificationPanel
+                    notifications={notifications}
+                    isOpen={isPanelOpen}
+                    onDismiss={handleDismissNotification}
+                    onClose={() => setIsPanelOpen(false)}
+                    onSelect={handleSelectNotification}
+                  />
+                </div>
+                <div className="flex items-center space-x-2 sm:space-x-3">
+                  <div className="hidden sm:block text-right">
+                    <p className="text-sm font-medium text-gray-900">Ali Raza</p>
+                    <p className="text-xs text-gray-500">Patient</p>
+                  </div>
+                  <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-blue-600 text-white flex items-center justify-center font-semibold">
+                    A
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </header>
