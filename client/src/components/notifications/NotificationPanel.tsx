@@ -1,5 +1,5 @@
 import { AlertNotification, NotificationSeverity } from '@/types';
-import { Fragment } from 'react';
+import { Fragment, type ReactElement } from 'react';
 
 interface NotificationPanelProps {
   notifications: AlertNotification[];
@@ -11,7 +11,7 @@ interface NotificationPanelProps {
 
 const severityConfig: Record<
   NotificationSeverity,
-  { icon: JSX.Element; bannerClass: string; accentClass: string }
+  { icon: ReactElement; bannerClass: string; accentClass: string }
 > = {
   info: {
     icon: (
