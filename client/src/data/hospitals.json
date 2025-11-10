@@ -7,7 +7,12 @@
     "specialties": ["Emergency", "Cardiology", "Orthopedics", "General Surgery"],
     "contact": "+92-51-1234567",
     "address": "Main Boulevard, Sector F-7, Islamabad",
-    "acceptedPlans": ["plan-acme-gold-2025", "plan-acme-basic-2025", "plan-beta-silver-2025", "plan-beta-basic-2025", "plan-noor-gold-2025", "plan-noor-basic-2025"]
+    "acceptedPlans": ["plan-acme-gold-2025", "plan-acme-basic-2025", "plan-beta-silver-2025", "plan-beta-basic-2025", "plan-noor-gold-2025", "plan-noor-basic-2025"],
+    "lat": 24.8927751,
+    "lng": 67.0740719,
+    "locationHint": "Aga Khan University Hospital, Stadium Road, KDA Scheme 1 Extension, Gulshan-e-Iqbal Town, Gulshan District, Karachi Division, 75300, Pakistan",
+    "hasEmergency": false,
+    "is24Hours": false
   },
   {
     "id": "hosp-002",
@@ -17,7 +22,12 @@
     "specialties": ["Oncology", "Neurology", "Pediatrics", "Cardiology"],
     "contact": "+92-42-2345678",
     "address": "MM Alam Road, Gulberg, Lahore",
-    "acceptedPlans": ["plan-acme-gold-2025", "plan-acme-basic-2025", "plan-beta-silver-2025", "plan-beta-basic-2025", "plan-noor-gold-2025", "plan-noor-basic-2025"]
+    "acceptedPlans": ["plan-acme-gold-2025", "plan-acme-basic-2025", "plan-beta-silver-2025", "plan-beta-basic-2025", "plan-noor-gold-2025", "plan-noor-basic-2025"],
+    "lat": 24.8593607,
+    "lng": 67.0103185,
+    "locationHint": "Civil Hospital, Hospital Road, Ranchore Lines, Saddar Town, Karachi District, Karachi Division, Sindh, 75660, Pakistan",
+    "hasEmergency": true,
+    "is24Hours": true
   },
   {
     "id": "hosp-003",
@@ -27,7 +37,12 @@
     "specialties": ["Multi-specialty", "Advanced Surgery", "Cancer Treatment", "Maternity"],
     "contact": "+92-21-34930000",
     "address": "Stadium Road, Karachi",
-    "acceptedPlans": ["plan-acme-gold-2025", "plan-acme-basic-2025", "plan-beta-silver-2025", "plan-beta-basic-2025", "plan-noor-gold-2025", "plan-noor-basic-2025"]
+    "acceptedPlans": ["plan-acme-gold-2025", "plan-acme-basic-2025", "plan-beta-silver-2025", "plan-beta-basic-2025", "plan-noor-gold-2025", "plan-noor-basic-2025"],
+    "lat": 24.8485,
+    "lng": 67.0777758,
+    "locationHint": "Bismillah Bhukhari Hospital, Street 13, Azam Basti, Saddar Town, Karachi District, Karachi Division, 75400, Pakistan",
+    "hasEmergency": true,
+    "is24Hours": true
   },
   {
     "id": "hosp-004",
@@ -37,7 +52,12 @@
     "specialties": ["Emergency", "Surgery", "Internal Medicine", "Radiology"],
     "contact": "+92-42-99211101",
     "address": "Shahrah-e-Abbas, Lahore",
-    "acceptedPlans": ["plan-acme-gold-2025", "plan-acme-basic-2025", "plan-beta-silver-2025", "plan-beta-basic-2025", "plan-noor-gold-2025", "plan-noor-basic-2025"]
+    "acceptedPlans": ["plan-acme-gold-2025", "plan-acme-basic-2025", "plan-beta-silver-2025", "plan-beta-basic-2025", "plan-noor-gold-2025", "plan-noor-basic-2025"],
+    "lat": 24.814065,
+    "lng": 67.0232722,
+    "locationHint": "Infinity Eye Care Centre, Block 3, Service Road, Clifton Block 5, Saddar Town, Karachi District, Karachi Division, 75600, Pakistan",
+    "hasEmergency": false,
+    "is24Hours": false
   },
   {
     "id": "hosp-005",
@@ -47,7 +67,12 @@
     "specialties": ["Emergency Care", "Surgery", "Cardiology", "Orthopedics"],
     "contact": "+92-42-99203000",
     "address": "Allama Iqbal Road, Lahore",
-    "acceptedPlans": ["plan-acme-gold-2025", "plan-acme-basic-2025", "plan-beta-silver-2025", "plan-beta-basic-2025", "plan-noor-gold-2025", "plan-noor-basic-2025"]
+    "acceptedPlans": ["plan-acme-gold-2025", "plan-acme-basic-2025", "plan-beta-silver-2025", "plan-beta-basic-2025", "plan-noor-gold-2025", "plan-noor-basic-2025"],
+    "lat": 24.9072163,
+    "lng": 67.0441594,
+    "locationHint": "Shah Medical Center, Khayaban-e-Hakeem Ajmal, Liaquatabad, Super Market, Liaquatabad Town, Nazimabad District, Karachi Division, Sindh, 75900, Pakistan",
+    "hasEmergency": true,
+    "is24Hours": true
   },
   {
     "id": "hosp-006",
@@ -147,7 +172,12 @@
     "specialties": ["General Medicine"],
     "contact": "N/A",
     "address": "Karachi",
-    "acceptedPlans": ["plan-acme-gold-2025", "plan-acme-basic-2025", "plan-beta-silver-2025", "plan-beta-basic-2025", "plan-noor-gold-2025", "plan-noor-basic-2025"]
+    "acceptedPlans": ["plan-acme-gold-2025", "plan-acme-basic-2025", "plan-beta-silver-2025", "plan-beta-basic-2025", "plan-noor-gold-2025", "plan-noor-basic-2025"],
+    "lat": 24.9402129,
+    "lng": 67.0338511,
+    "locationHint": "Essa General Hospital, Shahrah-e-Noor Jahan, North Nazimabad Block C, North Nazimabad Town, Nazimabad District, Karachi Division, Sindh, 74700, Pakistan",
+    "hasEmergency": true,
+    "is24Hours": true
   },
   {
     "id": "hosp-016",
@@ -157,7 +187,12 @@
     "specialties": ["General Medicine"],
     "contact": "N/A",
     "address": "Karachi",
-    "acceptedPlans": ["plan-acme-gold-2025", "plan-acme-basic-2025", "plan-beta-silver-2025", "plan-beta-basic-2025", "plan-noor-gold-2025", "plan-noor-basic-2025"]
+    "acceptedPlans": ["plan-acme-gold-2025", "plan-acme-basic-2025", "plan-beta-silver-2025", "plan-beta-basic-2025", "plan-noor-gold-2025", "plan-noor-basic-2025"],
+    "lat": 24.8825099,
+    "lng": 67.1821684,
+    "locationHint": "Nehal Hospital, National Highway, Darakhshan Housing Society, Malir Town, Malir District, Karachi Division, 75210, Pakistan",
+    "hasEmergency": false,
+    "is24Hours": false
   },
   {
     "id": "hosp-017",
@@ -167,7 +202,12 @@
     "specialties": ["General Medicine"],
     "contact": "N/A",
     "address": "Karachi",
-    "acceptedPlans": ["plan-acme-gold-2025", "plan-acme-basic-2025", "plan-beta-silver-2025", "plan-beta-basic-2025", "plan-noor-gold-2025", "plan-noor-basic-2025"]
+    "acceptedPlans": ["plan-acme-gold-2025", "plan-acme-basic-2025", "plan-beta-silver-2025", "plan-beta-basic-2025", "plan-noor-gold-2025", "plan-noor-basic-2025"],
+    "lat": 24.8805309,
+    "lng": 67.1858192,
+    "locationHint": "Hassan General Hospital, National Highway, Darakhshan Housing Society, Malir Town, Malir District, Karachi Division, 75210, Pakistan",
+    "hasEmergency": true,
+    "is24Hours": true
   },
   {
     "id": "hosp-018",
@@ -187,7 +227,12 @@
     "specialties": ["General Medicine"],
     "contact": "N/A",
     "address": "Karachi",
-    "acceptedPlans": ["plan-acme-gold-2025", "plan-acme-basic-2025", "plan-beta-silver-2025", "plan-beta-basic-2025", "plan-noor-gold-2025", "plan-noor-basic-2025"]
+    "acceptedPlans": ["plan-acme-gold-2025", "plan-acme-basic-2025", "plan-beta-silver-2025", "plan-beta-basic-2025", "plan-noor-gold-2025", "plan-noor-basic-2025"],
+    "lat": 25.0163167,
+    "lng": 67.1301263,
+    "locationHint": "Asfar Memorial Hospital, Quaid Avenue, Gadap Town, Malir District, Karachi Division, Kar\u0101chi District, 75340, Pakistan",
+    "hasEmergency": true,
+    "is24Hours": true
   },
   {
     "id": "hosp-020",
@@ -197,7 +242,12 @@
     "specialties": ["General Medicine"],
     "contact": "N/A",
     "address": "Karachi",
-    "acceptedPlans": ["plan-acme-gold-2025", "plan-acme-basic-2025", "plan-beta-silver-2025", "plan-beta-basic-2025", "plan-noor-gold-2025", "plan-noor-basic-2025"]
+    "acceptedPlans": ["plan-acme-gold-2025", "plan-acme-basic-2025", "plan-beta-silver-2025", "plan-beta-basic-2025", "plan-noor-gold-2025", "plan-noor-basic-2025"],
+    "lat": 24.8666265,
+    "lng": 67.3578774,
+    "locationHint": "Ayesha General Hospital, Khayaban e Hadeed, Gulshan-e-Hadeed, Bin Qasim Town, Malir District, Karachi Division, Sindh, 75010, Pakistan",
+    "hasEmergency": true,
+    "is24Hours": true
   },
   {
     "id": "hosp-021",
@@ -207,7 +257,12 @@
     "specialties": ["General Medicine"],
     "contact": "N/A",
     "address": "Karachi",
-    "acceptedPlans": ["plan-acme-gold-2025", "plan-acme-basic-2025", "plan-beta-silver-2025", "plan-beta-basic-2025", "plan-noor-gold-2025", "plan-noor-basic-2025"]
+    "acceptedPlans": ["plan-acme-gold-2025", "plan-acme-basic-2025", "plan-beta-silver-2025", "plan-beta-basic-2025", "plan-noor-gold-2025", "plan-noor-basic-2025"],
+    "lat": 24.8257353,
+    "lng": 67.0807692,
+    "locationHint": "Sir Syed Hospital, Khayaban e Aziz Bhatti Shaheed, D Area, Korangi Town, Korangi District, Karachi Division, 77500, Pakistan",
+    "hasEmergency": false,
+    "is24Hours": false
   },
   {
     "id": "hosp-022",
@@ -217,7 +272,12 @@
     "specialties": ["Plastic Surgery"],
     "contact": "N/A",
     "address": "Karachi",
-    "acceptedPlans": ["plan-acme-gold-2025", "plan-acme-basic-2025", "plan-beta-silver-2025", "plan-beta-basic-2025", "plan-noor-gold-2025", "plan-noor-basic-2025"]
+    "acceptedPlans": ["plan-acme-gold-2025", "plan-acme-basic-2025", "plan-beta-silver-2025", "plan-beta-basic-2025", "plan-noor-gold-2025", "plan-noor-basic-2025"],
+    "lat": 24.8738691,
+    "lng": 67.0745757,
+    "locationHint": "Plastic Surgery General Hospital PSG Hospital, Service Road, Darul Aman, Jamshed Town, Gulshan District, Karachi Division, Sindh, 07482, Pakistan",
+    "hasEmergency": true,
+    "is24Hours": true
   },
   {
     "id": "hosp-023",
@@ -237,7 +297,12 @@
     "specialties": ["Urgent Care"],
     "contact": "N/A",
     "address": "Karachi",
-    "acceptedPlans": ["plan-acme-gold-2025", "plan-acme-basic-2025", "plan-beta-silver-2025", "plan-beta-basic-2025", "plan-noor-gold-2025", "plan-noor-basic-2025"]
+    "acceptedPlans": ["plan-acme-gold-2025", "plan-acme-basic-2025", "plan-beta-silver-2025", "plan-beta-basic-2025", "plan-noor-gold-2025", "plan-noor-basic-2025"],
+    "lat": 24.8189304,
+    "lng": 67.1162105,
+    "locationHint": "New Urgent Care Hospital, Landhi Road, Allah Wala Town, Korangi, Korangi Town, Korangi District, Karachi Division, 74900, Pakistan",
+    "hasEmergency": true,
+    "is24Hours": true
   },
   {
     "id": "hosp-025",
@@ -247,7 +312,12 @@
     "specialties": ["General Medicine"],
     "contact": "N/A",
     "address": "Karachi",
-    "acceptedPlans": ["plan-acme-gold-2025", "plan-acme-basic-2025", "plan-beta-silver-2025", "plan-beta-basic-2025", "plan-noor-gold-2025", "plan-noor-basic-2025"]
+    "acceptedPlans": ["plan-acme-gold-2025", "plan-acme-basic-2025", "plan-beta-silver-2025", "plan-beta-basic-2025", "plan-noor-gold-2025", "plan-noor-basic-2025"],
+    "lat": 24.9215799,
+    "lng": 67.0882897,
+    "locationHint": "Samdani Hospital, Allama Shabbir Ahmed Usmani Road, Gulshan-e-Iqbal Block 1, Gulshan-e-Iqbal Town, Gulshan District, Karachi Division, 75300, Pakistan",
+    "hasEmergency": false,
+    "is24Hours": false
   },
   {
     "id": "hosp-026",

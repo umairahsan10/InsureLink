@@ -1,0 +1,100 @@
+{
+  "hosp-003": {
+    "lat": 24.8927751,
+    "lon": 67.0740719,
+    "displayName": "Aga Khan University Hospital, Stadium Road, KDA Scheme 1 Extension, Gulshan-e-Iqbal Town, Gulshan District, Karachi Division, 75300, Pakistan",
+    "source": "nominatim",
+    "timestamp": "2025-11-10T06:47:19.808Z"
+  },
+  "hosp-006": {
+    "lat": 24.8593607,
+    "lon": 67.0103185,
+    "displayName": "Civil Hospital, Hospital Road, Ranchore Lines, Saddar Town, Karachi District, Karachi Division, Sindh, 75660, Pakistan",
+    "source": "nominatim",
+    "timestamp": "2025-11-10T06:47:21.594Z"
+  },
+  "hosp-015": {
+    "lat": 24.9402129,
+    "lon": 67.0338511,
+    "displayName": "Essa General Hospital, Shahrah-e-Noor Jahan, North Nazimabad Block C, North Nazimabad Town, Nazimabad District, Karachi Division, Sindh, 74700, Pakistan",
+    "source": "nominatim",
+    "timestamp": "2025-11-10T06:47:23.322Z"
+  },
+  "hosp-016": {
+    "lat": 24.8825099,
+    "lon": 67.1821684,
+    "displayName": "Nehal Hospital, National Highway, Darakhshan Housing Society, Malir Town, Malir District, Karachi Division, 75210, Pakistan",
+    "source": "nominatim",
+    "timestamp": "2025-11-10T06:47:24.953Z"
+  },
+  "hosp-017": {
+    "lat": 24.8805309,
+    "lon": 67.1858192,
+    "displayName": "Hassan General Hospital, National Highway, Darakhshan Housing Society, Malir Town, Malir District, Karachi Division, 75210, Pakistan",
+    "source": "nominatim",
+    "timestamp": "2025-11-10T06:47:26.638Z"
+  },
+  "hosp-019": {
+    "lat": 25.0163167,
+    "lon": 67.1301263,
+    "displayName": "Asfar Memorial Hospital, Quaid Avenue, Gadap Town, Malir District, Karachi Division, Karāchi District, 75340, Pakistan",
+    "source": "nominatim",
+    "timestamp": "2025-11-10T06:48:46.261Z"
+  },
+  "hosp-020": {
+    "lat": 24.8666265,
+    "lon": 67.3578774,
+    "displayName": "Ayesha General Hospital, Khayaban e Hadeed, Gulshan-e-Hadeed, Bin Qasim Town, Malir District, Karachi Division, Sindh, 75010, Pakistan",
+    "source": "nominatim",
+    "timestamp": "2025-11-10T06:48:47.565Z"
+  },
+  "hosp-021": {
+    "lat": 24.8257353,
+    "lon": 67.0807692,
+    "displayName": "Sir Syed Hospital, Khayaban e Aziz Bhatti Shaheed, D Area, Korangi Town, Korangi District, Karachi Division, 77500, Pakistan",
+    "source": "nominatim",
+    "timestamp": "2025-11-10T06:48:49.149Z"
+  },
+  "hosp-022": {
+    "lat": 24.8738691,
+    "lon": 67.0745757,
+    "displayName": "Plastic Surgery General Hospital PSG Hospital, Service Road, Darul Aman, Jamshed Town, Gulshan District, Karachi Division, Sindh, 07482, Pakistan",
+    "source": "nominatim",
+    "timestamp": "2025-11-10T06:48:50.569Z"
+  },
+  "hosp-024": {
+    "lat": 24.8189304,
+    "lon": 67.1162105,
+    "displayName": "New Urgent Care Hospital, Landhi Road, Allah Wala Town, Korangi, Korangi Town, Korangi District, Karachi Division, 74900, Pakistan",
+    "source": "nominatim",
+    "timestamp": "2025-11-10T06:48:53.155Z"
+  },
+  "hosp-025": {
+    "lat": 24.9215799,
+    "lon": 67.0882897,
+    "displayName": "Samdani Hospital, Allama Shabbir Ahmed Usmani Road, Gulshan-e-Iqbal Block 1, Gulshan-e-Iqbal Town, Gulshan District, Karachi Division, 75300, Pakistan",
+    "source": "nominatim",
+    "timestamp": "2025-11-10T06:48:54.482Z"
+  },
+  "hosp-028": {
+    "lat": 24.8485,
+    "lon": 67.0777758,
+    "displayName": "Bismillah Bhukhari Hospital, Street 13, Azam Basti, Saddar Town, Karachi District, Karachi Division, 75400, Pakistan",
+    "source": "nominatim",
+    "timestamp": "2025-11-10T06:48:56.181Z"
+  },
+  "hosp-029": {
+    "lat": 24.814065,
+    "lon": 67.0232722,
+    "displayName": "Infinity Eye Care Centre, Block 3, Service Road, Clifton Block 5, Saddar Town, Karachi District, Karachi Division, 75600, Pakistan",
+    "source": "nominatim",
+    "timestamp": "2025-11-10T06:48:57.566Z"
+  },
+  "hosp-033": {
+    "lat": 24.9072163,
+    "lon": 67.0441594,
+    "displayName": "Shah Medical Center, Khayaban-e-Hakeem Ajmal, Liaquatabad, Super Market, Liaquatabad Town, Nazimabad District, Karachi Division, Sindh, 75900, Pakistan",
+    "source": "nominatim",
+    "timestamp": "2025-11-10T06:49:00.334Z"
+  }
+}
