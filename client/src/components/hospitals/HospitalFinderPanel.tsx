@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import type { HospitalEntity, HospitalType } from "@/types/hospital";
 import { HospitalMap } from "@/components/hospitals/HospitalMap";
 import { Coordinates, DEFAULT_CITY_CENTER, formatDistance, haversineDistance } from "@/utils/location";
@@ -13,12 +13,6 @@ type FinderFilters = {
   require24Hours: boolean;
 };
 
-type FinderState = FinderFilters & {
-  activeHospitalId?: string;
-};
-
-const STORAGE_KEY = "insurelink:hospital-finder";
-
 const defaultFilters: FinderFilters = {
   search: "",
   type: "all",
@@ -30,40 +24,11 @@ type HospitalFinderPanelProps = {
   hospitals: HospitalEntity[];
 };
 
-const getStoredState = (): FinderState | null => {
-  if (typeof window === "undefined") return null;
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    return {
-      ...defaultFilters,
-      ...(parsed ?? {}),
-    };
-  } catch (error) {
-    console.warn("Unable to read hospital finder state", error);
-    return null;
-  }
-};
-
 export function HospitalFinderPanel({ hospitals }: HospitalFinderPanelProps) {
-  const storedState = useMemo(() => getStoredState(), []);
-  const [filters, setFilters] = useState<FinderFilters>(() => ({
-    ...defaultFilters,
-    ...(storedState ?? {}),
-  }));
-  const [activeHospitalId, setActiveHospitalId] = useState<string | undefined>(storedState?.activeHospitalId);
+  const [filters, setFilters] = useState<FinderFilters>(defaultFilters);
+  const [activeHospitalId, setActiveHospitalId] = useState<string | undefined>();
 
   const { status, position, requestPermission, error, isLoading } = useGeolocation();
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const payload: FinderState = {
-      ...filters,
-      activeHospitalId,
-    };
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-  }, [activeHospitalId, filters]);
 
   const hospitalsWithDistance = useMemo(() => {
     const poised: Array<HospitalEntity & { distanceKm?: number; coords?: Coordinates }> = [];
@@ -113,16 +78,18 @@ export function HospitalFinderPanel({ hospitals }: HospitalFinderPanelProps) {
 
   const handleFilterToggle = (key: keyof FinderFilters, value?: unknown) => {
     setFilters((prev) => {
-      if (key === "type") {
-        return { ...prev, type: value as FinderFilters["type"] };
+      switch (key) {
+        case "type":
+          return { ...prev, type: value as FinderFilters["type"] };
+        case "search":
+          return { ...prev, search: (value as string) ?? "" };
+        case "requireEmergency":
+          return { ...prev, requireEmergency: !prev.requireEmergency };
+        case "require24Hours":
+          return { ...prev, require24Hours: !prev.require24Hours };
+        default:
+          return prev;
       }
-
-      if (key === "search") {
-        return { ...prev, search: (value as string) ?? "" };
-      }
-
-      const nextValue = !(prev as Record<string, boolean>)[key];
-      return { ...prev, [key]: nextValue };
     });
   };
 

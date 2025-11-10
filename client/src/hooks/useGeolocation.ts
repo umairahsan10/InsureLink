@@ -22,35 +22,9 @@ type UseGeolocationReturn = {
   isLoading: boolean;
 };
 
-const STORAGE_KEY = "insurelink:lastKnownLocation";
-
-const getStoredLocation = (): Coordinates | null => {
-  if (typeof window === "undefined") return null;
-
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    if (typeof parsed.lat === "number" && typeof parsed.lng === "number") {
-      return parsed as Coordinates;
-    }
-  } catch (err) {
-    console.warn("Failed to parse stored location", err);
-  }
-
-  return null;
-};
-
-const persistLocation = (coords: Coordinates) => {
-  if (typeof window === "undefined") return;
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(coords));
-};
-
 export function useGeolocation(options?: UseGeolocationOptions): UseGeolocationReturn {
   const [status, setStatus] = useState<GeolocationStatus>("idle");
-  const [position, setPosition] = useState<Coordinates>(
-    () => getStoredLocation() ?? DEFAULT_CITY_CENTER,
-  );
+  const [position, setPosition] = useState<Coordinates>(DEFAULT_CITY_CENTER);
   const [error, setError] = useState<string>();
   const requestedRef = useRef(false);
 
@@ -65,7 +39,6 @@ export function useGeolocation(options?: UseGeolocationOptions): UseGeolocationR
 
   const setManualPosition = useCallback((coords: Coordinates) => {
     setPosition(coords);
-    persistLocation(coords);
     setStatus("granted");
   }, []);
 
@@ -78,19 +51,12 @@ export function useGeolocation(options?: UseGeolocationOptions): UseGeolocationR
       setPosition(coords);
       setStatus("granted");
       setError(undefined);
-      persistLocation(coords);
     },
     [],
   );
 
   const handleError = useCallback((geoError: GeolocationPositionError) => {
-    const stored = getStoredLocation();
-    if (stored) {
-      setPosition(stored);
-    } else {
-      setPosition(DEFAULT_CITY_CENTER);
-    }
-
+    setPosition(DEFAULT_CITY_CENTER);
     if (geoError.code === geoError.PERMISSION_DENIED) {
       setStatus("denied");
     } else {
