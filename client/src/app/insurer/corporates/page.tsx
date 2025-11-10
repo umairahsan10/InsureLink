@@ -1,11 +1,22 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/layouts/DashboardLayout';
 import CorporateEmployeesModal from '@/components/insurer/CorporateEmployeesModal';
 import corporatesData from '@/data/corporates.json';
+import notificationsData from '@/data/insurerNotifications.json';
+import { AlertNotification } from '@/types';
 
 export default function InsurerCorporatesPage() {
+  const router = useRouter();
+  const insurerNotifications = useMemo(
+    () =>
+      (notificationsData as AlertNotification[]).map((notification) => ({
+        ...notification,
+      })),
+    []
+  );
   const [selectedCorporate, setSelectedCorporate] = useState<{id: string, name: string} | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
@@ -21,7 +32,16 @@ export default function InsurerCorporatesPage() {
   };
 
   return (
-    <DashboardLayout userRole="insurer" userName="HealthGuard Insurance">
+    <DashboardLayout
+      userRole="insurer"
+      userName="HealthGuard Insurance"
+      notifications={insurerNotifications}
+      onNotificationSelect={(notification) => {
+        if (notification.category === 'messaging') {
+          router.push('/insurer/claims');
+        }
+      }}
+    >
       <div className="p-8 bg-gray-50 min-h-screen">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold text-gray-900">Corporate Clients</h1>

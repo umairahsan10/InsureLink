@@ -1,10 +1,31 @@
 'use client';
 
+import { useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/layouts/DashboardLayout';
+import notificationsData from '@/data/insurerNotifications.json';
+import { AlertNotification } from '@/types';
 
 export default function InsurerHospitalsPage() {
+  const router = useRouter();
+  const insurerNotifications = useMemo(
+    () =>
+      (notificationsData as AlertNotification[]).map((notification) => ({
+        ...notification,
+      })),
+    []
+  );
   return (
-    <DashboardLayout userRole="insurer" userName="HealthGuard Insurance">
+    <DashboardLayout
+      userRole="insurer"
+      userName="HealthGuard Insurance"
+      notifications={insurerNotifications}
+      onNotificationSelect={(notification) => {
+        if (notification.category === 'messaging') {
+          router.push('/insurer/claims');
+        }
+      }}
+    >
       <div className="p-8 bg-gray-50 min-h-screen">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold text-gray-900">Network Hospitals</h1>

@@ -1,11 +1,22 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/layouts/DashboardLayout';
 import MessageButton from '@/components/messaging/MessageButton';
 import { useClaimsMessaging } from '@/contexts/ClaimsMessagingContext';
+import notificationsData from '@/data/insurerNotifications.json';
+import { AlertNotification } from '@/types';
 
 export default function InsurerClaimsPage() {
+  const router = useRouter();
+  const insurerNotifications = useMemo(
+    () =>
+      (notificationsData as AlertNotification[]).map((notification) => ({
+        ...notification,
+      })),
+    []
+  );
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('All Status');
   const [hospitalFilter, setHospitalFilter] = useState('All Hospitals');
@@ -44,7 +55,16 @@ export default function InsurerClaimsPage() {
   });
 
   return (
-    <DashboardLayout userRole="insurer" userName="HealthGuard Insurance">
+    <DashboardLayout
+      userRole="insurer"
+      userName="HealthGuard Insurance"
+      notifications={insurerNotifications}
+      onNotificationSelect={(notification) => {
+        if (notification.category === 'messaging') {
+          router.push('/insurer/claims');
+        }
+      }}
+    >
       <div className="p-8 bg-gray-50 min-h-screen">
         <h1 className="text-3xl font-bold text-gray-900 mb-6">Claims Processing</h1>
 
