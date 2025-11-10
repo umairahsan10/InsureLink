@@ -5,6 +5,7 @@ import type { Icon, LeafletMouseEvent } from "leaflet";
 import { MapContainer, TileLayer, Marker, Popup, CircleMarker, useMap } from "react-leaflet";
 import type { HospitalEntity } from "@/types/hospital";
 import { Coordinates, formatDistance, haversineDistance } from "@/utils/location";
+import type { GeolocationStatus } from "@/hooks/useGeolocation";
 
 const DEFAULT_TILE_URL = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
 const DEFAULT_ATTRIBUTION =
@@ -15,6 +16,7 @@ type HospitalMapProps = {
   currentPosition: Coordinates;
   activeHospitalId?: string;
   onHospitalClick?: (hospital: HospitalEntity) => void;
+  geolocationStatus?: GeolocationStatus;
 };
 
 type HospitalWithDistance = HospitalEntity & {
@@ -37,6 +39,7 @@ export function HospitalMap({
   currentPosition,
   activeHospitalId,
   onHospitalClick,
+  geolocationStatus,
 }: HospitalMapProps) {
   const [isClient, setIsClient] = useState(false);
   const [markerIcon, setMarkerIcon] = useState<Icon | undefined>(undefined);
@@ -186,11 +189,13 @@ export function HospitalMap({
         <HighestPriorityRecenter position={currentPosition} />
         <TileLayer url={DEFAULT_TILE_URL} attribution={DEFAULT_ATTRIBUTION} />
 
-        <CircleMarker
-          center={[currentPosition.lat, currentPosition.lng]}
-          radius={8}
-          pathOptions={{ color: "#2563eb", fillColor: "#2563eb", fillOpacity: 0.8 }}
-        />
+        {geolocationStatus === "granted" && (
+          <CircleMarker
+            center={[currentPosition.lat, currentPosition.lng]}
+            radius={8}
+            pathOptions={{ color: "#2563eb", fillColor: "#2563eb", fillOpacity: 0.8 }}
+          />
+        )}
 
         {markerLayers}
       </MapContainer>

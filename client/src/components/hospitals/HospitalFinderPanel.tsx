@@ -324,6 +324,7 @@ export function HospitalFinderPanel({ hospitals }: HospitalFinderPanelProps) {
               currentPosition={position ?? DEFAULT_CITY_CENTER}
               activeHospitalId={activeHospitalId ?? nearestHospital?.id}
               onHospitalClick={(hospital) => setActiveHospitalId(hospital.id)}
+              geolocationStatus={status}
             />
           </div>
         </section>

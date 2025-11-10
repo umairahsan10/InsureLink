@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Coordinates, DEFAULT_CITY_CENTER } from "@/utils/location";
 
-type GeolocationStatus = "idle" | "requesting" | "granted" | "denied" | "error" | "unsupported";
+export type GeolocationStatus = "idle" | "requesting" | "granted" | "denied" | "error" | "unsupported";
 
 type UseGeolocationOptions = {
   enableHighAccuracy?: boolean;
