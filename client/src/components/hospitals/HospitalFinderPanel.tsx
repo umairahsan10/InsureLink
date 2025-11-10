@@ -183,7 +183,7 @@ export function HospitalFinderPanel({ hospitals }: HospitalFinderPanelProps) {
         </div>
       )}
 
-      <div className="grid gap-6 lg:grid-cols-[1.8fr_1fr]">
+      <div className="grid gap-6 lg:grid-cols-[1.6fr_1fr]">
         <section className="order-2 space-y-4 lg:order-1">
           <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -258,7 +258,7 @@ export function HospitalFinderPanel({ hospitals }: HospitalFinderPanelProps) {
             </div>
           </div>
 
-          <div className="space-y-3">
+          <div className="space-y-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm lg:max-h-[440px] lg:overflow-y-auto lg:pr-2">
             {filteredHospitals.length === 0 && (
               <div className="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-500">
                 No hospitals match your current filters.

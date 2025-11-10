@@ -81,7 +81,7 @@ export function HospitalMap({
       <MapContainer
         center={[currentPosition.lat, currentPosition.lng]}
         zoom={12}
-        className="h-[420px] w-full rounded-xl"
+        className="h-[440px] w-full rounded-xl"
         scrollWheelZoom
       >
         <HighestPriorityRecenter position={currentPosition} />
