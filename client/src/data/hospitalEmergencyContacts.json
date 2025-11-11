@@ -1,0 +1,31 @@
+[
+  {
+    "level": 1,
+    "designation": "Head of Insurance",
+    "name": "Mr. Ahmed Raza",
+    "contactNumber": "+92 300 1234567",
+    "remarks": "Escalation level 4"
+  },
+  {
+    "level": 2,
+    "designation": "Regional Manager",
+    "name": "Ms. Fatima Khan",
+    "contactNumber": "+92 321 7654321",
+    "remarks": "Escalation level 3"
+  },
+  {
+    "level": 3,
+    "designation": "Claims Officer",
+    "name": "Mr. Bilal Hussain",
+    "contactNumber": "+92 333 1112223",
+    "remarks": "Escalation level 2"
+  },
+  {
+    "level": 4,
+    "designation": "Claims Assistant",
+    "name": "Ms. Sara Malik",
+    "contactNumber": "+92 334 9998887",
+    "remarks": "First point of contact"
+  }
+]
+

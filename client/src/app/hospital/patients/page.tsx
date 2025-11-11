@@ -1,10 +1,48 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import HospitalSidebar from '@/components/hospital/HospitalSidebar';
 
 export default function HospitalPatientsPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [timeframeFilter, setTimeframeFilter] = useState('All Patients');
+
+  const patients = useMemo(
+    () => [
+      { id: 'PAT-1247', name: 'John Doe', age: 45, lastVisit: '2025-10-06', insurance: 'HealthGuard', status: 'Active', insured: true, lastVisitDate: new Date('2025-10-06') },
+      { id: 'PAT-1246', name: 'Mary Johnson', age: 32, lastVisit: '2025-10-06', insurance: 'MediCare Plus', status: 'Active', insured: true, lastVisitDate: new Date('2025-10-06') },
+      { id: 'PAT-1245', name: 'Robert Smith', age: 58, lastVisit: '2025-10-05', insurance: 'SecureHealth', status: 'Active', insured: true, lastVisitDate: new Date('2025-10-05') },
+      { id: 'PAT-1244', name: 'Emily Davis', age: 29, lastVisit: '2025-10-05', insurance: 'HealthGuard', status: 'Active', insured: true, lastVisitDate: new Date('2025-10-05') },
+      { id: 'PAT-1243', name: 'Michael Wilson', age: 67, lastVisit: '2025-10-04', insurance: 'None', status: 'Uninsured', insured: false, lastVisitDate: new Date('2025-10-04') }
+    ],
+    []
+  );
+
+  const filteredPatients = useMemo(() => {
+    const today = new Date('2025-10-06');
+    const sevenDaysAgo = new Date(today);
+    sevenDaysAgo.setDate(today.getDate() - 6);
+
+    return patients.filter((patient) => {
+      const matchesSearch =
+        searchQuery.trim() === '' ||
+        patient.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        patient.id.toLowerCase().includes(searchQuery.toLowerCase());
+
+      const matchesFilter =
+        timeframeFilter === 'All Patients' ||
+        (timeframeFilter === "Today's Visits" &&
+          patient.lastVisitDate.toDateString() === today.toDateString()) ||
+        (timeframeFilter === 'This Week' &&
+          patient.lastVisitDate >= sevenDaysAgo &&
+          patient.lastVisitDate <= today) ||
+        (timeframeFilter === 'Insured' && patient.insured) ||
+        (timeframeFilter === 'Uninsured' && !patient.insured);
+
+      return matchesSearch && matchesFilter;
+    });
+  }, [patients, searchQuery, timeframeFilter]);
   
   return (
     <div className="min-h-screen bg-gray-50">
@@ -74,9 +112,15 @@ export default function HospitalPatientsPage() {
             <input
               type="text"
               placeholder="Search by name or patient ID..."
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
               className="flex-1 px-3 lg:px-4 py-2 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm lg:text-base"
             />
-            <select className="px-3 lg:px-4 py-2 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm lg:text-base">
+            <select
+              value={timeframeFilter}
+              onChange={(event) => setTimeframeFilter(event.target.value)}
+              className="px-3 lg:px-4 py-2 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm lg:text-base"
+            >
               <option>All Patients</option>
               <option>Today&apos;s Visits</option>
               <option>This Week</option>
@@ -100,13 +144,14 @@ export default function HospitalPatientsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {[
-                { id: 'PAT-1247', name: 'John Doe', age: 45, lastVisit: '2025-10-06', insurance: 'HealthGuard', status: 'Active' },
-                { id: 'PAT-1246', name: 'Mary Johnson', age: 32, lastVisit: '2025-10-06', insurance: 'MediCare Plus', status: 'Active' },
-                { id: 'PAT-1245', name: 'Robert Smith', age: 58, lastVisit: '2025-10-05', insurance: 'SecureHealth', status: 'Active' },
-                { id: 'PAT-1244', name: 'Emily Davis', age: 29, lastVisit: '2025-10-05', insurance: 'HealthGuard', status: 'Active' },
-                { id: 'PAT-1243', name: 'Michael Wilson', age: 67, lastVisit: '2025-10-04', insurance: 'None', status: 'Uninsured' },
-              ].map((patient) => (
+              {filteredPatients.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="px-6 py-8 text-center text-sm text-gray-500">
+                    No patients match your current filters.
+                  </td>
+                </tr>
+              ) : (
+              filteredPatients.map((patient) => (
                 <tr key={patient.id} className="hover:bg-gray-50">
                   <td className="px-3 lg:px-6 py-4 text-xs lg:text-sm font-medium text-gray-900">{patient.id}</td>
                   <td className="px-3 lg:px-6 py-4 text-xs lg:text-sm text-gray-900">{patient.name}</td>
@@ -124,7 +169,7 @@ export default function HospitalPatientsPage() {
                     <button className="text-blue-600 hover:text-blue-800">View</button>
                   </td>
                 </tr>
-              ))}
+              )))}
             </tbody>
           </table>
         </div>
