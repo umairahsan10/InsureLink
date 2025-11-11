@@ -26,3 +26,11 @@ export interface HospitalFormData {
   acceptedPlans: string[];
 }
 
+export interface HospitalEmergencyContact {
+  level: number;
+  designation: string;
+  name: string;
+  contactNumber: string;
+  remarks: string;
+}
+
