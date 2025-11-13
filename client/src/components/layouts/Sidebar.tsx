@@ -86,6 +86,7 @@ const menuItems: Record<string, MenuItem[]> = {
   corporate: [
     { name: 'Dashboard', href: '/corporate/dashboard', icon: <DashboardIcon /> },
     { name: 'Employees', href: '/corporate/employees', icon: <EmployeesIcon /> },
+    { name: 'Claims Overview', href: '/corporate/claims', icon: <ClaimsIcon /> },
     { name: 'Plans', href: '/corporate/plans', icon: <PlansIcon /> },
     { name: 'Profile', href: '/corporate/profile', icon: <ProfileIcon /> },
   ],
@@ -183,10 +184,11 @@ export default function Sidebar({ userRole }: SidebarProps) {
 
     const handleNavClick = (e: Event) => {
       const target = e.target as HTMLElement;
-      const link = target.closest('a');
+      const link = target.closest('a[href^="/corporate/"]');
       if (link) {
         const isMobile = window.innerWidth < 768;
         if (isMobile && sidebar && !sidebar.classList.contains('-translate-x-full')) {
+          // Don't prevent default - let Next.js handle navigation
           setTimeout(closeSidebar, 100);
         }
       }
