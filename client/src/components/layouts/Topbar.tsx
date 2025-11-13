@@ -1,8 +1,10 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
 import NotificationPanel from '../notifications/NotificationPanel';
 import { AlertNotification } from '@/types';
+
+const EMPTY_NOTIFICATIONS: AlertNotification[] = [];
 
 interface TopbarProps {
   userName?: string;
@@ -14,15 +16,22 @@ interface TopbarProps {
 export default function Topbar({
   userName = 'User',
   userRole = 'Guest',
-  notifications = [],
+  notifications,
   onNotificationSelect,
 }: TopbarProps) {
   const [isPanelOpen, setIsPanelOpen] = useState(false);
-  const [alerts, setAlerts] = useState<AlertNotification[]>(notifications);
+  const notificationsArray = notifications || EMPTY_NOTIFICATIONS;
+  const [alerts, setAlerts] = useState<AlertNotification[]>(notificationsArray);
+  const prevNotificationsRef = useRef<AlertNotification[]>(notificationsArray);
 
   useEffect(() => {
-    setAlerts(notifications);
-  }, [notifications]);
+    // Only update if notifications reference actually changed
+    // This prevents infinite loops when the same array is passed with a new reference
+    if (prevNotificationsRef.current !== notificationsArray) {
+      setAlerts(notificationsArray);
+      prevNotificationsRef.current = notificationsArray;
+    }
+  }, [notificationsArray]);
 
   const unreadCount = useMemo(
     () => alerts.filter((notification) => !notification.isRead).length,
