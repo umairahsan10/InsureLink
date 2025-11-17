@@ -1,16 +1,44 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import HospitalSidebar from '@/components/hospital/HospitalSidebar';
 import MessageButton from '@/components/messaging/MessageButton';
 import { useClaimsMessaging } from '@/contexts/ClaimsMessagingContext';
+import {
+  DocumentVerificationResult,
+  DocumentTemplateKey,
+  ensureDemoHashSeeded,
+  getTemplateOptions,
+  markHashAsSuspicious,
+  verifyDocumentLocally,
+} from '@/utils/documentVerification';
 
 export default function HospitalClaimsPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('All Status');
   const [insurerFilter, setInsurerFilter] = useState('All Insurers');
+  const [uploadModalOpen, setUploadModalOpen] = useState(false);
+  const [resultModalOpen, setResultModalOpen] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [hashMarked, setHashMarked] = useState(false);
+  const [verificationResult, setVerificationResult] = useState<DocumentVerificationResult | null>(null);
+  const [formState, setFormState] = useState({
+    file: null as File | null,
+    totalAmount: '',
+    lineItemsTotal: '',
+    admissionDate: '',
+    dischargeDate: '',
+    templateKey: '' as DocumentTemplateKey | '',
+    snippet: '',
+  });
   const { hasUnreadAlert } = useClaimsMessaging();
+  const templateOptions = useMemo(() => getTemplateOptions(), []);
+
+  useEffect(() => {
+    ensureDemoHashSeeded();
+  }, []);
 
   const allClaims = [
     { id: 'CLM-8921', patient: 'John Doe', treatment: 'General Checkup', date: '2025-10-06', amount: '$1,250', status: 'Pending' },
@@ -38,6 +66,7 @@ export default function HospitalClaimsPage() {
   });
   
   return (
+    <>
     <div className="min-h-screen bg-gray-50">
       {/* Left Sidebar */}
       <HospitalSidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
@@ -66,14 +95,52 @@ export default function HospitalClaimsPage() {
                 <button className="bg-blue-600 text-white px-3 lg:px-4 py-2 rounded-lg hover:bg-blue-700 text-sm lg:text-base">
                   + Submit New Claim
                 </button>
+                <button
+                  onClick={() => {
+                    setFormError(null);
+                    setFormState({
+                      file: null,
+                      totalAmount: '',
+                      lineItemsTotal: '',
+                      admissionDate: '',
+                      dischargeDate: '',
+                      templateKey: '' as DocumentTemplateKey | '',
+                      snippet: '',
+                    });
+                    setUploadModalOpen(true);
+                  }}
+                  className="bg-green-600 text-white px-3 lg:px-4 py-2 rounded-lg hover:bg-green-700 text-sm lg:text-base"
+                >
+                  Upload Document
+                </button>
               </div>
             </div>
           </div>
           {/* Mobile button */}
           <div className="lg:hidden px-4 pt-2 pb-3">
-            <button className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm">
-              + Submit New Claim
-            </button>
+            <div className="space-y-2">
+              <button className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm">
+                + Submit New Claim
+              </button>
+              <button
+                onClick={() => {
+                  setFormError(null);
+                  setFormState({
+                    file: null,
+                    totalAmount: '',
+                    lineItemsTotal: '',
+                    admissionDate: '',
+                    dischargeDate: '',
+                    templateKey: '' as DocumentTemplateKey | '',
+                    snippet: '',
+                  });
+                  setUploadModalOpen(true);
+                }}
+                className="w-full bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 text-sm"
+              >
+                Upload Document
+              </button>
+            </div>
           </div>
         </header>
 
@@ -193,6 +260,262 @@ export default function HospitalClaimsPage() {
         </main>
       </div>
     </div>
+      {/* Upload Modal */}
+      {uploadModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 py-6">
+          <div className="w-full max-w-3xl rounded-2xl bg-white shadow-2xl">
+            <div className="flex items-center justify-between border-b px-6 py-4">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900">Run Document Trust Checks</h2>
+                <p className="text-sm text-gray-500">Upload the hospital document and provide quick details for validation.</p>
+              </div>
+              <button
+                onClick={() => setUploadModalOpen(false)}
+                className="rounded-full p-2 text-gray-500 hover:bg-gray-100"
+                aria-label="Close upload modal"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="max-h-[80vh] overflow-y-auto px-6 py-4 space-y-6">
+              {formError && <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{formError}</p>}
+              <div className="space-y-3">
+                <label className="text-sm font-medium text-gray-700">Document File</label>
+                <input
+                  type="file"
+                  accept=".pdf,image/*"
+                  onChange={(event) => {
+                    const nextFile = event.target.files?.[0] ?? null;
+                    setFormState((prev) => ({ ...prev, file: nextFile }));
+                  }}
+                  className="block w-full rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-900 file:mr-4 file:rounded-md file:border-0 file:bg-green-100 file:px-3 file:py-2 file:text-sm file:font-medium file:text-green-700 hover:file:bg-green-200"
+                />
+                {formState.file && (
+                  <div className="rounded-lg bg-gray-50 px-4 py-2 text-xs text-gray-600">
+                    {formState.file.name} · {(formState.file.size / 1024).toFixed(1)} KB
+                  </div>
+                )}
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700">Total Amount (PKR)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={formState.totalAmount}
+                    onChange={(event) => setFormState((prev) => ({ ...prev, totalAmount: event.target.value }))}
+                    className="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-900 focus:border-green-500 focus:ring-2 focus:ring-green-200"
+                    placeholder="e.g., 45000"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700">Sum of Line Items (PKR)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={formState.lineItemsTotal}
+                    onChange={(event) => setFormState((prev) => ({ ...prev, lineItemsTotal: event.target.value }))}
+                    className="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-900 focus:border-green-500 focus:ring-2 focus:ring-green-200"
+                    placeholder="e.g., 44980"
+                  />
+                </div>
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700">Admission Date</label>
+                  <input
+                    type="date"
+                    value={formState.admissionDate}
+                    onChange={(event) => setFormState((prev) => ({ ...prev, admissionDate: event.target.value }))}
+                    className="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-900 focus:border-green-500 focus:ring-2 focus:ring-green-200"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700">Discharge Date</label>
+                  <input
+                    type="date"
+                    value={formState.dischargeDate}
+                    onChange={(event) => setFormState((prev) => ({ ...prev, dischargeDate: event.target.value }))}
+                    className="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-900 focus:border-green-500 focus:ring-2 focus:ring-green-200"
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">Hospital Template</label>
+                <select
+                  value={formState.templateKey}
+                  onChange={(event) =>
+                    setFormState((prev) => ({ ...prev, templateKey: event.target.value as DocumentTemplateKey | '' }))
+                  }
+                  className="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-900 focus:border-green-500 focus:ring-2 focus:ring-green-200"
+                >
+                  <option value="">Select hospital template</option>
+                  {templateOptions.map((template) => (
+                    <option key={template.key} value={template.key}>
+                      {template.label}
+                    </option>
+                  ))}
+                </select>
+                {formState.templateKey && (
+                  <p className="rounded-lg bg-gray-50 px-4 py-2 text-xs text-gray-600">
+                    Expected keywords: {templateOptions.find((template) => template.key === formState.templateKey)?.keywords.join(', ')}
+                  </p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">
+                  Paste a text snippet from the document (used for template check)
+                </label>
+                <textarea
+                  rows={3}
+                  value={formState.snippet}
+                  onChange={(event) => setFormState((prev) => ({ ...prev, snippet: event.target.value }))}
+                  className="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-900 focus:border-green-500 focus:ring-2 focus:ring-green-200"
+                  placeholder="Example: City General Hospital Billing Department..."
+                />
+              </div>
+              <div className="rounded-lg border border-yellow-200 bg-yellow-50 px-4 py-3 text-xs text-yellow-900">
+                Metadata checks are simulated in the UI until backend integration is available.
+              </div>
+            </div>
+            <div className="flex items-center justify-end gap-3 border-t px-6 py-4">
+              <button
+                onClick={() => setUploadModalOpen(false)}
+                className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  if (!formState.file) {
+                    setFormError('Please attach a document file.');
+                    return;
+                  }
+                  setFormError(null);
+                  setIsVerifying(true);
+                  setHashMarked(false);
+                  try {
+                    const result = await verifyDocumentLocally({
+                      file: formState.file,
+                      totalAmount: formState.totalAmount ? Number(formState.totalAmount) : undefined,
+                      lineItemsTotal: formState.lineItemsTotal ? Number(formState.lineItemsTotal) : undefined,
+                      admissionDate: formState.admissionDate,
+                      dischargeDate: formState.dischargeDate,
+                      templateKey: formState.templateKey,
+                      documentSnippet: formState.snippet,
+                    });
+                    setVerificationResult(result);
+                    setUploadModalOpen(false);
+                    setResultModalOpen(true);
+                  } catch (error) {
+                    console.error('Verification error', error);
+                    setFormError('Unable to run verification in the browser.');
+                  } finally {
+                    setIsVerifying(false);
+                  }
+                }}
+                disabled={isVerifying}
+                className="rounded-lg bg-green-600 px-5 py-2 text-sm font-semibold text-white hover:bg-green-700 disabled:cursor-not-allowed disabled:bg-green-400"
+              >
+                {isVerifying ? 'Processing…' : 'Run Verification'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Result Modal */}
+      {resultModalOpen && verificationResult && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 py-6">
+          <div className="w-full max-w-2xl rounded-2xl bg-white shadow-2xl">
+            <div className="flex items-center justify-between border-b px-6 py-4">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900">Verification Result</h2>
+                <p className="text-sm text-gray-500">Client-side checks completed successfully.</p>
+              </div>
+              <button
+                onClick={() => {
+                  setResultModalOpen(false);
+                  setVerificationResult(null);
+                }}
+                className="rounded-full p-2 text-gray-500 hover:bg-gray-100"
+                aria-label="Close result modal"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="px-6 py-5 space-y-5">
+              <div className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <p className="text-xs uppercase tracking-wide text-gray-500">Trust Score</p>
+                    <p className="text-4xl font-bold text-gray-900">{verificationResult.score}</p>
+                  </div>
+                  <span
+                    className={`inline-flex items-center rounded-full px-4 py-2 text-sm font-medium ${
+                      verificationResult.score >= 80
+                        ? 'bg-green-100 text-green-800'
+                        : verificationResult.score >= 50
+                          ? 'bg-yellow-100 text-yellow-800'
+                          : 'bg-red-100 text-red-800'
+                    }`}
+                  >
+                    {verificationResult.score >= 80
+                      ? 'Auto Accept'
+                      : verificationResult.score >= 50
+                        ? 'Needs Review'
+                        : 'High Risk'}
+                  </span>
+                </div>
+                <p className="mt-3 text-sm text-gray-600">{verificationResult.metadataNote}</p>
+              </div>
+              <div className="rounded-xl border border-gray-200 px-4 py-4">
+                <p className="text-sm font-semibold text-gray-900">Reasons & Insights</p>
+                <ul className="mt-3 list-disc space-y-2 pl-5 text-sm text-gray-700">
+                  {verificationResult.reasons.map((reason, index) => (
+                    <li key={index}>{reason}</li>
+                  ))}
+                </ul>
+              </div>
+              <div className="rounded-xl border border-gray-200 px-4 py-4 space-y-2 text-sm text-gray-700">
+                <div className="flex items-center justify-between">
+                  <span className="font-medium text-gray-900">SHA-256 Hash</span>
+                  <code className="break-all text-xs text-gray-500">{verificationResult.sha256 ?? 'Unavailable'}</code>
+                </div>
+                {verificationResult.templateLabel && (
+                  <p>
+                    Template evaluated:&nbsp;
+                    <span className="font-medium text-gray-900">{verificationResult.templateLabel}</span>
+                  </p>
+                )}
+              </div>
+              {verificationResult.sha256 && (
+                <button
+                  onClick={() => {
+                    markHashAsSuspicious(verificationResult.sha256);
+                    setHashMarked(true);
+                  }}
+                  className="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                >
+                  {hashMarked ? 'Marked as suspicious for future uploads' : 'Mark this hash as suspicious'}
+                </button>
+              )}
+            </div>
+            <div className="flex items-center justify-end border-t px-6 py-4">
+              <button
+                onClick={() => {
+                  setResultModalOpen(false);
+                  setVerificationResult(null);
+                }}
+                className="rounded-lg bg-green-600 px-5 py-2 text-sm font-semibold text-white hover:bg-green-700"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 
