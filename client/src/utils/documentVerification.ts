@@ -37,6 +37,8 @@ export interface DocumentVerificationResult {
   reasons: string[];
   sha256?: string;
   duplicateDetected: boolean;
+  nearDuplicateDetected?: boolean;
+  perceptualHash?: string;
   templateLabel?: string;
   metadataNote: string;
 }
@@ -64,6 +66,8 @@ const TEMPLATE_CONFIG: TemplateConfig[] = [
 
 const LOCAL_STORAGE_HASH_KEY = 'documentTrustHashes';
 const LOCAL_STORAGE_SEEDED_KEY = 'documentTrustSeeded';
+const LOCAL_STORAGE_PERPETUAL_HASH_KEY = 'documentTrustPerceptualHashes';
+const LOCAL_STORAGE_DEMO_HASHES_SEEDED_KEY = 'demoHashesSeeded';
 
 const getWindow = () => (typeof window !== 'undefined' ? window : undefined);
 
@@ -96,6 +100,82 @@ export const ensureDemoHashSeeded = () => {
   win.localStorage.setItem(LOCAL_STORAGE_SEEDED_KEY, 'true');
 };
 
+export const seedDemoHashesFromImages = async () => {
+  const win = getWindow();
+  if (!win) return;
+  
+  // Check if already seeded
+  if (win.localStorage.getItem(LOCAL_STORAGE_DEMO_HASHES_SEEDED_KEY)) {
+    return;
+  }
+
+  const DEMO_IMAGES = [
+    '/demo-docs/batch2-0024.jpg',
+    '/demo-docs/batch2-0267.jpg',
+    '/demo-docs/batch2-0365.jpg',
+    '/demo-docs/batch2-0386.jpg',
+    '/demo-docs/duplicate.jpg',
+    '/demo-docs/image.png',
+    '/demo-docs/test.jpg',
+    '/demo-docs/test_3.jpg',
+    '/demo-docs/test_4.jpg',
+    '/demo-docs/test_5.jpg',
+    '/demo-docs/test_6.jpg',
+    '/demo-docs/test_7.jpg',
+    '/demo-docs/test_9.jpg',
+    '/demo-docs/test_10.jpg',
+    '/demo-docs/test_11.jpg',
+    '/demo-docs/test_12.jpg',
+    '/demo-docs/test_13.jpeg',
+  ];
+
+  const sha256Hashes: string[] = [];
+  const perceptualHashes: string[] = [];
+
+  for (const imagePath of DEMO_IMAGES) {
+    try {
+      const response = await fetch(imagePath);
+      if (!response.ok) {
+        console.warn(`Failed to fetch ${imagePath}`);
+        continue;
+      }
+      const blob = await response.blob();
+      const file = new File([blob], imagePath.split('/').pop() || 'image', {
+        type: blob.type,
+      });
+
+      // Calculate SHA-256 hash
+      const sha256 = await computeSha256(file);
+      if (sha256) {
+        sha256Hashes.push(sha256);
+      }
+
+      // Calculate perceptual hash
+      const perceptualHash = await computePerceptualHash(file);
+      if (perceptualHash) {
+        perceptualHashes.push(perceptualHash);
+      }
+    } catch (error) {
+      console.warn(`Error processing ${imagePath}:`, error);
+      // Continue with next image
+    }
+  }
+
+  // Store all hashes
+  if (sha256Hashes.length > 0) {
+    const existingHashes = readHashes();
+    writeHashes([...existingHashes, ...sha256Hashes]);
+  }
+
+  if (perceptualHashes.length > 0) {
+    const existingPerceptualHashes = readPerceptualHashes();
+    writePerceptualHashes([...existingPerceptualHashes, ...perceptualHashes]);
+  }
+
+  // Mark as seeded
+  win.localStorage.setItem(LOCAL_STORAGE_DEMO_HASHES_SEEDED_KEY, 'true');
+};
+
 const bufferToHex = (buffer: ArrayBuffer) => {
   return [...new Uint8Array(buffer)]
     .map((b) => b.toString(16).padStart(2, '0'))
@@ -108,6 +188,132 @@ const computeSha256 = async (file: File): Promise<string | undefined> => {
   const fileBuffer = await file.arrayBuffer();
   const hashBuffer = await win.crypto.subtle.digest('SHA-256', fileBuffer);
   return bufferToHex(hashBuffer);
+};
+
+// Perceptual Hash Functions
+const readPerceptualHashes = (): string[] => {
+  const win = getWindow();
+  if (!win) return [];
+  try {
+    const raw = win.localStorage.getItem(LOCAL_STORAGE_PERPETUAL_HASH_KEY);
+    return raw ? (JSON.parse(raw) as string[]) : [];
+  } catch {
+    return [];
+  }
+};
+
+const writePerceptualHashes = (hashes: string[]) => {
+  const win = getWindow();
+  if (!win) return;
+  try {
+    win.localStorage.setItem(
+      LOCAL_STORAGE_PERPETUAL_HASH_KEY,
+      JSON.stringify(hashes.slice(-100))
+    );
+  } catch {
+    // ignore write failures
+  }
+};
+
+const calculateHammingDistance = (hash1: string, hash2: string): number => {
+  if (hash1.length !== hash2.length) return Infinity;
+  let distance = 0;
+  for (let i = 0; i < hash1.length; i++) {
+    if (hash1[i] !== hash2[i]) distance++;
+  }
+  return distance;
+};
+
+const calculateSimilarity = (hash1: string, hash2: string): number => {
+  if (hash1.length === 0 || hash2.length === 0) return 0;
+  const hammingDistance = calculateHammingDistance(hash1, hash2);
+  return 1 - hammingDistance / hash1.length;
+};
+
+const findNearDuplicate = (
+  perceptualHash: string,
+  threshold: number = 0.90
+): string | null => {
+  const storedHashes = readPerceptualHashes();
+  for (const storedHash of storedHashes) {
+    const similarity = calculateSimilarity(perceptualHash, storedHash);
+    if (similarity >= threshold) {
+      return storedHash;
+    }
+  }
+  return null;
+};
+
+const computePerceptualHash = async (file: File): Promise<string | undefined> => {
+  try {
+    // Convert file to image
+    const imageUrl = URL.createObjectURL(file);
+    const img = new Image();
+    
+    return new Promise((resolve) => {
+      img.onload = () => {
+        try {
+          // Create canvas to process image
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            URL.revokeObjectURL(imageUrl);
+            resolve(undefined);
+            return;
+          }
+
+          // Resize to 9x8 for dHash (difference hash)
+          const width = 9;
+          const height = 8;
+          canvas.width = width;
+          canvas.height = height;
+          
+          // Draw and get image data
+          ctx.drawImage(img, 0, 0, width, height);
+          const imageData = ctx.getImageData(0, 0, width, height);
+          const data = imageData.data;
+
+          // Convert to grayscale and build hash
+          const hash: number[] = [];
+          for (let row = 0; row < height; row++) {
+            for (let col = 0; col < width - 1; col++) {
+              const idx = (row * width + col) * 4;
+              const nextIdx = (row * width + col + 1) * 4;
+              
+              // Grayscale: 0.299*R + 0.587*G + 0.114*B
+              const gray = data[idx] * 0.299 + data[idx + 1] * 0.587 + data[idx + 2] * 0.114;
+              const nextGray = data[nextIdx] * 0.299 + data[nextIdx + 1] * 0.587 + data[nextIdx + 2] * 0.114;
+              
+              // Compare adjacent pixels (dHash algorithm)
+              hash.push(gray > nextGray ? 1 : 0);
+            }
+          }
+
+          // Convert binary array to hex string
+          let hashString = '';
+          for (let i = 0; i < hash.length; i += 4) {
+            const nibble = hash.slice(i, i + 4).join('');
+            hashString += parseInt(nibble, 2).toString(16);
+          }
+          
+          URL.revokeObjectURL(imageUrl);
+          resolve(hashString);
+        } catch (error) {
+          console.warn('Perceptual hash calculation error:', error);
+          URL.revokeObjectURL(imageUrl);
+          resolve(undefined);
+        }
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(imageUrl);
+        resolve(undefined);
+      };
+      img.src = imageUrl;
+    });
+  } catch (error) {
+    console.warn('Failed to compute perceptual hash:', error);
+    return undefined;
+  }
 };
 
 const templateFromKey = (key?: TemplateKey | '') => TEMPLATE_CONFIG.find((template) => template.key === key);
@@ -140,6 +346,28 @@ export const markHashAsSuspicious = (hash?: string) => {
   }
 };
 
+export const clearDocumentHashes = () => {
+  const win = getWindow();
+  if (!win) return;
+  
+  try {
+    win.localStorage.removeItem(LOCAL_STORAGE_HASH_KEY);
+    win.localStorage.removeItem(LOCAL_STORAGE_PERPETUAL_HASH_KEY);
+    win.localStorage.removeItem(LOCAL_STORAGE_SEEDED_KEY);
+    win.localStorage.removeItem(LOCAL_STORAGE_DEMO_HASHES_SEEDED_KEY);
+    console.log('✓ Document hash database cleared successfully');
+    return true;
+  } catch (error) {
+    console.error('Failed to clear document hashes:', error);
+    return false;
+  }
+};
+
+// Make it available globally for console access
+if (typeof window !== 'undefined') {
+  (window as any).clearDocumentHashes = clearDocumentHashes;
+}
+
 export const getTemplateOptions = () => TEMPLATE_CONFIG;
 
 export const verifyDocumentLocally = async (
@@ -149,6 +377,8 @@ export const verifyDocumentLocally = async (
   const reasons: string[] = [];
   let sha256: string | undefined;
   let duplicateDetected = false;
+  let perceptualHash: string | undefined;
+  let nearDuplicateDetected = false;
 
   if (input.file) {
     try {
@@ -172,6 +402,33 @@ export const verifyDocumentLocally = async (
       markHashAsSuspicious(sha256);
     } else {
       writeHashes([...hashes, sha256]);
+    }
+  }
+
+  // Perceptual Hash Check (Near-Duplicate Detection)
+  if (input.file && sha256) {
+    try {
+      perceptualHash = await computePerceptualHash(input.file);
+      
+      if (perceptualHash) {
+        const storedPerceptualHashes = readPerceptualHashes();
+        const matchingHash = findNearDuplicate(perceptualHash, 0.90);
+        
+        if (matchingHash) {
+          nearDuplicateDetected = true;
+          const similarity = calculateSimilarity(perceptualHash, matchingHash);
+          reasons.push(
+            `Near-duplicate detected: Document is ${(similarity * 100).toFixed(1)}% similar to a previously uploaded document (slightly edited version detected).`
+          );
+          score -= 40; // Less severe than exact duplicate (-50)
+        } else {
+          // Store new perceptual hash for future comparisons
+          writePerceptualHashes([...storedPerceptualHashes, perceptualHash]);
+        }
+      }
+    } catch (error) {
+      // Fail silently or log - don't break verification
+      console.warn('Perceptual hash calculation failed:', error);
     }
   }
 
@@ -318,6 +575,8 @@ export const verifyDocumentLocally = async (
     reasons,
     sha256,
     duplicateDetected,
+    nearDuplicateDetected,
+    perceptualHash,
     templateLabel: template?.label,
     metadataNote,
   };

@@ -11,6 +11,8 @@ import {
   getTemplateOptions,
   markHashAsSuspicious,
   verifyDocumentLocally,
+  seedDemoHashesFromImages,
+  clearDocumentHashes,
 } from '@/utils/documentVerification';
 
 export default function HospitalClaimsPage() {
@@ -24,6 +26,7 @@ export default function HospitalClaimsPage() {
   const [formError, setFormError] = useState<string | null>(null);
   const [hashMarked, setHashMarked] = useState(false);
   const [verificationResult, setVerificationResult] = useState<DocumentVerificationResult | null>(null);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [formState, setFormState] = useState({
     file: null as File | null,
     totalAmount: '',
@@ -39,6 +42,7 @@ export default function HospitalClaimsPage() {
 
   useEffect(() => {
     ensureDemoHashSeeded();
+    seedDemoHashesFromImages();
   }, []);
 
   const allClaims = [
@@ -115,6 +119,13 @@ export default function HospitalClaimsPage() {
                 >
                   Upload Document
                 </button>
+                <button
+                  onClick={() => setShowResetConfirm(true)}
+                  className="bg-gray-500 text-white px-3 lg:px-4 py-2 rounded-lg hover:bg-gray-600 text-sm lg:text-base"
+                  title="Clear hash database for testing"
+                >
+                  Reset Hashes
+                </button>
               </div>
             </div>
           </div>
@@ -142,6 +153,12 @@ export default function HospitalClaimsPage() {
                 className="w-full bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 text-sm"
               >
                 Upload Document
+              </button>
+              <button
+                onClick={() => setShowResetConfirm(true)}
+                className="w-full bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 text-sm"
+              >
+                Reset Hashes
               </button>
             </div>
           </div>
@@ -511,11 +528,25 @@ export default function HospitalClaimsPage() {
                   ))}
                 </ul>
               </div>
+              {verificationResult.nearDuplicateDetected && (
+                <div className="rounded-lg border border-orange-200 bg-orange-50 px-4 py-3 text-sm text-orange-800">
+                  <p className="font-medium">Near-duplicate document detected</p>
+                  <p className="mt-1 text-xs text-orange-700">
+                    This document is similar to a previously uploaded document (slightly edited version).
+                  </p>
+                </div>
+              )}
               <div className="rounded-xl border border-gray-200 px-4 py-4 space-y-2 text-sm text-gray-700">
                 <div className="flex items-center justify-between">
                   <span className="font-medium text-gray-900">SHA-256 Hash</span>
                   <code className="break-all text-xs text-gray-500">{verificationResult.sha256 ?? 'Unavailable'}</code>
                 </div>
+                {verificationResult.perceptualHash && (
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium text-gray-900">Perceptual Hash</span>
+                    <code className="break-all text-xs text-gray-500">{verificationResult.perceptualHash}</code>
+                  </div>
+                )}
                 {verificationResult.templateLabel && (
                   <p>
                     Template evaluated:&nbsp;
@@ -552,6 +583,46 @@ export default function HospitalClaimsPage() {
                 className="rounded-lg bg-green-600 px-5 py-2 text-sm font-semibold text-white hover:bg-green-700"
               >
                 Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reset Confirmation Modal */}
+      {showResetConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 py-6">
+          <div className="w-full max-w-md rounded-2xl bg-white shadow-2xl">
+            <div className="px-6 py-4 border-b">
+              <h2 className="text-lg font-semibold text-gray-900">Clear Hash Database</h2>
+              <p className="text-sm text-gray-500 mt-1">
+                This will clear all stored SHA-256 and perceptual hashes, including demo seeds.
+              </p>
+            </div>
+            <div className="px-6 py-4">
+              <p className="text-sm text-gray-700">
+                This action cannot be undone. You will need to reload the page to re-seed demo hashes.
+              </p>
+            </div>
+            <div className="flex items-center justify-end gap-3 border-t px-6 py-4">
+              <button
+                onClick={() => setShowResetConfirm(false)}
+                className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  const cleared = clearDocumentHashes();
+                  if (cleared) {
+                    setShowResetConfirm(false);
+                    // Reload page to re-seed demo hashes
+                    window.location.reload();
+                  }
+                }}
+                className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700"
+              >
+                Clear & Reload
               </button>
             </div>
           </div>
