@@ -1,5 +1,15 @@
 'use client';
 
+import {
+  getBenchmarkForClaim,
+  calculateZScore,
+  inferTreatmentCategory,
+  calculateLengthOfStay,
+  getTypicalStayRange,
+  type HospitalTier,
+} from './costBenchmarking';
+import hospitalsData from '@/data/hospitals.json';
+
 type TemplateKey = 'city-general' | 'karachi-care' | 'rehman-clinic';
 export type DocumentTemplateKey = TemplateKey;
 
@@ -18,6 +28,8 @@ export interface DocumentVerificationInput {
   dischargeDate?: string | null;
   templateKey?: TemplateKey | '';
   documentSnippet?: string;
+  treatmentCategory?: string | null;
+  hospitalId?: string | null;
 }
 
 export interface DocumentVerificationResult {
@@ -100,6 +112,26 @@ const computeSha256 = async (file: File): Promise<string | undefined> => {
 
 const templateFromKey = (key?: TemplateKey | '') => TEMPLATE_CONFIG.find((template) => template.key === key);
 
+const getHospitalIdFromTemplate = (templateKey: TemplateKey | ''): string | null => {
+  if (!templateKey) return null;
+
+  // Map template keys to hospital IDs
+  // This is a direct mapping for the demo templates
+  const templateToHospitalMap: Record<TemplateKey, string> = {
+    'city-general': 'hosp-001', // City General Hospital
+    'karachi-care': 'hosp-002', // National Hospital (closest match for demo)
+    'rehman-clinic': 'hosp-004', // Services Hospital (closest match for demo)
+  };
+
+  return templateToHospitalMap[templateKey] || null;
+};
+
+const getHospitalTier = (hospitalId: string | null): HospitalTier | null => {
+  if (!hospitalId) return null;
+  const hospital = hospitalsData.find((h: any) => h.id === hospitalId);
+  return (hospital?.tier as HospitalTier) || null;
+};
+
 export const markHashAsSuspicious = (hash?: string) => {
   if (!hash) return;
   const hashes = readHashes();
@@ -136,6 +168,8 @@ export const verifyDocumentLocally = async (
       duplicateDetected = true;
       reasons.push('Duplicate detected: matches a previously uploaded document hash.');
       score -= 50;
+      // Automatically mark duplicate as suspicious (no manual step needed)
+      markHashAsSuspicious(sha256);
     } else {
       writeHashes([...hashes, sha256]);
     }
@@ -187,6 +221,92 @@ export const verifyDocumentLocally = async (
   } else {
     reasons.push('No hospital template selected.');
     score -= 5;
+  }
+
+  // Cost Benchmarking Checks
+  if (totalAmount > 0 && input.admissionDate && input.dischargeDate) {
+    // Treatment category is now required, but we still infer for validation
+    const treatmentCategory = input.treatmentCategory;
+    const inferredCategory = inferTreatmentCategory(totalAmount);
+    const hospitalId = input.hospitalId || getHospitalIdFromTemplate(input.templateKey || '');
+    const hospitalTier = hospitalId ? getHospitalTier(hospitalId) : null;
+
+    let benchmark = null;
+    if (treatmentCategory) {
+      benchmark = getBenchmarkForClaim(treatmentCategory, hospitalTier, hospitalId);
+
+      if (benchmark) {
+        // Amount comparison
+        const ratio = totalAmount / benchmark.mean;
+        if (ratio >= 3) {
+          reasons.push(
+            `Claim amount (Rs. ${totalAmount.toLocaleString()}) is ${ratio.toFixed(1)}× above average for ${treatmentCategory}${hospitalTier ? ` at ${hospitalTier} hospitals` : ''} (avg: Rs. ${benchmark.mean.toLocaleString()}).`
+          );
+          score -= 50;
+        } else if (ratio >= 2) {
+          reasons.push(
+            `Claim amount (Rs. ${totalAmount.toLocaleString()}) is ${ratio.toFixed(1)}× above average for ${treatmentCategory}${hospitalTier ? ` at ${hospitalTier} hospitals` : ''} (avg: Rs. ${benchmark.mean.toLocaleString()}).`
+          );
+          score -= 30;
+        }
+
+        // Z-score calculation
+        if (benchmark.stdDev > 0) {
+          const zScore = calculateZScore(totalAmount, benchmark.mean, benchmark.stdDev);
+          if (zScore > 3) {
+            reasons.push(
+              `Statistical outlier: Claim amount is ${zScore.toFixed(1)} standard deviations above mean (top 0.1% of claims).`
+            );
+            score -= 40;
+          } else if (zScore > 2) {
+            reasons.push(
+              `Statistical outlier: Claim amount is ${zScore.toFixed(1)} standard deviations above mean (top 5% of claims).`
+            );
+            score -= 20;
+          }
+        }
+
+        // Percentile check
+        if (totalAmount > benchmark.percentile95) {
+          reasons.push(
+            `Claim amount exceeds 95th percentile (Rs. ${benchmark.percentile95.toLocaleString()}) for this category.`
+          );
+          score -= 15;
+        }
+
+        // Category mismatch check (validate user selection against inferred)
+        if (treatmentCategory && inferredCategory && inferredCategory !== treatmentCategory) {
+          reasons.push(
+            `Category mismatch: Selected "${treatmentCategory}" but amount suggests "${inferredCategory}". Please verify the correct category.`
+          );
+          score -= 25;
+        }
+      }
+    }
+
+    // Length of stay check
+    if (treatmentCategory) {
+      const lengthOfStay = calculateLengthOfStay(input.admissionDate, input.dischargeDate);
+      const typicalRange = getTypicalStayRange(treatmentCategory);
+      if (lengthOfStay < typicalRange.min || lengthOfStay > typicalRange.max) {
+        reasons.push(
+          `Length of stay (${lengthOfStay} days) is outside typical range for ${treatmentCategory} (${typicalRange.min}-${typicalRange.max} days).`
+        );
+        score -= 15;
+      }
+
+      // Cost per day check
+      const costPerDay = totalAmount / lengthOfStay;
+      if (benchmark) {
+        const avgCostPerDay = benchmark.mean / (typicalRange.min + typicalRange.max) / 2;
+        if (costPerDay > avgCostPerDay * 2) {
+          reasons.push(
+            `Cost per day (Rs. ${costPerDay.toLocaleString()}) is unusually high for this treatment category.`
+          );
+          score -= 10;
+        }
+      }
+    }
   }
 
   const metadataNote = 'Metadata check pending backend integration (simulated).';

@@ -32,6 +32,7 @@ export default function HospitalClaimsPage() {
     dischargeDate: '',
     templateKey: '' as DocumentTemplateKey | '',
     snippet: '',
+    treatmentCategory: '' as string | '',
   });
   const { hasUnreadAlert } = useClaimsMessaging();
   const templateOptions = useMemo(() => getTemplateOptions(), []);
@@ -106,6 +107,7 @@ export default function HospitalClaimsPage() {
                       dischargeDate: '',
                       templateKey: '' as DocumentTemplateKey | '',
                       snippet: '',
+                      treatmentCategory: '',
                     });
                     setUploadModalOpen(true);
                   }}
@@ -133,6 +135,7 @@ export default function HospitalClaimsPage() {
                     dischargeDate: '',
                     templateKey: '' as DocumentTemplateKey | '',
                     snippet: '',
+                    treatmentCategory: '',
                   });
                   setUploadModalOpen(true);
                 }}
@@ -364,6 +367,32 @@ export default function HospitalClaimsPage() {
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium text-gray-700">
+                  Treatment Category <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={formState.treatmentCategory}
+                  onChange={(event) =>
+                    setFormState((prev) => ({ ...prev, treatmentCategory: event.target.value }))
+                  }
+                  required
+                  className="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-900 focus:border-green-500 focus:ring-2 focus:ring-green-200"
+                >
+                  <option value="">Select treatment category</option>
+                  <option value="Surgery">Surgery</option>
+                  <option value="Emergency Care">Emergency Care</option>
+                  <option value="Routine Checkup">Routine Checkup</option>
+                  <option value="Lab Test">Lab Test</option>
+                  <option value="Maternity">Maternity</option>
+                  <option value="Cardiology">Cardiology</option>
+                  <option value="Orthopedics">Orthopedics</option>
+                  <option value="General Consultation">General Consultation</option>
+                </select>
+                <p className="text-xs text-gray-500">
+                  System will validate your selection against the claim amount
+                </p>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">
                   Paste a text snippet from the document (used for template check)
                 </label>
                 <textarea
@@ -391,6 +420,10 @@ export default function HospitalClaimsPage() {
                     setFormError('Please attach a document file.');
                     return;
                   }
+                  if (!formState.treatmentCategory) {
+                    setFormError('Please select a treatment category.');
+                    return;
+                  }
                   setFormError(null);
                   setIsVerifying(true);
                   setHashMarked(false);
@@ -403,6 +436,7 @@ export default function HospitalClaimsPage() {
                       dischargeDate: formState.dischargeDate,
                       templateKey: formState.templateKey,
                       documentSnippet: formState.snippet,
+                      treatmentCategory: formState.treatmentCategory,
                     });
                     setVerificationResult(result);
                     setUploadModalOpen(false);
@@ -489,7 +523,7 @@ export default function HospitalClaimsPage() {
                   </p>
                 )}
               </div>
-              {verificationResult.sha256 && (
+              {verificationResult.sha256 && !verificationResult.duplicateDetected && (
                 <button
                   onClick={() => {
                     markHashAsSuspicious(verificationResult.sha256);
@@ -497,8 +531,16 @@ export default function HospitalClaimsPage() {
                   }}
                   className="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
                 >
-                  {hashMarked ? 'Marked as suspicious for future uploads' : 'Mark this hash as suspicious'}
+                  {hashMarked ? '✓ Flagged for future review' : 'Flag for future review'}
                 </button>
+              )}
+              {verificationResult.duplicateDetected && (
+                <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+                  <p className="font-medium">Duplicate document automatically flagged</p>
+                  <p className="mt-1 text-xs text-red-700">
+                    This document hash has been added to the suspicious list for future reference.
+                  </p>
+                </div>
               )}
             </div>
             <div className="flex items-center justify-end border-t px-6 py-4">
