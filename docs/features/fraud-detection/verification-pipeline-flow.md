@@ -19,6 +19,27 @@ The verification pipeline runs multiple checks in sequence, each potentially mod
 
 ## Phase 1: Initialization (On Page Load)
 
+### Demo Hash Seeding (`documentVerification.ts`)
+
+**When:** Once when the page loads (checks seeded flag)
+
+**Process:**
+1. Check if `demoHashesSeeded` flag exists in localStorage
+2. If not seeded:
+   - Fetch 16 demo images from `/demo-docs/` folder
+   - For each image:
+     - Calculate SHA-256 hash
+     - Calculate perceptual hash (dHash)
+     - Store both hashes
+   - Add SHA-256 hashes to `documentTrustHashes` array
+   - Add perceptual hashes to `documentTrustPerceptualHashes` array
+   - Set `demoHashesSeeded` flag to prevent re-seeding
+3. If already seeded: Skip (instant)
+
+**Output:** Pre-populated hash database for immediate duplicate/near-duplicate detection
+
+**Note:** Seeding runs asynchronously and won't block page load. Errors are logged but don't break the flow.
+
 ### Benchmark Calculation (`costBenchmarking.ts`)
 
 **When:** Once when the page loads (cached in localStorage)
@@ -49,7 +70,9 @@ When user clicks "Run Verification" button, the pipeline executes in the followi
 
 ## Step 1: Document Hash Check
 
-**Function:** `computeSha256()` → Duplicate Detection
+### Step 1.1: SHA-256 Hash (Exact Duplicate Detection)
+
+**Function:** `computeSha256()` → Exact Duplicate Detection
 
 **Process:**
 ```
@@ -61,7 +84,7 @@ Check hash against stored hashes (localStorage, last 25 hashes)
   ↓
 Decision Point:
   ├─ Hash found in storage?
-  │   ├─ YES → Duplicate Detected
+  │   ├─ YES → Exact Duplicate Detected
   │   │   ├─ Set duplicateDetected = true
   │   │   ├─ Add reason: "Duplicate detected: matches a previously uploaded document hash"
   │   │   ├─ Deduct: -50 points
@@ -76,9 +99,44 @@ Decision Point:
 ```
 
 **Score Impact:**
-- Duplicate: -50 points
+- Exact duplicate: -50 points
 - Hash calculation failure: -10 points
 - New document: No deduction (stored for future)
+
+### Step 1.2: Perceptual Hash (Near-Duplicate Detection)
+
+**Function:** `computePerceptualHash()` → Near-Duplicate Detection
+
+**Prerequisites:** File provided AND SHA-256 hash calculated successfully
+
+**Process:**
+```
+Calculate perceptual hash (dHash algorithm)
+  ↓
+Check hash against stored perceptual hashes (localStorage, last 100 hashes)
+  ↓
+Decision Point:
+  ├─ Similar hash found? (similarity >= 90%)
+  │   ├─ YES → Near-Duplicate Detected
+  │   │   ├─ Set nearDuplicateDetected = true
+  │   │   ├─ Calculate similarity percentage
+  │   │   ├─ Add reason: "Near-duplicate detected: Document is X% similar to a previously uploaded document (slightly edited version detected)"
+  │   │   ├─ Deduct: -40 points
+  │   │   └─ Store perceptual hash for future checks
+  │   │
+  │   └─ NO → New Document (visually different)
+  │       └─ Store perceptual hash in localStorage for future checks
+  │
+  └─ Hash calculation failed?
+      └─ Log warning (don't break verification, graceful degradation)
+```
+
+**Score Impact:**
+- Near-duplicate (90%+ similar): -40 points
+- Calculation failure: No deduction (graceful degradation)
+- New document: No deduction (stored for future)
+
+**Note:** Perceptual hash catches slightly edited documents (cropped, brightness adjusted, watermarked, etc.) that SHA-256 would miss.
 
 ---
 
@@ -391,12 +449,14 @@ Determine Status:
 **Output Structure:**
 ```typescript
 {
-  score: number,              // 0-100
-  reasons: string[],          // All flags, warnings, and notes
-  sha256?: string,            // Document hash
-  duplicateDetected: boolean, // Whether duplicate was found
-  templateLabel?: string,     // Hospital name from template
-  metadataNote: string        // Placeholder for future metadata checks
+  score: number,                    // 0-100
+  reasons: string[],                // All flags, warnings, and notes
+  sha256?: string,                  // SHA-256 document hash
+  duplicateDetected: boolean,       // Whether exact duplicate was found
+  nearDuplicateDetected?: boolean,   // Whether near-duplicate was found
+  perceptualHash?: string,          // Perceptual hash (dHash)
+  templateLabel?: string,           // Hospital name from template
+  metadataNote: string              // Placeholder for future metadata checks
 }
 ```
 
@@ -410,10 +470,14 @@ Determine Status:
 1. **Trust Score:** Large number (0-100) with color coding
 2. **Status Badge:** Auto Accept / Needs Review / High Risk
 3. **Reasons List:** All flags and warnings in bullet format
-4. **Document Hash:** SHA-256 hash for reference
-5. **Template Info:** Hospital name if template matched
-6. **Actions:**
-   - **If Duplicate:** Info message "Duplicate document automatically flagged"
+4. **Near-Duplicate Warning:** Orange alert box if near-duplicate detected
+5. **Document Hashes:**
+   - **SHA-256 Hash:** For exact duplicate reference
+   - **Perceptual Hash:** For near-duplicate reference (if calculated)
+6. **Template Info:** Hospital name if template matched
+7. **Actions:**
+   - **If Exact Duplicate:** Info message "Duplicate document automatically flagged"
+   - **If Near-Duplicate:** Orange warning box with similarity percentage
    - **If Not Duplicate:** "Flag for future review" button (manual flagging)
 
 ---
@@ -427,9 +491,15 @@ Determine Status:
                             ↓
 ┌─────────────────────────────────────────────────────────────┐
 │  STEP 1: Document Hash Check                                │
-│  • Calculate SHA-256                                         │
-│  • Check for duplicates                                      │
-│  • Auto-mark duplicates as suspicious                       │
+│  ├─ 1.1: SHA-256 Hash (Exact Duplicate)                    │
+│  │   • Calculate SHA-256                                     │
+│  │   • Check for exact duplicates                           │
+│  │   • Auto-mark duplicates as suspicious                   │
+│  │                                                           │
+│  └─ 1.2: Perceptual Hash (Near-Duplicate)                   │
+│      • Calculate dHash (perceptual hash)                    │
+│      • Check for similar documents (90%+ similarity)        │
+│      • Detect slightly edited versions                      │
 └─────────────────────────────────────────────────────────────┘
                             ↓
 ┌─────────────────────────────────────────────────────────────┐
@@ -481,7 +551,8 @@ Determine Status:
 
 | Check | Deduction | Bonus |
 |-------|-----------|-------|
-| Duplicate hash | -50 | - |
+| Exact duplicate hash (SHA-256) | -50 | - |
+| Near-duplicate hash (perceptual) | -40 | - |
 | Hash calculation failure | -10 | - |
 | Amount mismatch | -20 | +5 (if match) |
 | Missing amounts | -5 | - |
@@ -516,7 +587,6 @@ Determine Status:
 ## Future Enhancements
 
 **Planned:**
-- Perceptual hash for near-duplicate detection
 - OCR integration (auto-extract text, remove manual snippet)
 - Cross-claim consistency checks
 - Metadata extraction (EXIF, PDF metadata)
@@ -525,9 +595,15 @@ Determine Status:
 
 **Current Limitations:**
 - Client-side only (no backend persistence)
-- Limited hash history (last 25 only)
+- Limited SHA-256 hash history (last 25 only)
+- Limited perceptual hash history (last 100 only)
 - Manual text snippet input (until OCR ready)
 - No cross-claim pattern detection yet
+
+**Recently Completed:**
+- ✅ Perceptual hash for near-duplicate detection (dHash algorithm)
+- ✅ Demo hash seeding from 16 images in `demo-docs/` folder
+- ✅ Reset function for testing (clears hash database)
 
 ---
 
@@ -546,12 +622,19 @@ Determine Status:
   - "Statistical outlier: top 0.1%"
   - "Category mismatch: Selected Routine Checkup but amount suggests Surgery"
 
-### Scenario 3: Duplicate Document
-- **Input:** Same document uploaded twice
+### Scenario 3: Exact Duplicate Document
+- **Input:** Same document uploaded twice (identical file)
 - **Result:** Score 50, High Risk
 - **Reasons:**
   - "Duplicate detected: matches a previously uploaded document hash"
 - **Action:** Automatically flagged, no manual button needed
+
+### Scenario 4: Near-Duplicate Document
+- **Input:** Slightly edited document (cropped, brightness adjusted, watermarked)
+- **Result:** Score 60, Needs Review
+- **Reasons:**
+  - "Near-duplicate detected: Document is 92.5% similar to a previously uploaded document (slightly edited version detected)"
+- **Action:** Orange warning displayed, document flagged for review
 
 ---
 

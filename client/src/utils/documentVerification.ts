@@ -39,6 +39,7 @@ export interface DocumentVerificationResult {
   duplicateDetected: boolean;
   nearDuplicateDetected?: boolean;
   perceptualHash?: string;
+  perceptualWarningSimilarity?: number;
   templateLabel?: string;
   metadataNote: string;
 }
@@ -148,12 +149,14 @@ export const seedDemoHashesFromImages = async () => {
       const sha256 = await computeSha256(file);
       if (sha256) {
         sha256Hashes.push(sha256);
+        console.log(`[Demo Seeding] SHA-256 calculated for ${imagePath.split('/').pop()}: ${sha256.substring(0, 16)}...`);
       }
 
       // Calculate perceptual hash
       const perceptualHash = await computePerceptualHash(file);
       if (perceptualHash) {
         perceptualHashes.push(perceptualHash);
+        console.log(`[Demo Seeding] Perceptual hash calculated for ${imagePath.split('/').pop()}: ${perceptualHash.substring(0, 8)}...`);
       }
     } catch (error) {
       console.warn(`Error processing ${imagePath}:`, error);
@@ -164,16 +167,21 @@ export const seedDemoHashesFromImages = async () => {
   // Store all hashes
   if (sha256Hashes.length > 0) {
     const existingHashes = readHashes();
-    writeHashes([...existingHashes, ...sha256Hashes]);
+    const allHashes = [...existingHashes, ...sha256Hashes];
+    writeHashes(allHashes);
+    console.log(`[Demo Seeding] Stored ${sha256Hashes.length} SHA-256 hashes (total: ${allHashes.length})`);
   }
 
   if (perceptualHashes.length > 0) {
     const existingPerceptualHashes = readPerceptualHashes();
-    writePerceptualHashes([...existingPerceptualHashes, ...perceptualHashes]);
+    const allPerceptualHashes = [...existingPerceptualHashes, ...perceptualHashes];
+    writePerceptualHashes(allPerceptualHashes);
+    console.log(`[Demo Seeding] Stored ${perceptualHashes.length} perceptual hashes (total: ${allPerceptualHashes.length})`);
   }
 
   // Mark as seeded
   win.localStorage.setItem(LOCAL_STORAGE_DEMO_HASHES_SEEDED_KEY, 'true');
+  console.log('[Demo Seeding] Demo hash seeding completed');
 };
 
 const bufferToHex = (buffer: ArrayBuffer) => {
@@ -215,11 +223,26 @@ const writePerceptualHashes = (hashes: string[]) => {
   }
 };
 
+// Convert hex string to binary string for bit-by-bit comparison
+const hexToBinary = (hex: string): string => {
+  return hex
+    .split('')
+    .map((char) => parseInt(char, 16).toString(2).padStart(4, '0'))
+    .join('');
+};
+
 const calculateHammingDistance = (hash1: string, hash2: string): number => {
   if (hash1.length !== hash2.length) return Infinity;
+  
+  // Convert hex strings to binary for bit-by-bit comparison
+  const binary1 = hexToBinary(hash1);
+  const binary2 = hexToBinary(hash2);
+  
+  if (binary1.length !== binary2.length) return Infinity;
+  
   let distance = 0;
-  for (let i = 0; i < hash1.length; i++) {
-    if (hash1[i] !== hash2[i]) distance++;
+  for (let i = 0; i < binary1.length; i++) {
+    if (binary1[i] !== binary2[i]) distance++;
   }
   return distance;
 };
@@ -227,21 +250,62 @@ const calculateHammingDistance = (hash1: string, hash2: string): number => {
 const calculateSimilarity = (hash1: string, hash2: string): number => {
   if (hash1.length === 0 || hash2.length === 0) return 0;
   const hammingDistance = calculateHammingDistance(hash1, hash2);
-  return 1 - hammingDistance / hash1.length;
+  if (hammingDistance === Infinity) return 0;
+  
+  // Total bits = hex length * 4 (each hex char = 4 bits)
+  const totalBits = hash1.length * 4;
+  return 1 - hammingDistance / totalBits;
 };
+
+// Configurable thresholds:
+// - Near duplicate threshold: score impact
+// - Warning threshold: highlight borderline cases without score penalty
+const PERCEPTUAL_HASH_THRESHOLD = 0.80;
+const PERCEPTUAL_WARNING_THRESHOLD = 0.70;
+
+interface PerceptualHashResult {
+  matchHash: string | null;
+  matchSimilarity: number;
+  highestSimilarity: number;
+}
 
 const findNearDuplicate = (
   perceptualHash: string,
-  threshold: number = 0.90
-): string | null => {
+  threshold: number = PERCEPTUAL_HASH_THRESHOLD
+): PerceptualHashResult => {
   const storedHashes = readPerceptualHashes();
+  let maxSimilarity = 0;
+  let bestMatch: string | null = null;
+
   for (const storedHash of storedHashes) {
     const similarity = calculateSimilarity(perceptualHash, storedHash);
+    if (similarity > maxSimilarity) {
+      maxSimilarity = similarity;
+      bestMatch = storedHash;
+    }
     if (similarity >= threshold) {
-      return storedHash;
+      console.log(
+        `[Perceptual Hash] Match found: ${(similarity * 100).toFixed(1)}% similar (threshold: ${(threshold * 100).toFixed(0)}%)`
+      );
+      return {
+        matchHash: storedHash,
+        matchSimilarity: similarity,
+        highestSimilarity: maxSimilarity,
+      };
     }
   }
-  return null;
+
+  if (maxSimilarity > 0) {
+    console.log(
+      `[Perceptual Hash] Highest similarity: ${(maxSimilarity * 100).toFixed(1)}% (below threshold: ${(threshold * 100).toFixed(0)}%)`
+    );
+  }
+
+  return {
+    matchHash: null,
+    matchSimilarity: 0,
+    highestSimilarity: maxSimilarity,
+  };
 };
 
 const computePerceptualHash = async (file: File): Promise<string | undefined> => {
@@ -379,6 +443,7 @@ export const verifyDocumentLocally = async (
   let duplicateDetected = false;
   let perceptualHash: string | undefined;
   let nearDuplicateDetected = false;
+  let perceptualWarningSimilarity: number | undefined;
 
   if (input.file) {
     try {
@@ -394,42 +459,71 @@ export const verifyDocumentLocally = async (
 
   if (sha256) {
     const hashes = readHashes();
+    console.log(`[Hash Check] Checking SHA-256 against ${hashes.length} stored hashes`);
+    console.log(`[Hash Check] Current hash: ${sha256.substring(0, 32)}...`);
+    
     if (hashes.includes(sha256)) {
       duplicateDetected = true;
       reasons.push('Duplicate detected: matches a previously uploaded document hash.');
       score -= 50;
       // Automatically mark duplicate as suspicious (no manual step needed)
       markHashAsSuspicious(sha256);
+      console.log('[Hash Check] ✓ Exact duplicate detected via SHA-256');
     } else {
       writeHashes([...hashes, sha256]);
+      console.log('[Hash Check] ✓ New document SHA-256 stored');
     }
   }
 
   // Perceptual Hash Check (Near-Duplicate Detection)
-  if (input.file && sha256) {
+  // Skip if exact duplicate already found (optimization + clarity)
+  if (input.file && sha256 && !duplicateDetected) {
     try {
       perceptualHash = await computePerceptualHash(input.file);
       
       if (perceptualHash) {
         const storedPerceptualHashes = readPerceptualHashes();
-        const matchingHash = findNearDuplicate(perceptualHash, 0.90);
-        
-        if (matchingHash) {
+        console.log(
+          `[Perceptual Hash] Comparing against ${storedPerceptualHashes.length} stored perceptual hashes`
+        );
+
+        const { matchHash, matchSimilarity, highestSimilarity } = findNearDuplicate(
+          perceptualHash,
+          PERCEPTUAL_HASH_THRESHOLD
+        );
+
+        if (matchHash) {
           nearDuplicateDetected = true;
-          const similarity = calculateSimilarity(perceptualHash, matchingHash);
+          const similarityPercent = (matchSimilarity * 100).toFixed(1);
           reasons.push(
-            `Near-duplicate detected: Document is ${(similarity * 100).toFixed(1)}% similar to a previously uploaded document (slightly edited version detected).`
+            `Near-duplicate detected: Document is ${similarityPercent}% similar to a previously uploaded document (slightly edited version detected).`
           );
           score -= 40; // Less severe than exact duplicate (-50)
+          console.log(`[Perceptual Hash] Near-duplicate detected: ${similarityPercent}% similar`);
         } else {
+          if (highestSimilarity >= PERCEPTUAL_WARNING_THRESHOLD) {
+            const similarityPercent = (highestSimilarity * 100).toFixed(1);
+            reasons.push(
+              `Possible document reuse: ${similarityPercent}% similar to a previous upload. Manual review recommended.`
+            );
+            perceptualWarningSimilarity = highestSimilarity;
+            console.log(
+              `[Perceptual Hash] Warning band triggered: ${similarityPercent}% similar (threshold: ${
+                PERCEPTUAL_HASH_THRESHOLD * 100
+              }%)`
+            );
+          }
           // Store new perceptual hash for future comparisons
           writePerceptualHashes([...storedPerceptualHashes, perceptualHash]);
+          console.log('[Perceptual Hash] New document perceptual hash stored');
         }
       }
     } catch (error) {
       // Fail silently or log - don't break verification
       console.warn('Perceptual hash calculation failed:', error);
     }
+  } else if (duplicateDetected) {
+    console.log('[Perceptual Hash] Skipped (exact duplicate already detected)');
   }
 
   const totalAmount = Number(input.totalAmount ?? 0);
@@ -577,8 +671,10 @@ export const verifyDocumentLocally = async (
     duplicateDetected,
     nearDuplicateDetected,
     perceptualHash,
+    perceptualWarningSimilarity,
     templateLabel: template?.label,
     metadataNote,
   };
 };
+
 

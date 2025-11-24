@@ -536,6 +536,16 @@ export default function HospitalClaimsPage() {
                   </p>
                 </div>
               )}
+              {!verificationResult.nearDuplicateDetected &&
+                verificationResult.perceptualWarningSimilarity !== undefined && (
+                  <div className="rounded-lg border border-yellow-200 bg-yellow-50 px-4 py-3 text-sm text-yellow-800">
+                    <p className="font-medium">Possible document reuse detected</p>
+                    <p className="mt-1 text-xs text-yellow-700">
+                      This document is {(verificationResult.perceptualWarningSimilarity * 100).toFixed(1)}% similar to a
+                      previous upload. Manual review is recommended.
+                    </p>
+                  </div>
+                )}
               <div className="rounded-xl border border-gray-200 px-4 py-4 space-y-2 text-sm text-gray-700">
                 <div className="flex items-center justify-between">
                   <span className="font-medium text-gray-900">SHA-256 Hash</span>
