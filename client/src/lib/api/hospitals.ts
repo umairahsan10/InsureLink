@@ -9,7 +9,6 @@ export interface Hospital {
   location?: string;
   specializations?: string;
   status?: string;
-  [key: string]: any;
 }
 
 export interface AddHospitalRequest {

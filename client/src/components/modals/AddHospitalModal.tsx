@@ -34,6 +34,7 @@ export default function AddHospitalModal({ isOpen, onClose, onSuccess }: AddHosp
         email: '',
       });
     } catch (error) {
+      console.error('Failed to add hospital', error);
       alert('Failed to add hospital. Please try again.');
     } finally {
       setIsSubmitting(false);

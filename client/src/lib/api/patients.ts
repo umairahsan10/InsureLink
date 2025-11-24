@@ -1,6 +1,6 @@
 import { apiFetch } from './client';
 
-export interface Patient {
+export interface Patient extends Record<string, unknown> {
   id: string;
   name?: string;
   cnic?: string;
@@ -11,7 +11,6 @@ export interface Patient {
   lastVisit?: string;
   insurance?: string;
   status?: string;
-  [key: string]: any;
 }
 
 export interface VerifyPatientRequest {

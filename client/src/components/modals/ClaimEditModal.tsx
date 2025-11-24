@@ -3,21 +3,28 @@
 import { useState, useEffect } from 'react';
 import BaseModal from './BaseModal';
 
+interface EditableClaimData {
+  id: string;
+  amount?: string;
+  treatment?: string;
+}
+
+interface ClaimEditForm {
+  amount: string;
+  treatment: string;
+  description: string;
+}
+
 interface ClaimEditModalProps {
   isOpen: boolean;
   onClose: () => void;
   claimId: string;
-  claimData?: {
-    id: string;
-    amount?: string;
-    treatment?: string;
-    [key: string]: any;
-  };
-  onSave?: (updatedData: any) => void;
+  claimData?: EditableClaimData;
+  onSave?: (updatedData: ClaimEditForm) => void;
 }
 
 export default function ClaimEditModal({ isOpen, onClose, claimId, claimData, onSave }: ClaimEditModalProps) {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<ClaimEditForm>({
     amount: '',
     treatment: '',
     description: '',
@@ -44,6 +51,7 @@ export default function ClaimEditModal({ isOpen, onClose, claimId, claimData, on
       onSave?.(formData);
       onClose();
     } catch (error) {
+      console.error('Failed to update claim', error);
       alert('Failed to update claim. Please try again.');
     } finally {
       setIsSaving(false);
@@ -53,6 +61,10 @@ export default function ClaimEditModal({ isOpen, onClose, claimId, claimData, on
   return (
     <BaseModal isOpen={isOpen} onClose={onClose} title="Edit Claim" size="lg">
       <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="text-sm text-gray-500">
+          Editing claim <span className="font-semibold text-gray-900">{claimId}</span>
+        </div>
+
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Treatment *</label>
           <input

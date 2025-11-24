@@ -9,7 +9,6 @@ export interface Claim {
   date?: string;
   status?: string;
   treatment?: string;
-  [key: string]: any;
 }
 
 export interface ApproveClaimRequest {

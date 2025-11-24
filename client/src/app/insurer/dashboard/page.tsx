@@ -9,7 +9,6 @@ import notificationsData from '@/data/insurerNotifications.json';
 import { AlertNotification } from '@/types';
 import { apiFetch } from '@/lib/api/client';
 import ClaimReviewModal from '@/components/modals/ClaimReviewModal';
-import ClaimDetailsModal from '@/components/modals/ClaimDetailsModal';
 
 interface Claim {
   id: string;
@@ -34,7 +33,6 @@ export default function InsurerDashboardPage() {
   const router = useRouter();
   const [selectedClaimId, setSelectedClaimId] = useState<string | null>(null);
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
-  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [selectedClaims, setSelectedClaims] = useState<Set<string>>(new Set());
   const [claims, setClaims] = useState<Claim[]>([
     {
@@ -101,6 +99,7 @@ export default function InsurerDashboardPage() {
       setClaims(prev => prev.map(c => c.id === claimId ? { ...c, status: 'Approved' } : c));
       alert('Claim approved successfully');
     } catch (error) {
+      console.error('Failed to approve claim', error);
       alert('Failed to approve claim. Please try again.');
     }
   };
@@ -114,6 +113,7 @@ export default function InsurerDashboardPage() {
       setClaims(prev => prev.map(c => c.id === claimId ? { ...c, status: 'Rejected' } : c));
       alert('Claim rejected');
     } catch (error) {
+      console.error('Failed to reject claim', error);
       alert('Failed to reject claim. Please try again.');
     }
   };
@@ -148,6 +148,7 @@ export default function InsurerDashboardPage() {
       setSelectedClaims(new Set());
       alert('Claims approved successfully');
     } catch (error) {
+      console.error('Failed to bulk approve claims', error);
       alert('Failed to approve claims. Please try again.');
     }
   };
@@ -170,6 +171,8 @@ export default function InsurerDashboardPage() {
     a.click();
     window.URL.revokeObjectURL(url);
   };
+
+  const selectedClaim = selectedClaimId ? claims.find((claim) => claim.id === selectedClaimId) : undefined;
 
   return (
     <DashboardLayout
@@ -411,6 +414,32 @@ export default function InsurerDashboardPage() {
           </button>
         </div>
       </div>
+      {selectedClaimId && selectedClaim && (
+        <ClaimReviewModal
+          isOpen={isReviewModalOpen}
+          onClose={() => {
+            setIsReviewModalOpen(false);
+            setSelectedClaimId(null);
+          }}
+          claimId={selectedClaim.claimNumber}
+          claimData={{
+            id: selectedClaim.claimNumber,
+            patientName: selectedClaim.patient,
+            amount: selectedClaim.amount,
+            hospital: selectedClaim.hospital,
+          }}
+          onApprove={async (claimId) => {
+            await handleApprove(claimId);
+            setIsReviewModalOpen(false);
+            setSelectedClaimId(null);
+          }}
+          onReject={async (claimId, reason) => {
+            await handleReject(claimId, reason);
+            setIsReviewModalOpen(false);
+            setSelectedClaimId(null);
+          }}
+        />
+      )}
     </DashboardLayout>
   );
 }

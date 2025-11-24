@@ -36,6 +36,7 @@ export default function AddCorporateModal({ isOpen, onClose, onSuccess }: AddCor
         contactPerson: '',
       });
     } catch (error) {
+      console.error('Failed to add corporate', error);
       alert('Failed to add corporate. Please try again.');
     } finally {
       setIsSubmitting(false);

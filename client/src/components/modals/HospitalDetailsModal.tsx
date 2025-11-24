@@ -2,18 +2,19 @@
 
 import BaseModal from './BaseModal';
 
+interface HospitalDetails {
+  id: string;
+  name?: string;
+  address?: string;
+  phone?: string;
+  email?: string;
+}
+
 interface HospitalDetailsModalProps {
   isOpen: boolean;
   onClose: () => void;
   hospitalId: string;
-  hospitalData?: {
-    id: string;
-    name?: string;
-    address?: string;
-    phone?: string;
-    email?: string;
-    [key: string]: any;
-  };
+  hospitalData?: HospitalDetails;
 }
 
 export default function HospitalDetailsModal({ isOpen, onClose, hospitalId, hospitalData }: HospitalDetailsModalProps) {

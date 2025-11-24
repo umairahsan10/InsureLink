@@ -9,7 +9,6 @@ export interface Corporate {
   contactPerson?: string;
   industry?: string;
   planType?: string;
-  [key: string]: any;
 }
 
 export interface AddCorporateRequest {
@@ -28,6 +27,8 @@ export interface ExportReportRequest {
     status?: string;
   };
 }
+
+type AuditReport = Record<string, unknown>;
 
 export const insurerApi = {
   async addCorporate(request: AddCorporateRequest): Promise<Corporate> {
@@ -63,12 +64,12 @@ export const insurerApi = {
   async generateAuditReport(filters?: {
     dateFrom?: string;
     dateTo?: string;
-  }): Promise<any> {
+  }): Promise<AuditReport> {
     const queryParams = new URLSearchParams();
     if (filters?.dateFrom) queryParams.append('dateFrom', filters.dateFrom);
     if (filters?.dateTo) queryParams.append('dateTo', filters.dateTo);
 
-    const response = await apiFetch<any>(`/api/reports/audit?${queryParams.toString()}`);
+    const response = await apiFetch<AuditReport>(`/api/reports/audit?${queryParams.toString()}`);
     return response.data;
   },
 };

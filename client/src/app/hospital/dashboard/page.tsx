@@ -35,7 +35,7 @@ export default function HospitalDashboardPage() {
       alert('Patient verified successfully');
       setCnicNumber('');
     } catch (error) {
-      // Handle error
+      console.error('Failed to verify patient', error);
       alert('Failed to verify patient. Please try again.');
     } finally {
       setIsVerifying(false);

@@ -2,20 +2,21 @@
 
 import BaseModal from './BaseModal';
 
+interface ClaimDetails {
+  id: string;
+  patientName?: string;
+  amount?: string;
+  date?: string;
+  status?: string;
+  treatment?: string;
+  hospital?: string;
+}
+
 interface ClaimDetailsModalProps {
   isOpen: boolean;
   onClose: () => void;
   claimId: string;
-  claimData?: {
-    id: string;
-    patientName?: string;
-    amount?: string;
-    date?: string;
-    status?: string;
-    treatment?: string;
-    hospital?: string;
-    [key: string]: any;
-  };
+  claimData?: ClaimDetails;
 }
 
 export default function ClaimDetailsModal({ isOpen, onClose, claimId, claimData }: ClaimDetailsModalProps) {

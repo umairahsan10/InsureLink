@@ -38,6 +38,7 @@ export default function PatientRegistrationModal({ isOpen, onClose, onSuccess }:
         address: '',
       });
     } catch (error) {
+      console.error('Failed to register patient', error);
       alert('Failed to register patient. Please try again.');
     } finally {
       setIsSubmitting(false);

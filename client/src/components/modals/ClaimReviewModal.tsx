@@ -3,17 +3,18 @@
 import { useState } from 'react';
 import BaseModal from './BaseModal';
 
+interface ReviewClaimData {
+  id: string;
+  patientName?: string;
+  amount?: string;
+  hospital?: string;
+}
+
 interface ClaimReviewModalProps {
   isOpen: boolean;
   onClose: () => void;
   claimId: string;
-  claimData?: {
-    id: string;
-    patientName?: string;
-    amount?: string;
-    hospital?: string;
-    [key: string]: any;
-  };
+  claimData?: ReviewClaimData;
   onApprove?: (claimId: string) => void;
   onReject?: (claimId: string, reason: string) => void;
 }
@@ -39,6 +40,7 @@ export default function ClaimReviewModal({
       onClose();
       setReviewNotes('');
     } catch (error) {
+      console.error('Failed to approve claim', error);
       alert('Failed to approve claim. Please try again.');
     } finally {
       setIsProcessing(false);
@@ -59,6 +61,7 @@ export default function ClaimReviewModal({
       setRejectionReason('');
       setReviewNotes('');
     } catch (error) {
+      console.error('Failed to reject claim', error);
       alert('Failed to reject claim. Please try again.');
     } finally {
       setIsProcessing(false);
