@@ -1,14 +1,14 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/layouts/DashboardLayout';
 import MessageButton from '@/components/messaging/MessageButton';
 import { useClaimsMessaging } from '@/contexts/ClaimsMessagingContext';
 import notificationsData from '@/data/insurerNotifications.json';
 import { AlertNotification } from '@/types';
-import ClaimReviewModal from '@/components/modals/ClaimReviewModal';
-import ClaimDetailsModal from '@/components/modals/ClaimDetailsModal';
+import ClaimActionDrawer, { ClaimRecord } from '@/components/claims/ClaimActionDrawer';
+import { ClaimData, CLAIMS_STORAGE_KEY, CLAIMS_UPDATED_EVENT, defaultClaimData, loadStoredClaims } from '@/data/claimsData';
 
 export default function InsurerClaimsPage() {
   const router = useRouter();
@@ -22,22 +22,66 @@ export default function InsurerClaimsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('All Status');
   const [hospitalFilter, setHospitalFilter] = useState('All Hospitals');
-  const [dateFilter, setDateFilter] = useState('This Month');
-  const [selectedClaimId, setSelectedClaimId] = useState<string | null>(null);
-  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
-  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [selectedClaim, setSelectedClaim] = useState<ClaimRecord | null>(null);
+  const [drawerMode, setDrawerMode] = useState<'view' | 'review' | null>(null);
   const { hasUnreadAlert } = useClaimsMessaging();
+  const [claims, setClaims] = useState<ClaimData[]>(defaultClaimData);
 
-  const allClaims = [
-    { id: 'CLM-8921', patient: 'John Doe', hospital: 'City General', date: '2025-10-06', amount: '$1,250', priority: 'High', status: 'Pending' },
-    { id: 'CLM-8920', patient: 'Mary Johnson', hospital: 'St. Mary\'s', date: '2025-10-06', amount: '$450', priority: 'Normal', status: 'Under Review' },
-    { id: 'CLM-8919', patient: 'Robert Smith', hospital: 'County Hospital', date: '2025-10-05', amount: '$5,200', priority: 'High', status: 'Approved' },
-    { id: 'CLM-8918', patient: 'Emily Davis', hospital: 'City General', date: '2025-10-05', amount: '$820', priority: 'Normal', status: 'Approved' },
-    { id: 'CLM-8917', patient: 'Michael Wilson', hospital: 'Metro Clinic', date: '2025-10-04', amount: '$3,100', priority: 'Normal', status: 'Rejected' },
-  ];
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const applyStoredClaims = () => {
+      const stored = loadStoredClaims();
+      setClaims(stored);
+    };
+
+    applyStoredClaims();
+
+    const handleClaimsUpdate = (event: Event) => {
+      const customEvent = event as CustomEvent<ClaimData[]>;
+      if (customEvent.detail) {
+        setClaims(customEvent.detail);
+      }
+    };
+
+    const handleStorage = (event: StorageEvent) => {
+      if (event.key === CLAIMS_STORAGE_KEY) {
+        applyStoredClaims();
+      }
+    };
+
+    const claimsListener = handleClaimsUpdate as EventListener;
+    window.addEventListener(CLAIMS_UPDATED_EVENT, claimsListener);
+    window.addEventListener('storage', handleStorage);
+
+    return () => {
+      window.removeEventListener(CLAIMS_UPDATED_EVENT, claimsListener);
+      window.removeEventListener('storage', handleStorage);
+    };
+  }, []);
+
+  const openDrawer = (claim: ClaimRecord, mode: 'view' | 'review') => {
+    setSelectedClaim(claim);
+    setDrawerMode(mode);
+  };
+
+  const handleCloseDrawer = () => {
+    setDrawerMode(null);
+    setSelectedClaim(null);
+  };
+
+  const handleDecision = (claimId: string, action: 'approve' | 'reject', notes?: string) => {
+    console.log(`[Claims] ${action.toUpperCase()} claim ${claimId}`, notes);
+  };
+
+  const handleSaveNotes = (claimId: string, notes: string) => {
+    console.log(`[Claims] SAVE notes for ${claimId}`, notes);
+  };
 
   // Filter claims based on search and filters
-  const filteredClaims = allClaims.filter((claim) => {
+  const filteredClaims = claims.filter((claim) => {
     // Search filter - matches claim ID, patient name, or hospital
     const matchesSearch = 
       searchQuery === '' ||
@@ -92,7 +136,7 @@ export default function InsurerClaimsPage() {
         </div>
         <div className="bg-white rounded-lg shadow p-4">
           <p className="text-sm text-gray-500">Total Payout</p>
-          <p className="text-2xl font-bold text-blue-600">$2.8M</p>
+          <p className="text-2xl font-bold text-blue-600">Rs. 2.8M</p>
         </div>
       </div>
       
@@ -123,20 +167,11 @@ export default function InsurerClaimsPage() {
               className="px-4 py-2 border border-gray-300 rounded-lg"
             >
               <option>All Hospitals</option>
-              <option>City General</option>
-              <option>St. Mary&apos;s</option>
-              <option>County Hospital</option>
-              <option>Metro Clinic</option>
-            </select>
-            <select 
-              value={dateFilter}
-              onChange={(e) => setDateFilter(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg"
-            >
-              <option>This Month</option>
-              <option>Today</option>
-              <option>This Week</option>
-              <option>Last 3 Months</option>
+              <option>City General Hospital</option>
+              <option>National Hospital</option>
+              <option>Aga Khan University Hospital</option>
+              <option>Services Hospital</option>
+              <option>Jinnah Hospital</option>
             </select>
           </div>
         </div>
@@ -195,19 +230,7 @@ export default function InsurerClaimsPage() {
                     </td>
                     <td className="px-6 py-4 text-sm">
                       <button 
-                        onClick={() => {
-                          setSelectedClaimId(claim.id);
-                          setIsReviewModalOpen(true);
-                        }}
-                        className="text-blue-600 hover:text-blue-800 mr-2"
-                      >
-                        Review
-                      </button>
-                      <button 
-                        onClick={() => {
-                          setSelectedClaimId(claim.id);
-                          setIsDetailsModalOpen(true);
-                        }}
+                        onClick={() => openDrawer(claim, 'view')}
                         className="text-gray-600 hover:text-gray-800"
                       >
                         View
@@ -224,28 +247,14 @@ export default function InsurerClaimsPage() {
         </div>
       </div>
       
-      {selectedClaimId && (
-        <>
-          <ClaimReviewModal
-            isOpen={isReviewModalOpen}
-            onClose={() => {
-              setIsReviewModalOpen(false);
-              setSelectedClaimId(null);
-            }}
-            claimId={selectedClaimId}
-            claimData={allClaims.find(c => c.id === selectedClaimId)}
-          />
-          <ClaimDetailsModal
-            isOpen={isDetailsModalOpen}
-            onClose={() => {
-              setIsDetailsModalOpen(false);
-              setSelectedClaimId(null);
-            }}
-            claimId={selectedClaimId}
-            claimData={allClaims.find(c => c.id === selectedClaimId)}
-          />
-        </>
-      )}
+      <ClaimActionDrawer
+        isOpen={Boolean(selectedClaim && drawerMode)}
+        mode={drawerMode ?? 'view'}
+        claim={selectedClaim}
+        onClose={handleCloseDrawer}
+        onDecision={handleDecision}
+        onSaveNotes={handleSaveNotes}
+      />
       </div>
     </DashboardLayout>
   );

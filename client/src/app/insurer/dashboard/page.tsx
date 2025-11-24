@@ -1,23 +1,17 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/layouts/DashboardLayout';
 import MessageButton from '@/components/messaging/MessageButton';
 import { useClaimsMessaging } from '@/contexts/ClaimsMessagingContext';
 import notificationsData from '@/data/insurerNotifications.json';
 import { AlertNotification } from '@/types';
+import ClaimActionDrawer, { ClaimRecord } from '@/components/claims/ClaimActionDrawer';
+import { ClaimData, CLAIMS_STORAGE_KEY, CLAIMS_UPDATED_EVENT, defaultClaimData, loadStoredClaims, persistClaims } from '@/data/claimsData';
 
-interface Claim {
-  id: string;
+interface Claim extends ClaimData {
   claimNumber: string;
-  patient: string;
-  hospital: string;
-  amount: string;
-  date: string;
-  priority: 'High' | 'Medium' | 'Low';
-  status: string;
-  isPaid?: boolean;
 }
 
 export default function InsurerDashboardPage() {
@@ -30,43 +24,54 @@ export default function InsurerDashboardPage() {
     []
   );
   const router = useRouter();
-  const [claims, setClaims] = useState<Claim[]>([
-    {
-      id: 'CLM-8921',
-      claimNumber: 'CLM-8921',
-      patient: 'John Doe',
-      hospital: 'City General',
-      amount: 'Rs. 1,250',
-      date: '2025-10-06',
-      priority: 'Low',
-      status: 'Pending',
-      isPaid: false
-    },
-    {
-      id: 'CLM-8920',
-      claimNumber: 'CLM-8920',
-      patient: 'Mary Johnson',
-      hospital: 'St. Mary\'s',
-      amount: 'Rs. 450',
-      date: '2025-10-06',
-      priority: 'Medium',
-      status: 'Pending',
-      isPaid: false
-    },
-    {
-      id: 'CLM-8919',
-      claimNumber: 'CLM-8919',
-      patient: 'Robert Smith',
-      hospital: 'County Hospital',
-      amount: 'Rs. 5,200',
-      date: '2025-10-05',
-      priority: 'High',
-      status: 'Pending',
-      isPaid: false
+  const toClaim = (data: ClaimData): Claim => ({
+    ...data,
+    claimNumber: data.id
+  });
+
+  const toClaimData = (claim: Claim): ClaimData => {
+    const { claimNumber, ...rest } = claim;
+    return rest;
+  };
+
+  const [claims, setClaims] = useState<Claim[]>(defaultClaimData.map(toClaim));
+  const [selectedClaim, setSelectedClaim] = useState<ClaimRecord | null>(null);
+  const [drawerMode, setDrawerMode] = useState<'view' | 'review' | null>(null);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
     }
-  ]);
-  const [openActionId, setOpenActionId] = useState<string | null>(null);
-  const [openActionPlacement, setOpenActionPlacement] = useState<'above' | 'below'>('below');
+
+    const applyStoredClaims = () => {
+      const stored = loadStoredClaims();
+      setClaims(stored.map(toClaim));
+    };
+
+    applyStoredClaims();
+
+    const handleClaimsUpdate = (event: Event) => {
+      const customEvent = event as CustomEvent<ClaimData[]>;
+      if (customEvent.detail) {
+        setClaims(customEvent.detail.map(toClaim));
+      }
+    };
+
+    const handleStorage = (event: StorageEvent) => {
+      if (event.key === CLAIMS_STORAGE_KEY) {
+        applyStoredClaims();
+      }
+    };
+
+    const claimsListener = handleClaimsUpdate as EventListener;
+    window.addEventListener(CLAIMS_UPDATED_EVENT, claimsListener);
+    window.addEventListener('storage', handleStorage);
+
+    return () => {
+      window.removeEventListener(CLAIMS_UPDATED_EVENT, claimsListener);
+      window.removeEventListener('storage', handleStorage);
+    };
+  }, []);
 
   const formatCurrency = (value: number) => `Rs. ${value.toLocaleString('en-PK')}`;
 
@@ -100,6 +105,7 @@ export default function InsurerDashboardPage() {
       case 'High':
         return 'bg-red-100 text-red-800 border-red-200';
       case 'Medium':
+      case 'Normal':
         return 'bg-yellow-100 text-yellow-800 border-yellow-200';
       case 'Low':
         return 'bg-green-100 text-green-800 border-green-200';
@@ -113,6 +119,7 @@ export default function InsurerDashboardPage() {
       case 'High':
         return 'bg-red-500';
       case 'Medium':
+      case 'Normal':
         return 'bg-yellow-500';
       case 'Low':
         return 'bg-green-500';
@@ -121,29 +128,46 @@ export default function InsurerDashboardPage() {
     }
   };
 
-  const handleApprove = (claimId: string) => {
-    setClaims((prevClaims) =>
-      prevClaims.map((claim) =>
-        claim.id === claimId ? { ...claim, status: 'Approved', isPaid: true } : claim
-      )
-    );
-    setOpenActionId(null);
-    setOpenActionPlacement('below');
+  const updateClaimStatus = (claimId: string, status: 'Approved' | 'Rejected') => {
+    setClaims((prevClaims) => {
+      const updated = prevClaims.map((claim) =>
+        claim.id === claimId ? { ...claim, status, isPaid: status === 'Approved' } : claim
+      );
+      persistClaims(updated.map(toClaimData));
+      return updated;
+    });
   };
 
-  const handleReject = (claimId: string) => {
-    setClaims((prevClaims) =>
-      prevClaims.map((claim) =>
-        claim.id === claimId ? { ...claim, status: 'Rejected', isPaid: false } : claim
-      )
-    );
-    setOpenActionId(null);
-    setOpenActionPlacement('below');
+  const openDrawer = (claim: Claim) => {
+    const claimRecord: ClaimRecord = {
+      id: claim.id,
+      patient: claim.patient,
+      hospital: claim.hospital,
+      date: claim.date,
+      amount: claim.amount,
+      priority: claim.priority,
+      status: claim.status
+    };
+    setSelectedClaim(claimRecord);
+    setDrawerMode('review');
+  };
+
+  const handleCloseDrawer = () => {
+    setDrawerMode(null);
+    setSelectedClaim(null);
+  };
+
+  const handleDecision = (claimId: string, action: 'approve' | 'reject') => {
+    updateClaimStatus(claimId, action === 'approve' ? 'Approved' : 'Rejected');
+  };
+
+  const handleSaveNotes = (claimId: string, notes: string) => {
+    console.log(`[Dashboard] SAVE notes for ${claimId}`, notes);
   };
 
   const handleExportReport = () => {
     const headers = ['Claim ID', 'Patient', 'Hospital', 'Amount', 'Date', 'Priority', 'Status'];
-    const rows = claims.map((claim) => [
+    const rows = claims.slice(0, 3).map((claim) => [
       claim.claimNumber,
       claim.patient,
       claim.hospital,
@@ -305,12 +329,12 @@ export default function InsurerDashboardPage() {
                   <th className="px-3 md:px-4 py-2 text-left font-medium text-gray-500 uppercase tracking-wider">Amount</th>
                   <th className="px-3 md:px-4 py-2 text-left font-medium text-gray-500 uppercase tracking-wider">Date</th>
                   <th className="px-3 md:px-4 py-2 text-left font-medium text-gray-500 uppercase tracking-wider">Priority</th>
-                  <th className="px-3 md:px-4 py-2 text-left font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                  <th className="px-3 md:px-4 py-2 text-left font-medium text-gray-500 uppercase tracking-wider">Review</th>
                   <th className="px-3 md:px-4 py-2 text-left font-medium text-gray-500 uppercase tracking-wider">Message</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200 text-xs md:text-sm">
-                {claims.map((claim) => {
+                {claims.slice(0, 3).map((claim) => {
                   const hasAlert = hasUnreadAlert(claim.id, 'insurer');
                   return (
                     <tr
@@ -340,67 +364,18 @@ export default function InsurerDashboardPage() {
                       </td>
                       <td className="px-3 md:px-4 py-3 whitespace-nowrap font-medium">
                         {claim.status === 'Pending' ? (
-                          <div className="relative inline-block text-left">
-                            <button
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                if (openActionId === claim.id) {
-                                  setOpenActionId(null);
-                                  return;
-                                }
-                                const dropdownHeight = 110; // approximate height of menu
-                                const rect = event.currentTarget.getBoundingClientRect();
-                                const spaceBelow = window.innerHeight - rect.bottom;
-                                setOpenActionPlacement(spaceBelow < dropdownHeight ? 'above' : 'below');
-                                setOpenActionId(claim.id);
-                              }}
-                              className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors text-xs md:text-sm flex items-center gap-1"
-                            >
-                              Actions
-                              <svg
-                                className={`w-3.5 h-3.5 transition-transform ${openActionId === claim.id ? 'rotate-180' : ''}`}
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                              >
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                              </svg>
-                            </button>
-                            {openActionId === claim.id && (
-                              <div
-                                className={`absolute right-0 w-32 origin-top-right rounded-md border border-gray-100 bg-white shadow-lg z-10 ${
-                                  openActionPlacement === 'above' ? 'bottom-full mb-2' : 'top-full mt-2'
-                                }`}
-                              >
-                                <button
-                                  onClick={(event) => {
-                                    event.stopPropagation();
-                                    handleApprove(claim.id);
-                                  }}
-                                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs md:text-sm text-green-700 hover:bg-green-50"
-                                >
-                                  Approve
-                                </button>
-                                <button
-                                  onClick={(event) => {
-                                    event.stopPropagation();
-                                    handleReject(claim.id);
-                                  }}
-                                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs md:text-sm text-red-700 hover:bg-red-50"
-                                >
-                                  Reject
-                                </button>
-                              </div>
-                            )}
-                          </div>
+                          <button
+                            onClick={() => openDrawer(claim)}
+                            className="text-blue-600 hover:text-blue-800 font-semibold text-xs md:text-sm"
+                          >
+                            Review
+                          </button>
                         ) : (
                           <span
-                            className={`inline-flex items-center px-3 py-1.5 rounded-md text-xs md:text-sm font-semibold ${
+                            className={`inline-flex items-center rounded-full px-3 py-1.5 text-xs md:text-sm font-semibold ${
                               claim.status === 'Approved'
                                 ? 'bg-green-100 text-green-700 border border-green-200'
-                                : claim.status === 'Rejected'
-                                  ? 'bg-red-100 text-red-700 border border-red-200'
-                                  : 'bg-gray-100 text-gray-700 border border-gray-200'
+                                : 'bg-red-100 text-red-700 border border-red-200'
                             }`}
                           >
                             {claim.status}
@@ -418,6 +393,14 @@ export default function InsurerDashboardPage() {
           </div>
         </div>
 
+        <ClaimActionDrawer
+          isOpen={Boolean(selectedClaim && drawerMode)}
+          mode={drawerMode ?? 'view'}
+          claim={selectedClaim}
+          onClose={handleCloseDrawer}
+          onDecision={handleDecision}
+          onSaveNotes={handleSaveNotes}
+        />
       </div>
     </DashboardLayout>
   );
