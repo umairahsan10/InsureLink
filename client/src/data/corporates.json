@@ -2,6 +2,10 @@
   {
     "id": "corp-001",
     "name": "Acme Ltd",
+    "industry": "Technology",
+    "planType": "Comprehensive",
+    "premium": "$45K",
+    "status": "Active",
     "hrContact": {
       "name": "Sara Ahmed",
       "email": "sara.ahmed@acme.com",
@@ -15,6 +19,10 @@
   {
     "id": "corp-002",
     "name": "Beta Systems",
+    "industry": "Finance",
+    "planType": "Premium",
+    "premium": "$52K",
+    "status": "Active",
     "hrContact": {
       "name": "Imran Shah",
       "email": "imran.shah@beta.com",
@@ -28,6 +36,10 @@
   {
     "id": "corp-003",
     "name": "Noor Foods",
+    "industry": "Healthcare",
+    "planType": "Basic",
+    "premium": "$31K",
+    "status": "Active",
     "hrContact": {
       "name": "Fatima Noor",
       "email": "fatima.noor@noorfoods.com",
