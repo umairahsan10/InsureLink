@@ -1,15 +1,18 @@
 'use client';
 
 import { useState } from 'react';
-import HospitalSidebar from '@/components/hospital/HospitalSidebar';
+import { useRouter } from 'next/navigation';
 import MessageButton from '@/components/messaging/MessageButton';
 import { useClaimsMessaging } from '@/contexts/ClaimsMessagingContext';
+import ClaimDetailsModal from '@/components/modals/ClaimDetailsModal';
 
 export default function HospitalClaimsPage() {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('All Status');
   const [insurerFilter, setInsurerFilter] = useState('All Insurers');
+  const [selectedClaimId, setSelectedClaimId] = useState<string | null>(null);
+  const [isClaimDetailsOpen, setIsClaimDetailsOpen] = useState(false);
   const { hasUnreadAlert } = useClaimsMessaging();
 
   const allClaims = [
@@ -38,47 +41,7 @@ export default function HospitalClaimsPage() {
   });
   
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Left Sidebar */}
-      <HospitalSidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
-
-      {/* Main Content */}
-      <div className="ml-0 lg:ml-64 flex flex-col">
-        {/* Top Header */}
-        <header className="bg-white shadow-sm border-b">
-          <div className="px-4 lg:px-6 py-4">
-            <div className="flex items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={() => setSidebarOpen(!sidebarOpen)}
-                  className="lg:hidden p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                >
-                  <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                  </svg>
-                </button>
-                <div>
-                  <h1 className="text-xl lg:text-2xl font-bold text-gray-900">Claims Management</h1>
-                  <p className="text-xs lg:text-sm text-gray-600">Manage and track insurance claims</p>
-                </div>
-              </div>
-              <div className="hidden lg:flex items-center space-x-2 lg:space-x-4">
-                <button className="bg-blue-600 text-white px-3 lg:px-4 py-2 rounded-lg hover:bg-blue-700 text-sm lg:text-base">
-                  + Submit New Claim
-                </button>
-              </div>
-            </div>
-          </div>
-          {/* Mobile button */}
-          <div className="lg:hidden px-4 pt-2 pb-3">
-            <button className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm">
-              + Submit New Claim
-            </button>
-          </div>
-        </header>
-
-        {/* Page Content */}
-        <main className="flex-1 p-4 lg:p-6">
+    <div className="p-4 lg:p-6">
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <div className="bg-white rounded-lg shadow p-4">
@@ -178,7 +141,15 @@ export default function HospitalClaimsPage() {
                       </span>
                     </td>
                     <td className="px-3 lg:px-6 py-4 text-xs lg:text-sm">
-                      <button className="text-blue-600 hover:text-blue-800">View</button>
+                      <button 
+                        onClick={() => {
+                          setSelectedClaimId(claim.id);
+                          setIsClaimDetailsOpen(true);
+                        }}
+                        className="text-blue-600 hover:text-blue-800"
+                      >
+                        View
+                      </button>
                     </td>
                     <td className="px-3 lg:px-6 py-4 text-xs lg:text-sm">
                       <MessageButton claimId={claim.id} userRole="hospital" />
@@ -190,8 +161,18 @@ export default function HospitalClaimsPage() {
           </table>
         </div>
       </div>
-        </main>
-      </div>
+      
+      {selectedClaimId && (
+        <ClaimDetailsModal
+          isOpen={isClaimDetailsOpen}
+          onClose={() => {
+            setIsClaimDetailsOpen(false);
+            setSelectedClaimId(null);
+          }}
+          claimId={selectedClaimId}
+          claimData={allClaims.find(c => c.id === selectedClaimId)}
+        />
+      )}
     </div>
   );
 }

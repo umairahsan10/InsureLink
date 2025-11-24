@@ -1,12 +1,15 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import HospitalSidebar from '@/components/hospital/HospitalSidebar';
+import PatientDetailsModal from '@/components/modals/PatientDetailsModal';
+import PatientRegistrationModal from '@/components/modals/PatientRegistrationModal';
 
 export default function HospitalPatientsPage() {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [timeframeFilter, setTimeframeFilter] = useState('All Patients');
+  const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
+  const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null);
+  const [isPatientDetailsOpen, setIsPatientDetailsOpen] = useState(false);
 
   const patients = useMemo(
     () => [
@@ -45,47 +48,19 @@ export default function HospitalPatientsPage() {
   }, [patients, searchQuery, timeframeFilter]);
   
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Left Sidebar */}
-      <HospitalSidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
-
-      {/* Main Content */}
-      <div className="ml-0 lg:ml-64 flex flex-col">
-        {/* Top Header */}
-        <header className="bg-white shadow-sm border-b">
-          <div className="px-4 lg:px-6 py-4">
-            <div className="flex items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={() => setSidebarOpen(!sidebarOpen)}
-                  className="lg:hidden p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                >
-                  <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                  </svg>
-                </button>
-                <div>
-                  <h1 className="text-xl lg:text-2xl font-bold text-gray-900">Patient Records</h1>
-                  <p className="text-xs lg:text-sm text-gray-600">Manage patient information and records</p>
-                </div>
-              </div>
-              <div className="hidden lg:flex items-center space-x-2 lg:space-x-4">
-                <button className="bg-blue-600 text-white px-3 lg:px-4 py-2 rounded-lg hover:bg-blue-700 text-sm lg:text-base">
-                  + Register Patient
-                </button>
-              </div>
-            </div>
-          </div>
-          {/* Mobile button */}
-          <div className="lg:hidden px-4 pt-2 pb-3">
-            <button className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm">
-              + Register Patient
-            </button>
-          </div>
-        </header>
-
-        {/* Page Content */}
-        <main className="flex-1 p-4 lg:p-6">
+    <div className="p-4 lg:p-6">
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <h1 className="text-xl lg:text-2xl font-bold text-gray-900">Patient Records</h1>
+          <p className="text-xs lg:text-sm text-gray-600">Manage patient information and records</p>
+        </div>
+        <button 
+          onClick={() => setIsRegisterModalOpen(true)}
+          className="bg-blue-600 text-white px-3 lg:px-4 py-2 rounded-lg hover:bg-blue-700 text-sm lg:text-base"
+        >
+          + Register Patient
+        </button>
+      </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <div className="bg-white rounded-lg shadow p-4">
@@ -166,7 +141,15 @@ export default function HospitalPatientsPage() {
                     </span>
                   </td>
                   <td className="px-3 lg:px-6 py-4 text-xs lg:text-sm">
-                    <button className="text-blue-600 hover:text-blue-800">View</button>
+                    <button 
+                      onClick={() => {
+                        setSelectedPatientId(patient.id);
+                        setIsPatientDetailsOpen(true);
+                      }}
+                      className="text-blue-600 hover:text-blue-800"
+                    >
+                      View
+                    </button>
                   </td>
                 </tr>
               )))}
@@ -174,8 +157,23 @@ export default function HospitalPatientsPage() {
           </table>
         </div>
       </div>
-        </main>
-      </div>
+      
+      <PatientRegistrationModal
+        isOpen={isRegisterModalOpen}
+        onClose={() => setIsRegisterModalOpen(false)}
+      />
+      
+      {selectedPatientId && (
+        <PatientDetailsModal
+          isOpen={isPatientDetailsOpen}
+          onClose={() => {
+            setIsPatientDetailsOpen(false);
+            setSelectedPatientId(null);
+          }}
+          patientId={selectedPatientId}
+          patientData={patients.find(p => p.id === selectedPatientId)}
+        />
+      )}
     </div>
   );
 }

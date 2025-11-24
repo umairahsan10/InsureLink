@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/layouts/DashboardLayout';
 import CorporateEmployeesModal from '@/components/insurer/CorporateEmployeesModal';
+import AddCorporateModal from '@/components/modals/AddCorporateModal';
 import corporatesData from '@/data/corporates.json';
 import notificationsData from '@/data/insurerNotifications.json';
 import { AlertNotification } from '@/types';
@@ -19,7 +20,11 @@ export default function InsurerCorporatesPage() {
   );
   const [selectedCorporate, setSelectedCorporate] = useState<{id: string, name: string} | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [industryFilter, setIndustryFilter] = useState('All Industries');
+  const [planFilter, setPlanFilter] = useState('All Plans');
 
   const handleViewClick = (corporateId: string, corporateName: string) => {
     setSelectedCorporate({ id: corporateId, name: corporateName });
@@ -45,7 +50,10 @@ export default function InsurerCorporatesPage() {
       <div className="p-8 bg-gray-50 min-h-screen">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold text-gray-900">Corporate Clients</h1>
-        <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+        <button 
+          onClick={() => setIsAddModalOpen(true)}
+          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+        >
           + Add Corporate
         </button>
       </div>
@@ -75,16 +83,26 @@ export default function InsurerCorporatesPage() {
             <input
               type="text"
               placeholder="Search corporate clients..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
               className="flex-1 px-4 py-2 border border-gray-300 rounded-lg"
             />
-            <select className="px-4 py-2 border border-gray-300 rounded-lg">
+            <select 
+              value={industryFilter}
+              onChange={(e) => setIndustryFilter(e.target.value)}
+              className="px-4 py-2 border border-gray-300 rounded-lg"
+            >
               <option>All Industries</option>
               <option>Technology</option>
               <option>Finance</option>
               <option>Healthcare</option>
               <option>Manufacturing</option>
             </select>
-            <select className="px-4 py-2 border border-gray-300 rounded-lg">
+            <select 
+              value={planFilter}
+              onChange={(e) => setPlanFilter(e.target.value)}
+              className="px-4 py-2 border border-gray-300 rounded-lg"
+            >
               <option>All Plans</option>
               <option>Basic</option>
               <option>Comprehensive</option>
@@ -107,7 +125,12 @@ export default function InsurerCorporatesPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {corporatesData.map((corporate) => (
+              {corporatesData.filter(c => {
+                const matchesSearch = searchQuery === '' || c.name.toLowerCase().includes(searchQuery.toLowerCase());
+                const matchesIndustry = industryFilter === 'All Industries' || true; // Industry data not in corporatesData
+                const matchesPlan = planFilter === 'All Plans' || true; // Plan data not in corporatesData
+                return matchesSearch && matchesIndustry && matchesPlan;
+              }).map((corporate) => (
                 <tr key={corporate.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 text-sm font-medium text-gray-900">{corporate.name}</td>
                   <td className="px-6 py-4 text-sm text-gray-500">Technology</td>
@@ -172,6 +195,11 @@ export default function InsurerCorporatesPage() {
           corporateName={selectedCorporate.name}
         />
       )}
+      
+      <AddCorporateModal
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+      />
     </DashboardLayout>
   );
 }

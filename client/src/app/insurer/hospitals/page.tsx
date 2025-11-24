@@ -1,13 +1,21 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/layouts/DashboardLayout';
 import notificationsData from '@/data/insurerNotifications.json';
 import { AlertNotification } from '@/types';
+import AddHospitalModal from '@/components/modals/AddHospitalModal';
+import HospitalDetailsModal from '@/components/modals/HospitalDetailsModal';
 
 export default function InsurerHospitalsPage() {
   const router = useRouter();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('All Status');
+  const [locationFilter, setLocationFilter] = useState('All Locations');
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [selectedHospitalId, setSelectedHospitalId] = useState<string | null>(null);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const insurerNotifications = useMemo(
     () =>
       (notificationsData as AlertNotification[]).map((notification) => ({
@@ -15,6 +23,21 @@ export default function InsurerHospitalsPage() {
       })),
     []
   );
+  
+  const hospitals = [
+    { id: 'HOSP-001', name: 'City General Hospital', location: 'Downtown', specializations: 'Multi-specialty', claims: 342, rating: 4.8, status: 'Active' },
+    { id: 'HOSP-002', name: 'St. Mary\'s Medical Center', location: 'Northside', specializations: 'Cardiology, Neurology', claims: 289, rating: 4.6, status: 'Active' },
+    { id: 'HOSP-003', name: 'County Hospital', location: 'Westside', specializations: 'Emergency, Surgery', claims: 412, rating: 4.5, status: 'Active' },
+    { id: 'HOSP-004', name: 'Metro Clinic', location: 'Eastside', specializations: 'Outpatient Care', claims: 156, rating: 4.3, status: 'Active' },
+    { id: 'HOSP-005', name: 'Regional Medical Center', location: 'Southside', specializations: 'Multi-specialty', claims: 0, rating: 0, status: 'Pending' },
+  ];
+  
+  const filteredHospitals = hospitals.filter(h => {
+    const matchesSearch = searchQuery === '' || h.name.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesStatus = statusFilter === 'All Status' || h.status === statusFilter;
+    const matchesLocation = locationFilter === 'All Locations' || h.location === locationFilter;
+    return matchesSearch && matchesStatus && matchesLocation;
+  });
   return (
     <DashboardLayout
       userRole="insurer"
@@ -29,7 +52,10 @@ export default function InsurerHospitalsPage() {
       <div className="p-8 bg-gray-50 min-h-screen">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold text-gray-900">Network Hospitals</h1>
-        <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+        <button 
+          onClick={() => setIsAddModalOpen(true)}
+          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+        >
           + Add Hospital
         </button>
       </div>
@@ -59,20 +85,31 @@ export default function InsurerHospitalsPage() {
             <input
               type="text"
               placeholder="Search hospitals..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
               className="flex-1 px-4 py-2 border border-gray-300 rounded-lg"
             />
-            <select className="px-4 py-2 border border-gray-300 rounded-lg">
+            <select 
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="px-4 py-2 border border-gray-300 rounded-lg"
+            >
               <option>All Status</option>
               <option>Active</option>
               <option>Pending</option>
               <option>Inactive</option>
             </select>
-            <select className="px-4 py-2 border border-gray-300 rounded-lg">
+            <select 
+              value={locationFilter}
+              onChange={(e) => setLocationFilter(e.target.value)}
+              className="px-4 py-2 border border-gray-300 rounded-lg"
+            >
               <option>All Locations</option>
-              <option>North Region</option>
-              <option>South Region</option>
-              <option>East Region</option>
-              <option>West Region</option>
+              <option>Downtown</option>
+              <option>Northside</option>
+              <option>Westside</option>
+              <option>Eastside</option>
+              <option>Southside</option>
             </select>
           </div>
         </div>
@@ -91,13 +128,7 @@ export default function InsurerHospitalsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {[
-                { name: 'City General Hospital', location: 'Downtown', specializations: 'Multi-specialty', claims: 342, rating: 4.8, status: 'Active' },
-                { name: 'St. Mary&apos;s Medical Center', location: 'Northside', specializations: 'Cardiology, Neurology', claims: 289, rating: 4.6, status: 'Active' },
-                { name: 'County Hospital', location: 'Westside', specializations: 'Emergency, Surgery', claims: 412, rating: 4.5, status: 'Active' },
-                { name: 'Metro Clinic', location: 'Eastside', specializations: 'Outpatient Care', claims: 156, rating: 4.3, status: 'Active' },
-                { name: 'Regional Medical Center', location: 'Southside', specializations: 'Multi-specialty', claims: 0, rating: 0, status: 'Pending' },
-              ].map((hospital) => (
+              {filteredHospitals.map((hospital) => (
                 <tr key={hospital.name} className="hover:bg-gray-50">
                   <td className="px-6 py-4 text-sm font-medium text-gray-900">{hospital.name}</td>
                   <td className="px-6 py-4 text-sm text-gray-500">{hospital.location}</td>
@@ -118,7 +149,15 @@ export default function InsurerHospitalsPage() {
                     </span>
                   </td>
                   <td className="px-6 py-4 text-sm">
-                    <button className="text-blue-600 hover:text-blue-800">View</button>
+                    <button 
+                      onClick={() => {
+                        setSelectedHospitalId(hospital.id);
+                        setIsDetailsModalOpen(true);
+                      }}
+                      className="text-blue-600 hover:text-blue-800"
+                    >
+                      View
+                    </button>
                   </td>
                 </tr>
               ))}
@@ -126,6 +165,23 @@ export default function InsurerHospitalsPage() {
           </table>
         </div>
       </div>
+      
+      <AddHospitalModal
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+      />
+      
+      {selectedHospitalId && (
+        <HospitalDetailsModal
+          isOpen={isDetailsModalOpen}
+          onClose={() => {
+            setIsDetailsModalOpen(false);
+            setSelectedHospitalId(null);
+          }}
+          hospitalId={selectedHospitalId}
+          hospitalData={hospitals.find(h => h.id === selectedHospitalId)}
+        />
+      )}
       </div>
     </DashboardLayout>
   );

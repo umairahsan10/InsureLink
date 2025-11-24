@@ -7,6 +7,9 @@ import MessageButton from '@/components/messaging/MessageButton';
 import { useClaimsMessaging } from '@/contexts/ClaimsMessagingContext';
 import notificationsData from '@/data/insurerNotifications.json';
 import { AlertNotification } from '@/types';
+import { apiFetch } from '@/lib/api/client';
+import ClaimReviewModal from '@/components/modals/ClaimReviewModal';
+import ClaimDetailsModal from '@/components/modals/ClaimDetailsModal';
 
 interface Claim {
   id: string;
@@ -29,7 +32,11 @@ export default function InsurerDashboardPage() {
     []
   );
   const router = useRouter();
-  const [claims] = useState<Claim[]>([
+  const [selectedClaimId, setSelectedClaimId] = useState<string | null>(null);
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [selectedClaims, setSelectedClaims] = useState<Set<string>>(new Set());
+  const [claims, setClaims] = useState<Claim[]>([
     {
       id: 'CLM-8921',
       claimNumber: 'CLM-8921',
@@ -88,14 +95,80 @@ export default function InsurerDashboardPage() {
     }
   };
 
-  const handleApprove = (claimId: string) => {
-    console.log('Approving claim:', claimId);
-    // Add approval logic here
+  const handleApprove = async (claimId: string) => {
+    try {
+      await apiFetch(`/api/claims/${claimId}/approve`, { method: 'POST' });
+      setClaims(prev => prev.map(c => c.id === claimId ? { ...c, status: 'Approved' } : c));
+      alert('Claim approved successfully');
+    } catch (error) {
+      alert('Failed to approve claim. Please try again.');
+    }
   };
 
-  const handleReject = (claimId: string) => {
-    console.log('Rejecting claim:', claimId);
-    // Add rejection logic here
+  const handleReject = async (claimId: string, reason?: string) => {
+    try {
+      await apiFetch(`/api/claims/${claimId}/reject`, {
+        method: 'POST',
+        body: JSON.stringify({ reason }),
+      });
+      setClaims(prev => prev.map(c => c.id === claimId ? { ...c, status: 'Rejected' } : c));
+      alert('Claim rejected');
+    } catch (error) {
+      alert('Failed to reject claim. Please try again.');
+    }
+  };
+
+  const handleExportReport = () => {
+    // Generate CSV
+    const csvContent = [
+      ['Claim ID', 'Patient', 'Hospital', 'Amount', 'Date', 'Status'].join(','),
+      ...claims.map(c => [c.claimNumber, c.patient, c.hospital, c.amount, c.date, c.status].join(','))
+    ].join('\n');
+    
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `claims-report-${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+  };
+
+  const handleBulkApprove = async () => {
+    if (selectedClaims.size === 0) {
+      alert('Please select claims to approve');
+      return;
+    }
+    try {
+      await apiFetch('/api/claims/bulk-approve', {
+        method: 'POST',
+        body: JSON.stringify({ claimIds: Array.from(selectedClaims) }),
+      });
+      setClaims(prev => prev.map(c => selectedClaims.has(c.id) ? { ...c, status: 'Approved' } : c));
+      setSelectedClaims(new Set());
+      alert('Claims approved successfully');
+    } catch (error) {
+      alert('Failed to approve claims. Please try again.');
+    }
+  };
+
+  const handleGenerateAuditReport = () => {
+    // Generate audit report
+    const report = {
+      generatedAt: new Date().toISOString(),
+      totalClaims: claims.length,
+      approved: claims.filter(c => c.status === 'Approved').length,
+      rejected: claims.filter(c => c.status === 'Rejected').length,
+      pending: claims.filter(c => c.status === 'Pending').length,
+    };
+    
+    const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `audit-report-${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    window.URL.revokeObjectURL(url);
   };
 
   return (
@@ -217,7 +290,10 @@ export default function InsurerDashboardPage() {
           <div className="p-4 md:p-6 border-b border-gray-200">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
               <h2 className="text-lg md:text-xl font-semibold text-gray-900">Pending Claims Review</h2>
-              <button className="px-3 md:px-4 py-2 text-sm md:text-base bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors whitespace-nowrap">
+              <button 
+                onClick={handleExportReport}
+                className="px-3 md:px-4 py-2 text-sm md:text-base bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors whitespace-nowrap"
+              >
                 Export Report
               </button>
             </div>
@@ -269,6 +345,15 @@ export default function InsurerDashboardPage() {
                       <td className="px-4 md:px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <div className="flex space-x-1 md:space-x-2">
                           <button
+                            onClick={() => {
+                              setSelectedClaimId(claim.id);
+                              setIsReviewModalOpen(true);
+                            }}
+                            className="px-2 md:px-3 py-1 text-xs md:text-sm bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 transition-colors"
+                          >
+                            Review
+                          </button>
+                          <button
                             onClick={() => handleApprove(claim.id)}
                             className="px-2 md:px-3 py-1 text-xs md:text-sm bg-green-100 text-green-700 rounded-md hover:bg-green-200 transition-colors"
                           >
@@ -295,21 +380,30 @@ export default function InsurerDashboardPage() {
 
         {/* Quick Actions */}
         <div className="flex flex-col sm:flex-row gap-3 md:gap-4">
-          <button className="flex items-center justify-center px-4 md:px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm md:text-base">
+          <button 
+            onClick={() => router.push('/insurer/claims?filter=flagged')}
+            className="flex items-center justify-center px-4 md:px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm md:text-base"
+          >
             <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
             </svg>
             <span className="text-center">Review Flagged Claims</span>
           </button>
           
-          <button className="flex items-center justify-center px-4 md:px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm md:text-base">
+          <button 
+            onClick={handleBulkApprove}
+            className="flex items-center justify-center px-4 md:px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm md:text-base"
+          >
             <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             <span className="text-center">Bulk Approve Claims</span>
           </button>
           
-          <button className="flex items-center justify-center px-4 md:px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm md:text-base">
+          <button 
+            onClick={handleGenerateAuditReport}
+            className="flex items-center justify-center px-4 md:px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm md:text-base"
+          >
             <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>

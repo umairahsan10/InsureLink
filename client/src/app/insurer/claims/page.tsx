@@ -7,6 +7,8 @@ import MessageButton from '@/components/messaging/MessageButton';
 import { useClaimsMessaging } from '@/contexts/ClaimsMessagingContext';
 import notificationsData from '@/data/insurerNotifications.json';
 import { AlertNotification } from '@/types';
+import ClaimReviewModal from '@/components/modals/ClaimReviewModal';
+import ClaimDetailsModal from '@/components/modals/ClaimDetailsModal';
 
 export default function InsurerClaimsPage() {
   const router = useRouter();
@@ -21,6 +23,9 @@ export default function InsurerClaimsPage() {
   const [statusFilter, setStatusFilter] = useState('All Status');
   const [hospitalFilter, setHospitalFilter] = useState('All Hospitals');
   const [dateFilter, setDateFilter] = useState('This Month');
+  const [selectedClaimId, setSelectedClaimId] = useState<string | null>(null);
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const { hasUnreadAlert } = useClaimsMessaging();
 
   const allClaims = [
@@ -189,8 +194,24 @@ export default function InsurerClaimsPage() {
                       </span>
                     </td>
                     <td className="px-6 py-4 text-sm">
-                      <button className="text-blue-600 hover:text-blue-800 mr-2">Review</button>
-                      <button className="text-gray-600 hover:text-gray-800">View</button>
+                      <button 
+                        onClick={() => {
+                          setSelectedClaimId(claim.id);
+                          setIsReviewModalOpen(true);
+                        }}
+                        className="text-blue-600 hover:text-blue-800 mr-2"
+                      >
+                        Review
+                      </button>
+                      <button 
+                        onClick={() => {
+                          setSelectedClaimId(claim.id);
+                          setIsDetailsModalOpen(true);
+                        }}
+                        className="text-gray-600 hover:text-gray-800"
+                      >
+                        View
+                      </button>
                     </td>
                     <td className="px-6 py-4 text-sm">
                       <MessageButton claimId={claim.id} userRole="insurer" />
@@ -202,6 +223,29 @@ export default function InsurerClaimsPage() {
           </table>
         </div>
       </div>
+      
+      {selectedClaimId && (
+        <>
+          <ClaimReviewModal
+            isOpen={isReviewModalOpen}
+            onClose={() => {
+              setIsReviewModalOpen(false);
+              setSelectedClaimId(null);
+            }}
+            claimId={selectedClaimId}
+            claimData={allClaims.find(c => c.id === selectedClaimId)}
+          />
+          <ClaimDetailsModal
+            isOpen={isDetailsModalOpen}
+            onClose={() => {
+              setIsDetailsModalOpen(false);
+              setSelectedClaimId(null);
+            }}
+            claimId={selectedClaimId}
+            claimData={allClaims.find(c => c.id === selectedClaimId)}
+          />
+        </>
+      )}
       </div>
     </DashboardLayout>
   );

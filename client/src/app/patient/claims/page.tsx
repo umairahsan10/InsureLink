@@ -336,7 +336,18 @@ export default function PatientClaimsPage() {
               <button
                 type="button"
                 className="px-6 py-3 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors font-medium"
-                onClick={() => window.location.reload()}
+                onClick={() => {
+                  setFormData({
+                    hospitalName: '',
+                    hospitalId: '',
+                    admissionDate: '',
+                    dischargeDate: '',
+                    amountClaimed: 0,
+                    description: '',
+                    documents: []
+                  });
+                  setErrors({});
+                }}
               >
                 Reset Form
               </button>
