@@ -7,8 +7,6 @@ import MessageButton from '@/components/messaging/MessageButton';
 import { useClaimsMessaging } from '@/contexts/ClaimsMessagingContext';
 import notificationsData from '@/data/insurerNotifications.json';
 import { AlertNotification } from '@/types';
-import { apiFetch } from '@/lib/api/client';
-import ClaimReviewModal from '@/components/modals/ClaimReviewModal';
 
 interface Claim {
   id: string;
@@ -19,6 +17,7 @@ interface Claim {
   date: string;
   priority: 'High' | 'Medium' | 'Low';
   status: string;
+  isPaid?: boolean;
 }
 
 export default function InsurerDashboardPage() {
@@ -31,41 +30,70 @@ export default function InsurerDashboardPage() {
     []
   );
   const router = useRouter();
-  const [selectedClaimId, setSelectedClaimId] = useState<string | null>(null);
-  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
-  const [selectedClaims, setSelectedClaims] = useState<Set<string>>(new Set());
   const [claims, setClaims] = useState<Claim[]>([
     {
       id: 'CLM-8921',
       claimNumber: 'CLM-8921',
       patient: 'John Doe',
       hospital: 'City General',
-      amount: '$1,250',
+      amount: 'Rs. 1,250',
       date: '2025-10-06',
-      priority: 'High',
-      status: 'Pending'
+      priority: 'Low',
+      status: 'Pending',
+      isPaid: false
     },
     {
       id: 'CLM-8920',
       claimNumber: 'CLM-8920',
       patient: 'Mary Johnson',
       hospital: 'St. Mary\'s',
-      amount: '$450',
+      amount: 'Rs. 450',
       date: '2025-10-06',
       priority: 'Medium',
-      status: 'Pending'
+      status: 'Pending',
+      isPaid: false
     },
     {
       id: 'CLM-8919',
       claimNumber: 'CLM-8919',
       patient: 'Robert Smith',
       hospital: 'County Hospital',
-      amount: '$5,200',
+      amount: 'Rs. 5,200',
       date: '2025-10-05',
       priority: 'High',
-      status: 'Pending'
+      status: 'Pending',
+      isPaid: false
     }
   ]);
+  const [openActionId, setOpenActionId] = useState<string | null>(null);
+  const [openActionPlacement, setOpenActionPlacement] = useState<'above' | 'below'>('below');
+
+  const formatCurrency = (value: number) => `Rs. ${value.toLocaleString('en-PK')}`;
+
+  const stats = useMemo(() => {
+    const parseAmount = (amount: string) => Number(amount.replace(/Rs\.\s?/i, '').replace(/,/g, '')) || 0;
+
+    const totalValue = claims.reduce((sum, claim) => sum + parseAmount(claim.amount), 0);
+    const pendingCount = claims.filter((claim) => claim.status === 'Pending').length;
+    const approvedCount = claims.filter((claim) => claim.status === 'Approved').length;
+    const rejectedCount = claims.filter((claim) => claim.status === 'Rejected').length;
+    const paidClaims = claims.filter((claim) => claim.isPaid);
+    const paidCount = paidClaims.length;
+    const paidTotal = paidClaims.reduce((sum, claim) => sum + parseAmount(claim.amount), 0);
+    const flaggedCount = claims.filter((claim) => claim.priority === 'High').length;
+    const approvalRate = claims.length === 0 ? 0 : Math.round((approvedCount / claims.length) * 100);
+
+    return {
+      totalValue,
+      pendingCount,
+      approvedCount,
+      rejectedCount,
+      paidCount,
+      paidTotal,
+      flaggedCount,
+      approvalRate
+    };
+  }, [claims]);
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
@@ -93,86 +121,51 @@ export default function InsurerDashboardPage() {
     }
   };
 
-  const handleApprove = async (claimId: string) => {
-    try {
-      await apiFetch(`/api/claims/${claimId}/approve`, { method: 'POST' });
-      setClaims(prev => prev.map(c => c.id === claimId ? { ...c, status: 'Approved' } : c));
-      alert('Claim approved successfully');
-    } catch (error) {
-      console.error('Failed to approve claim', error);
-      alert('Failed to approve claim. Please try again.');
-    }
+  const handleApprove = (claimId: string) => {
+    setClaims((prevClaims) =>
+      prevClaims.map((claim) =>
+        claim.id === claimId ? { ...claim, status: 'Approved', isPaid: true } : claim
+      )
+    );
+    setOpenActionId(null);
+    setOpenActionPlacement('below');
   };
 
-  const handleReject = async (claimId: string, reason?: string) => {
-    try {
-      await apiFetch(`/api/claims/${claimId}/reject`, {
-        method: 'POST',
-        body: JSON.stringify({ reason }),
-      });
-      setClaims(prev => prev.map(c => c.id === claimId ? { ...c, status: 'Rejected' } : c));
-      alert('Claim rejected');
-    } catch (error) {
-      console.error('Failed to reject claim', error);
-      alert('Failed to reject claim. Please try again.');
-    }
+  const handleReject = (claimId: string) => {
+    setClaims((prevClaims) =>
+      prevClaims.map((claim) =>
+        claim.id === claimId ? { ...claim, status: 'Rejected', isPaid: false } : claim
+      )
+    );
+    setOpenActionId(null);
+    setOpenActionPlacement('below');
   };
 
   const handleExportReport = () => {
-    // Generate CSV
-    const csvContent = [
-      ['Claim ID', 'Patient', 'Hospital', 'Amount', 'Date', 'Status'].join(','),
-      ...claims.map(c => [c.claimNumber, c.patient, c.hospital, c.amount, c.date, c.status].join(','))
-    ].join('\n');
-    
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `claims-report-${new Date().toISOString().split('T')[0]}.csv`;
-    a.click();
-    window.URL.revokeObjectURL(url);
-  };
+    const headers = ['Claim ID', 'Patient', 'Hospital', 'Amount', 'Date', 'Priority', 'Status'];
+    const rows = claims.map((claim) => [
+      claim.claimNumber,
+      claim.patient,
+      claim.hospital,
+      claim.amount,
+      claim.date,
+      claim.priority,
+      claim.status
+    ]);
 
-  const handleBulkApprove = async () => {
-    if (selectedClaims.size === 0) {
-      alert('Please select claims to approve');
-      return;
-    }
-    try {
-      await apiFetch('/api/claims/bulk-approve', {
-        method: 'POST',
-        body: JSON.stringify({ claimIds: Array.from(selectedClaims) }),
-      });
-      setClaims(prev => prev.map(c => selectedClaims.has(c.id) ? { ...c, status: 'Approved' } : c));
-      setSelectedClaims(new Set());
-      alert('Claims approved successfully');
-    } catch (error) {
-      console.error('Failed to bulk approve claims', error);
-      alert('Failed to approve claims. Please try again.');
-    }
-  };
+    const escapeCsv = (value: string) => `"${value.replace(/"/g, '""')}"`;
+    const csvContent = [headers, ...rows].map((row) => row.map(escapeCsv).join(',')).join('\r\n');
 
-  const handleGenerateAuditReport = () => {
-    // Generate audit report
-    const report = {
-      generatedAt: new Date().toISOString(),
-      totalClaims: claims.length,
-      approved: claims.filter(c => c.status === 'Approved').length,
-      rejected: claims.filter(c => c.status === 'Rejected').length,
-      pending: claims.filter(c => c.status === 'Pending').length,
-    };
-    
-    const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `audit-report-${new Date().toISOString().split('T')[0]}.json`;
-    a.click();
-    window.URL.revokeObjectURL(url);
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', 'pending-claims.csv');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
-
-  const selectedClaim = selectedClaimId ? claims.find((claim) => claim.id === selectedClaimId) : undefined;
 
   return (
     <DashboardLayout
@@ -198,7 +191,7 @@ export default function InsurerDashboardPage() {
             <div className="flex items-center justify-between">
               <div className="flex-1 min-w-0">
                 <p className="text-sm text-gray-500 mb-1">Pending Claims</p>
-                <p className="text-2xl md:text-3xl font-bold text-gray-900">5</p>
+                <p className="text-2xl md:text-3xl font-bold text-gray-900">{stats.pendingCount}</p>
                 <p className="text-xs md:text-sm text-gray-500">Requires review</p>
               </div>
               <div className="w-10 h-10 md:w-12 md:h-12 bg-red-100 rounded-lg flex items-center justify-center flex-shrink-0 ml-2">
@@ -212,9 +205,9 @@ export default function InsurerDashboardPage() {
           <div className="bg-white rounded-lg shadow-sm p-4 md:p-6 border border-gray-200">
             <div className="flex items-center justify-between">
               <div className="flex-1 min-w-0">
-                <p className="text-sm text-gray-500 mb-1">Approved Claims</p>
-                <p className="text-2xl md:text-3xl font-bold text-gray-900">12</p>
-                <p className="text-xs md:text-sm text-gray-500">This week</p>
+                <p className="text-sm text-gray-500 mb-1">Rejected Claims</p>
+                <p className="text-2xl md:text-3xl font-bold text-gray-900">{stats.rejectedCount}</p>
+                <p className="text-xs md:text-sm text-gray-500">Need review</p>
               </div>
               <div className="w-10 h-10 md:w-12 md:h-12 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0 ml-2">
                 <svg className="w-5 h-5 md:w-6 md:h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -227,9 +220,9 @@ export default function InsurerDashboardPage() {
           <div className="bg-white rounded-lg shadow-sm p-4 md:p-6 border border-gray-200">
             <div className="flex items-center justify-between">
               <div className="flex-1 min-w-0">
-                <p className="text-sm text-gray-500 mb-1">Paid Claims</p>
-                <p className="text-2xl md:text-3xl font-bold text-gray-900">7</p>
-                <p className="text-xs md:text-sm text-gray-500">Rs. 285,000</p>
+                <p className="text-sm text-gray-500 mb-1">Approved Claims</p>
+                <p className="text-2xl md:text-3xl font-bold text-gray-900">{stats.paidCount}</p>
+                <p className="text-xs md:text-sm text-gray-500">{formatCurrency(stats.paidTotal)}</p>
               </div>
               <div className="w-10 h-10 md:w-12 md:h-12 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0 ml-2">
                 <svg className="w-5 h-5 md:w-6 md:h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -243,7 +236,7 @@ export default function InsurerDashboardPage() {
             <div className="flex items-center justify-between">
               <div className="flex-1 min-w-0">
                 <p className="text-sm text-gray-500 mb-1">Flagged Claims</p>
-                <p className="text-2xl md:text-3xl font-bold text-gray-900">1</p>
+                <p className="text-2xl md:text-3xl font-bold text-gray-900">{stats.flaggedCount}</p>
                 <p className="text-xs md:text-sm text-gray-500">High priority</p>
               </div>
               <div className="w-10 h-10 md:w-12 md:h-12 bg-orange-100 rounded-lg flex items-center justify-center flex-shrink-0 ml-2">
@@ -261,7 +254,7 @@ export default function InsurerDashboardPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-red-100 text-xs md:text-sm mb-1">Total Claims Value</p>
-                <p className="text-2xl md:text-3xl font-bold">Rs. 2.4M</p>
+                <p className="text-2xl md:text-3xl font-bold">{formatCurrency(stats.totalValue)}</p>
                 <p className="text-red-100 text-xs md:text-sm">Total Claims Value</p>
               </div>
             </div>
@@ -271,7 +264,7 @@ export default function InsurerDashboardPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-green-100 text-xs md:text-sm mb-1">Approval Rate</p>
-                <p className="text-2xl md:text-3xl font-bold">92%</p>
+                <p className="text-2xl md:text-3xl font-bold">{stats.approvalRate}%</p>
                 <p className="text-green-100 text-xs md:text-sm">Approval Rate</p>
               </div>
             </div>
@@ -289,13 +282,13 @@ export default function InsurerDashboardPage() {
         </div>
 
         {/* Pending Claims Review */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6 md:mb-8">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-2 md:mb-2">
           <div className="p-4 md:p-6 border-b border-gray-200">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
               <h2 className="text-lg md:text-xl font-semibold text-gray-900">Pending Claims Review</h2>
-              <button 
+              <button
                 onClick={handleExportReport}
-                className="px-3 md:px-4 py-2 text-sm md:text-base bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors whitespace-nowrap"
+                className="px-4 md:px-5 py-2.5 text-sm md:text-base font-semibold text-white bg-indigo-600 rounded-lg shadow-sm hover:bg-indigo-500 active:bg-indigo-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-indigo-400 transition-transform duration-150 hover:-translate-y-0.5 active:translate-y-0 whitespace-nowrap"
               >
                 Export Report
               </button>
@@ -303,20 +296,20 @@ export default function InsurerDashboardPage() {
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[900px]">
-              <thead className="bg-gray-50">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50 text-xs md:text-sm">
                 <tr>
-                  <th className="px-4 md:px-6 py-3 text-left text-xs md:text-sm font-medium text-gray-500 uppercase tracking-wider">Claim ID</th>
-                  <th className="px-4 md:px-6 py-3 text-left text-xs md:text-sm font-medium text-gray-500 uppercase tracking-wider">Patient</th>
-                  <th className="px-4 md:px-6 py-3 text-left text-xs md:text-sm font-medium text-gray-500 uppercase tracking-wider">Hospital</th>
-                  <th className="px-4 md:px-6 py-3 text-left text-xs md:text-sm font-medium text-gray-500 uppercase tracking-wider">Amount</th>
-                  <th className="px-4 md:px-6 py-3 text-left text-xs md:text-sm font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                  <th className="px-4 md:px-6 py-3 text-left text-xs md:text-sm font-medium text-gray-500 uppercase tracking-wider">Priority</th>
-                  <th className="px-4 md:px-6 py-3 text-left text-xs md:text-sm font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                  <th className="px-4 md:px-6 py-3 text-left text-xs md:text-sm font-medium text-gray-500 uppercase tracking-wider">Message</th>
+                  <th className="px-3 md:px-4 py-2 text-left font-medium text-gray-500 uppercase tracking-wider">Claim ID</th>
+                  <th className="px-3 md:px-4 py-2 text-left font-medium text-gray-500 uppercase tracking-wider">Patient</th>
+                  <th className="px-3 md:px-4 py-2 text-left font-medium text-gray-500 uppercase tracking-wider">Hospital</th>
+                  <th className="px-3 md:px-4 py-2 text-left font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                  <th className="px-3 md:px-4 py-2 text-left font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                  <th className="px-3 md:px-4 py-2 text-left font-medium text-gray-500 uppercase tracking-wider">Priority</th>
+                  <th className="px-3 md:px-4 py-2 text-left font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                  <th className="px-3 md:px-4 py-2 text-left font-medium text-gray-500 uppercase tracking-wider">Message</th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-white divide-y divide-gray-200 text-xs md:text-sm">
                 {claims.map((claim) => {
                   const hasAlert = hasUnreadAlert(claim.id, 'insurer');
                   return (
@@ -324,53 +317,97 @@ export default function InsurerDashboardPage() {
                       key={claim.id}
                       className={`hover:bg-gray-50 ${hasAlert ? 'border-l-4 border-red-500' : ''}`}
                     >
-                      <td className="px-4 md:px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      <td className="px-3 md:px-4 py-3 whitespace-nowrap font-medium text-gray-900">
                         {claim.claimNumber}
                       </td>
-                      <td className="px-4 md:px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="px-3 md:px-4 py-3 whitespace-nowrap text-gray-900">
                         {claim.patient}
                       </td>
-                      <td className="px-4 md:px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="px-3 md:px-4 py-3 whitespace-nowrap text-gray-900">
                         {claim.hospital}
                       </td>
-                      <td className="px-4 md:px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="px-3 md:px-4 py-3 whitespace-nowrap text-gray-900">
                         {claim.amount}
                       </td>
-                      <td className="px-4 md:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-3 md:px-4 py-3 whitespace-nowrap text-gray-500">
                         {claim.date}
                       </td>
-                      <td className="px-4 md:px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex items-center px-2 md:px-2.5 py-0.5 rounded-full text-xs font-medium border ${getPriorityColor(claim.priority)}`}>
+                      <td className="px-3 md:px-4 py-3 whitespace-nowrap">
+                        <span className={`inline-flex items-center px-2 md:px-2.5 py-0.5 rounded-full text-[11px] md:text-xs font-medium border ${getPriorityColor(claim.priority)}`}>
                           <span className={`w-2 h-2 rounded-full mr-1.5 ${getPriorityDot(claim.priority)}`}></span>
                           {claim.priority}
                         </span>
                       </td>
-                      <td className="px-4 md:px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <div className="flex space-x-1 md:space-x-2">
-                          <button
-                            onClick={() => {
-                              setSelectedClaimId(claim.id);
-                              setIsReviewModalOpen(true);
-                            }}
-                            className="px-2 md:px-3 py-1 text-xs md:text-sm bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 transition-colors"
+                      <td className="px-3 md:px-4 py-3 whitespace-nowrap font-medium">
+                        {claim.status === 'Pending' ? (
+                          <div className="relative inline-block text-left">
+                            <button
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                if (openActionId === claim.id) {
+                                  setOpenActionId(null);
+                                  return;
+                                }
+                                const dropdownHeight = 110; // approximate height of menu
+                                const rect = event.currentTarget.getBoundingClientRect();
+                                const spaceBelow = window.innerHeight - rect.bottom;
+                                setOpenActionPlacement(spaceBelow < dropdownHeight ? 'above' : 'below');
+                                setOpenActionId(claim.id);
+                              }}
+                              className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors text-xs md:text-sm flex items-center gap-1"
+                            >
+                              Actions
+                              <svg
+                                className={`w-3.5 h-3.5 transition-transform ${openActionId === claim.id ? 'rotate-180' : ''}`}
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                              </svg>
+                            </button>
+                            {openActionId === claim.id && (
+                              <div
+                                className={`absolute right-0 w-32 origin-top-right rounded-md border border-gray-100 bg-white shadow-lg z-10 ${
+                                  openActionPlacement === 'above' ? 'bottom-full mb-2' : 'top-full mt-2'
+                                }`}
+                              >
+                                <button
+                                  onClick={(event) => {
+                                    event.stopPropagation();
+                                    handleApprove(claim.id);
+                                  }}
+                                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs md:text-sm text-green-700 hover:bg-green-50"
+                                >
+                                  Approve
+                                </button>
+                                <button
+                                  onClick={(event) => {
+                                    event.stopPropagation();
+                                    handleReject(claim.id);
+                                  }}
+                                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs md:text-sm text-red-700 hover:bg-red-50"
+                                >
+                                  Reject
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <span
+                            className={`inline-flex items-center px-3 py-1.5 rounded-md text-xs md:text-sm font-semibold ${
+                              claim.status === 'Approved'
+                                ? 'bg-green-100 text-green-700 border border-green-200'
+                                : claim.status === 'Rejected'
+                                  ? 'bg-red-100 text-red-700 border border-red-200'
+                                  : 'bg-gray-100 text-gray-700 border border-gray-200'
+                            }`}
                           >
-                            Review
-                          </button>
-                          <button
-                            onClick={() => handleApprove(claim.id)}
-                            className="px-2 md:px-3 py-1 text-xs md:text-sm bg-green-100 text-green-700 rounded-md hover:bg-green-200 transition-colors"
-                          >
-                            Approve
-                          </button>
-                          <button
-                            onClick={() => handleReject(claim.id)}
-                            className="px-2 md:px-3 py-1 text-xs md:text-sm bg-red-100 text-red-700 rounded-md hover:bg-red-200 transition-colors"
-                          >
-                            Reject
-                          </button>
-                        </div>
+                            {claim.status}
+                          </span>
+                        )}
                       </td>
-                      <td className="px-4 md:px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <td className="px-3 md:px-4 py-3 whitespace-nowrap font-medium">
                         <MessageButton claimId={claim.id} userRole="insurer" />
                       </td>
                     </tr>
@@ -381,65 +418,7 @@ export default function InsurerDashboardPage() {
           </div>
         </div>
 
-        {/* Quick Actions */}
-        <div className="flex flex-col sm:flex-row gap-3 md:gap-4">
-          <button 
-            onClick={() => router.push('/insurer/claims?filter=flagged')}
-            className="flex items-center justify-center px-4 md:px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm md:text-base"
-          >
-            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-            </svg>
-            <span className="text-center">Review Flagged Claims</span>
-          </button>
-          
-          <button 
-            onClick={handleBulkApprove}
-            className="flex items-center justify-center px-4 md:px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm md:text-base"
-          >
-            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <span className="text-center">Bulk Approve Claims</span>
-          </button>
-          
-          <button 
-            onClick={handleGenerateAuditReport}
-            className="flex items-center justify-center px-4 md:px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm md:text-base"
-          >
-            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-            <span className="text-center">Generate Audit Report</span>
-          </button>
-        </div>
       </div>
-      {selectedClaimId && selectedClaim && (
-        <ClaimReviewModal
-          isOpen={isReviewModalOpen}
-          onClose={() => {
-            setIsReviewModalOpen(false);
-            setSelectedClaimId(null);
-          }}
-          claimId={selectedClaim.claimNumber}
-          claimData={{
-            id: selectedClaim.claimNumber,
-            patientName: selectedClaim.patient,
-            amount: selectedClaim.amount,
-            hospital: selectedClaim.hospital,
-          }}
-          onApprove={async (claimId) => {
-            await handleApprove(claimId);
-            setIsReviewModalOpen(false);
-            setSelectedClaimId(null);
-          }}
-          onReject={async (claimId, reason) => {
-            await handleReject(claimId, reason);
-            setIsReviewModalOpen(false);
-            setSelectedClaimId(null);
-          }}
-        />
-      )}
     </DashboardLayout>
   );
 }
