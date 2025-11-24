@@ -7,8 +7,9 @@ import MessageButton from '@/components/messaging/MessageButton';
 import { useClaimsMessaging } from '@/contexts/ClaimsMessagingContext';
 import notificationsData from '@/data/insurerNotifications.json';
 import { AlertNotification } from '@/types';
-import ClaimActionDrawer, { ClaimRecord } from '@/components/claims/ClaimActionDrawer';
-import { ClaimData, CLAIMS_STORAGE_KEY, CLAIMS_UPDATED_EVENT, defaultClaimData, loadStoredClaims } from '@/data/claimsData';
+import { ClaimRecord } from '@/components/claims/ClaimActionDrawer';
+import ClaimDetailsModal from '@/components/claims/ClaimDetailsModal';
+import { ClaimData, CLAIMS_STORAGE_KEY, CLAIMS_UPDATED_EVENT, defaultClaimData, loadStoredClaims, persistClaims } from '@/data/claimsData';
 
 export default function InsurerClaimsPage() {
   const router = useRouter();
@@ -22,8 +23,7 @@ export default function InsurerClaimsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('All Status');
   const [hospitalFilter, setHospitalFilter] = useState('All Hospitals');
-  const [selectedClaim, setSelectedClaim] = useState<ClaimRecord | null>(null);
-  const [drawerMode, setDrawerMode] = useState<'view' | 'review' | null>(null);
+  const [viewClaim, setViewClaim] = useState<ClaimRecord | null>(null);
   const { hasUnreadAlert } = useClaimsMessaging();
   const [claims, setClaims] = useState<ClaimData[]>(defaultClaimData);
 
@@ -62,22 +62,38 @@ export default function InsurerClaimsPage() {
     };
   }, []);
 
-  const openDrawer = (claim: ClaimRecord, mode: 'view' | 'review') => {
-    setSelectedClaim(claim);
-    setDrawerMode(mode);
+  const openClaimModal = (claim: ClaimRecord) => {
+    setViewClaim(claim);
   };
 
-  const handleCloseDrawer = () => {
-    setDrawerMode(null);
-    setSelectedClaim(null);
+  const closeClaimModal = () => {
+    setViewClaim(null);
   };
 
-  const handleDecision = (claimId: string, action: 'approve' | 'reject', notes?: string) => {
-    console.log(`[Claims] ${action.toUpperCase()} claim ${claimId}`, notes);
+  const updateClaimStatus = (claimId: string, status: 'Approved' | 'Rejected') => {
+    setClaims((prevClaims) => {
+      const updated = prevClaims.map((claim) =>
+        claim.id === claimId ? { ...claim, status, isPaid: status === 'Approved' } : claim
+      );
+      persistClaims(updated);
+      const currentClaim = updated.find((c) => c.id === claimId);
+      if (currentClaim) {
+        setViewClaim({
+          id: currentClaim.id,
+          patient: currentClaim.patient,
+          hospital: currentClaim.hospital,
+          date: currentClaim.date,
+          amount: currentClaim.amount,
+          priority: currentClaim.priority,
+          status: currentClaim.status
+        });
+      }
+      return updated;
+    });
   };
 
-  const handleSaveNotes = (claimId: string, notes: string) => {
-    console.log(`[Claims] SAVE notes for ${claimId}`, notes);
+  const handleClaimDecision = (claimId: string, action: 'approve' | 'reject') => {
+    updateClaimStatus(claimId, action === 'approve' ? 'Approved' : 'Rejected');
   };
 
   // Filter claims based on search and filters
@@ -230,7 +246,7 @@ export default function InsurerClaimsPage() {
                     </td>
                     <td className="px-6 py-4 text-sm">
                       <button 
-                        onClick={() => openDrawer(claim, 'view')}
+                        onClick={() => openClaimModal(claim)}
                         className="text-gray-600 hover:text-gray-800"
                       >
                         View
@@ -247,13 +263,11 @@ export default function InsurerClaimsPage() {
         </div>
       </div>
       
-      <ClaimActionDrawer
-        isOpen={Boolean(selectedClaim && drawerMode)}
-        mode={drawerMode ?? 'view'}
-        claim={selectedClaim}
-        onClose={handleCloseDrawer}
-        onDecision={handleDecision}
-        onSaveNotes={handleSaveNotes}
+      <ClaimDetailsModal
+        claim={viewClaim}
+        isOpen={Boolean(viewClaim)}
+        onClose={closeClaimModal}
+        onDecision={handleClaimDecision}
       />
       </div>
     </DashboardLayout>
