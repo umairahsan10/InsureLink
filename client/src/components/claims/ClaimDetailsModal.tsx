@@ -11,11 +11,10 @@ interface ClaimDetailsModalProps {
 }
 
 export default function ClaimDetailsModal({ claim, isOpen, onClose, onDecision }: ClaimDetailsModalProps) {
-  if (!isOpen || !claim) {
-    return null;
-  }
-
   const statusChip = useMemo(() => {
+    if (!claim) {
+      return 'bg-amber-50 text-amber-700 border border-amber-200';
+    }
     switch (claim.status) {
       case 'Approved':
         return 'bg-emerald-50 text-emerald-700 border border-emerald-200';
@@ -26,7 +25,11 @@ export default function ClaimDetailsModal({ claim, isOpen, onClose, onDecision }
       default:
         return 'bg-amber-50 text-amber-700 border border-amber-200';
     }
-  }, [claim.status]);
+  }, [claim?.status]);
+
+  if (!isOpen || !claim) {
+    return null;
+  }
 
   const detailRows = [
     { label: 'Claim ID', value: claim.id },

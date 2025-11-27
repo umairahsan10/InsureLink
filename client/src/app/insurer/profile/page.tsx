@@ -61,6 +61,7 @@ export default function InsurerProfilePage() {
       selectedPlans.size !== initialData.availablePlans.length ||
       initialData.availablePlans.some((plan) => !selectedPlans.has(plan));
     setIsDirty(hasChanges);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formData, selectedPlans]);
 
   const handleInputChange = (
@@ -73,7 +74,11 @@ export default function InsurerProfilePage() {
   const handlePlanToggle = (plan: string) => {
     setSelectedPlans((prev) => {
       const next = new Set(prev);
-      next.has(plan) ? next.delete(plan) : next.add(plan);
+      if (next.has(plan)) {
+        next.delete(plan);
+      } else {
+        next.add(plan);
+      }
       return next;
     });
   };

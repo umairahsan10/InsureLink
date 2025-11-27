@@ -30,7 +30,7 @@ export default function InsurerDashboardPage() {
   });
 
   const toClaimData = (claim: Claim): ClaimData => {
-    const { claimNumber, ...rest } = claim;
+    const { claimNumber: _claimNumber, ...rest } = claim;
     return rest;
   };
 
