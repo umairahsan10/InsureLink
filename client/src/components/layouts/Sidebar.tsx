@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 
 interface SidebarProps {
@@ -76,12 +76,20 @@ const ShieldIcon = () => (
   </svg>
 );
 
+const LabsIcon = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+  </svg>
+);
+
 const menuItems: Record<string, MenuItem[]> = {
   patient: [
     { name: 'Dashboard', href: '/patient/dashboard', icon: <DashboardIcon /> },
     { name: 'My Claims', href: '/patient/claims', icon: <ClaimsIcon /> },
-    { name: 'Profile', href: '/patient/profile', icon: <ProfileIcon /> },
     { name: 'History', href: '/patient/history', icon: <HistoryIcon /> },
+    { name: 'Hospitals', href: '/patient/hospitals', icon: <HospitalIcon /> },
+    { name: 'Labs', href: '/patient/labs', icon: <LabsIcon /> },
+    { name: 'Profile', href: '/patient/profile', icon: <ProfileIcon /> },
   ],
   corporate: [
     { name: 'Dashboard', href: '/corporate/dashboard', icon: <DashboardIcon /> },
@@ -155,8 +163,17 @@ const themes = {
 
 export default function Sidebar({ userRole }: SidebarProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const items = menuItems[userRole];
   const theme = themes[userRole];
+
+  const handleLogout = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    e.preventDefault();
+    // Clear auth token cookie
+    document.cookie = 'auth_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+    // Redirect to login page
+    router.push('/login');
+  };
 
   useEffect(() => {
     const sidebarToggle = document.getElementById('sidebar-toggle');
@@ -247,15 +264,16 @@ export default function Sidebar({ userRole }: SidebarProps) {
 
         {/* Logout Link */}
         <div className="p-2 md:p-4 border-t border-gray-200">
-          <Link
+          <a
             href="/login"
-            className={`flex items-center space-x-2 md:space-x-3 px-3 md:px-4 py-2 md:py-3 rounded-lg transition-colors text-sm md:text-base ${theme.itemTextColor} ${theme.hoverBg} ${theme.hoverText}`}
+            onClick={handleLogout}
+            className={`flex items-center space-x-2 md:space-x-3 px-3 md:px-4 py-2 md:py-3 rounded-lg transition-colors text-sm md:text-base cursor-pointer ${theme.itemTextColor} ${theme.hoverBg} ${theme.hoverText}`}
           >
             <svg className="w-4 md:w-5 h-4 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
             </svg>
             <span className="font-medium">Logout</span>
-          </Link>
+          </a>
         </div>
       </aside>
       

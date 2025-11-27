@@ -1,5 +1,7 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
+
 interface QuickActionButtonProps {
   title: string;
   icon: string;
@@ -25,19 +27,20 @@ function QuickActionButton({ title, icon, onClick, variant = 'secondary' }: Quic
 }
 
 export default function QuickActions() {
+  const router = useRouter();
+
   const handleManagePolicies = () => {
-    // Navigate to employee policies management
-    console.log('Navigate to manage employee policies');
+    router.push('/corporate/plans');
   };
 
   const handleGenerateReport = () => {
-    // Generate usage report
-    console.log('Generate usage report');
+    // Generate usage report - could navigate to reports page or open modal
+    alert('Report generation feature coming soon');
   };
 
   const handleViewAnalytics = () => {
-    // Navigate to analytics dashboard
-    console.log('Navigate to analytics dashboard');
+    // Navigate to analytics dashboard - could be a separate page or modal
+    router.push('/corporate/dashboard'); // Assuming analytics is on dashboard
   };
 
   return (

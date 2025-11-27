@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/layouts/DashboardLayout';
 import CorporateEmployeesModal from '@/components/insurer/CorporateEmployeesModal';
+import AddCorporateModal from '@/components/modals/AddCorporateModal';
 import corporatesData from '@/data/corporates.json';
 import notificationsData from '@/data/insurerNotifications.json';
 import { AlertNotification } from '@/types';
@@ -17,18 +18,68 @@ export default function InsurerCorporatesPage() {
       })),
     []
   );
+  const industries = useMemo(
+    () => [
+      'All Industries',
+      ...Array.from(
+        new Set(
+          corporatesData
+            .map((corporate) => corporate.industry)
+            .filter(Boolean)
+        )
+      ),
+    ],
+    []
+  );
+  const planTypes = useMemo(
+    () => [
+      'All Plans',
+      ...Array.from(
+        new Set(
+          corporatesData
+            .map((corporate) => corporate.planType)
+            .filter(Boolean)
+        )
+      ),
+    ],
+    []
+  );
   const [selectedCorporate, setSelectedCorporate] = useState<{id: string, name: string} | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [industryFilter, setIndustryFilter] = useState('All Industries');
+  const [planFilter, setPlanFilter] = useState('All Plans');
+  const filteredCorporates = useMemo(
+    () =>
+      corporatesData.filter((corporate) => {
+        const matchesSearch =
+          searchQuery === '' ||
+          corporate.name.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesIndustry =
+          industryFilter === 'All Industries' ||
+          corporate.industry === industryFilter;
+        const matchesPlan =
+          planFilter === 'All Plans' || corporate.planType === planFilter;
+        return matchesSearch && matchesIndustry && matchesPlan;
+      }),
+    [industryFilter, planFilter, searchQuery]
+  );
+
+  const getStatusBadgeClasses = (status: string) => {
+    switch (status) {
+      case 'Pending Renewal':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'Inactive':
+        return 'bg-gray-100 text-gray-800';
+      default:
+        return 'bg-green-100 text-green-800';
+    }
+  };
 
   const handleViewClick = (corporateId: string, corporateName: string) => {
     setSelectedCorporate({ id: corporateId, name: corporateName });
     setIsModalOpen(true);
-    setOpenDropdownId(null);
-  };
-
-  const toggleDropdown = (corporateId: string) => {
-    setOpenDropdownId(openDropdownId === corporateId ? null : corporateId);
   };
 
   return (
@@ -45,7 +96,10 @@ export default function InsurerCorporatesPage() {
       <div className="p-8 bg-gray-50 min-h-screen">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold text-gray-900">Corporate Clients</h1>
-        <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+        <button 
+          onClick={() => setIsAddModalOpen(true)}
+          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+        >
           + Add Corporate
         </button>
       </div>
@@ -75,20 +129,31 @@ export default function InsurerCorporatesPage() {
             <input
               type="text"
               placeholder="Search corporate clients..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
               className="flex-1 px-4 py-2 border border-gray-300 rounded-lg"
             />
-            <select className="px-4 py-2 border border-gray-300 rounded-lg">
-              <option>All Industries</option>
-              <option>Technology</option>
-              <option>Finance</option>
-              <option>Healthcare</option>
-              <option>Manufacturing</option>
+            <select
+              value={industryFilter}
+              onChange={(e) => setIndustryFilter(e.target.value)}
+              className="px-4 py-2 border border-gray-300 rounded-lg"
+            >
+              {industries.map((industry) => (
+                <option key={industry} value={industry}>
+                  {industry}
+                </option>
+              ))}
             </select>
-            <select className="px-4 py-2 border border-gray-300 rounded-lg">
-              <option>All Plans</option>
-              <option>Basic</option>
-              <option>Comprehensive</option>
-              <option>Premium</option>
+            <select
+              value={planFilter}
+              onChange={(e) => setPlanFilter(e.target.value)}
+              className="px-4 py-2 border border-gray-300 rounded-lg"
+            >
+              {planTypes.map((plan) => (
+                <option key={plan} value={plan}>
+                  {plan}
+                </option>
+              ))}
             </select>
           </div>
         </div>
@@ -107,50 +172,42 @@ export default function InsurerCorporatesPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {corporatesData.map((corporate) => (
+              {filteredCorporates.map((corporate) => (
                 <tr key={corporate.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 text-sm font-medium text-gray-900">{corporate.name}</td>
-                  <td className="px-6 py-4 text-sm text-gray-500">Technology</td>
+                  <td className="px-6 py-4 text-sm text-gray-500">{corporate.industry}</td>
                   <td className="px-6 py-4 text-sm text-gray-900">{corporate.totalEmployees}</td>
-                  <td className="px-6 py-4 text-sm text-gray-500">Comprehensive</td>
-                  <td className="px-6 py-4 text-sm text-gray-900">$45K</td>
+                  <td className="px-6 py-4 text-sm text-gray-500">{corporate.planType}</td>
+                  <td className="px-6 py-4 text-sm text-gray-900">{corporate.premium}</td>
                   <td className="px-6 py-4 text-sm">
-                    <span className="inline-block px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">
-                      Active
+                    <span
+                      className={`inline-block px-2 py-1 text-xs rounded-full ${getStatusBadgeClasses(
+                        corporate.status || 'Active'
+                      )}`}
+                    >
+                      {corporate.status || 'Active'}
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-sm relative">
-                    <div className="relative">
-                      <button 
-                        onClick={() => toggleDropdown(corporate.id)}
-                        className="text-blue-600 hover:text-blue-800 flex items-center"
+                  <td className="px-6 py-4 text-sm">
+                    <button
+                      onClick={() => handleViewClick(corporate.id, corporate.name)}
+                      className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 transition-colors"
+                    >
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
                       >
-                        Actions
-                        <svg className="ml-1 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                        </svg>
-                      </button>
-                      
-                      {openDropdownId === corporate.id && (
-                        <>
-                          <div 
-                            className="fixed inset-0 z-10" 
-                            onClick={() => setOpenDropdownId(null)}
-                          ></div>
-                          <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-20 border border-gray-200">
-                            <button
-                              onClick={() => handleViewClick(corporate.id, corporate.name)}
-                              className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
-                            >
-                              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                              </svg>
-                              View Employees
-                            </button>
-                          </div>
-                        </>
-                      )}
-                    </div>
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+                        />
+                      </svg>
+                      View Employees
+                    </button>
                   </td>
                 </tr>
               ))}
@@ -172,6 +229,11 @@ export default function InsurerCorporatesPage() {
           corporateName={selectedCorporate.name}
         />
       )}
+      
+      <AddCorporateModal
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+      />
     </DashboardLayout>
   );
 }

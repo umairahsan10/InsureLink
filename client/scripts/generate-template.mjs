@@ -1,6 +1,10 @@
-const XLSX = require('xlsx');
-const path = require('path');
-const fs = require('fs');
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import * as XLSX from 'xlsx';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Create workbook
 const wb = XLSX.utils.book_new();

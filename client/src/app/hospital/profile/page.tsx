@@ -1,43 +1,14 @@
 'use client';
 
-import { useState } from 'react';
-import HospitalSidebar from '@/components/hospital/HospitalSidebar';
-
 export default function HospitalProfilePage() {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Left Sidebar */}
-      <HospitalSidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
+    <div className="p-4 lg:p-6">
+      <div className="mb-6">
+        <h1 className="text-xl lg:text-2xl font-bold text-gray-900">Hospital Profile</h1>
+        <p className="text-sm text-gray-600">Manage your hospital information and settings</p>
+      </div>
 
-      {/* Main Content */}
-      <div className="ml-0 lg:ml-64 flex flex-col">
-        {/* Top Header */}
-        <header className="bg-white shadow-sm border-b px-4 lg:px-6 py-4">
-          <div className="flex items-center justify-between flex-wrap gap-4">
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="lg:hidden p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                </svg>
-              </button>
-              <div>
-                <h1 className="text-xl lg:text-2xl font-bold text-gray-900">Hospital Profile</h1>
-                <p className="text-xs lg:text-sm text-gray-600">Manage your hospital information and settings</p>
-              </div>
-            </div>
-                         <div className="flex items-center space-x-2 lg:space-x-4">
-             </div>
-          </div>
-        </header>
-
-        {/* Page Content */}
-        <main className="flex-1 p-4 lg:p-6">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
             <div className="lg:col-span-2 space-y-4 lg:space-y-6">
               <div className="bg-white rounded-lg shadow p-4 lg:p-6">
                 <h2 className="text-lg lg:text-xl font-semibold text-gray-900 mb-4">Hospital Information</h2>
@@ -162,8 +133,6 @@ export default function HospitalProfilePage() {
               </div>
             </div>
           </div>
-        </main>
-      </div>
-    </div>
+        </div>
   );
 }

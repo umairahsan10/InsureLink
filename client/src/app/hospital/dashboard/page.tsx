@@ -1,57 +1,44 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import ClaimStatusBadge from '@/components/claims/ClaimStatusBadge';
-import HospitalSidebar from '@/components/hospital/HospitalSidebar';
 import MessageButton from '@/components/messaging/MessageButton';
-import NotificationPanel from '@/components/notifications/NotificationPanel';
 import { useClaimsMessaging } from '@/contexts/ClaimsMessagingContext';
-import notificationsData from '@/data/hospitalNotifications.json';
-import { AlertNotification } from '@/types';
+import { apiFetch } from '@/lib/api/client';
+import ClaimDetailsModal from '@/components/modals/ClaimDetailsModal';
+import ClaimEditModal from '@/components/modals/ClaimEditModal';
 
 // Import data
 import analyticsData from '@/data/analytics.json';
 
 export default function HospitalDashboardPage() {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [cnicNumber, setCnicNumber] = useState('');
-  const [isPanelOpen, setIsPanelOpen] = useState(false);
-  const [notifications, setNotifications] = useState<AlertNotification[]>(
-    notificationsData as AlertNotification[]
-  );
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [selectedClaimId, setSelectedClaimId] = useState<string | null>(null);
+  const [isClaimDetailsOpen, setIsClaimDetailsOpen] = useState(false);
+  const [isClaimEditOpen, setIsClaimEditOpen] = useState(false);
   const { hasUnreadAlert } = useClaimsMessaging();
-  const unreadCount = useMemo(
-    () => notifications.filter((notification) => !notification.isRead).length,
-    [notifications]
-  );
-
-  const handleVerifyPatient = () => {
-    // Handle patient verification logic
-    console.log('Verifying patient with CNIC:', cnicNumber);
-  };
-
   const router = useRouter();
 
-  const handleTogglePanel = () => {
-    if (!isPanelOpen) {
-      setNotifications((current) =>
-        current.map((notification) =>
-          notification.isRead ? notification : { ...notification, isRead: true }
-        )
-      );
-    }
-    setIsPanelOpen((prev) => !prev);
-  };
-
-  const handleDismissNotification = (id: string) => {
-    setNotifications((current) => current.filter((notification) => notification.id !== id));
-  };
-
-  const handleSelectNotification = (notification: AlertNotification) => {
-    if (notification.category === 'messaging') {
-      router.push('/hospital/claims');
-      setIsPanelOpen(false);
+  const handleVerifyPatient = async () => {
+    if (!cnicNumber.trim()) return;
+    
+    setIsVerifying(true);
+    try {
+      // API call to verify patient
+      await apiFetch('/api/patients/verify', {
+        method: 'POST',
+        body: JSON.stringify({ cnic: cnicNumber }),
+      });
+      // Handle success - could show a toast or update UI
+      alert('Patient verified successfully');
+      setCnicNumber('');
+    } catch (error) {
+      console.error('Failed to verify patient', error);
+      alert('Failed to verify patient. Please try again.');
+    } finally {
+      setIsVerifying(false);
     }
   };
 
@@ -100,68 +87,7 @@ export default function HospitalDashboardPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Left Sidebar */}
-      <HospitalSidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
-
-      {/* Main Content */}
-      <div className="ml-0 lg:ml-64 flex flex-col">
-        {/* Top Header */}
-        <header className="bg-white shadow-sm border-b px-4 lg:px-6 py-4">
-          <div className="flex items-center justify-between flex-wrap gap-4">
-            <div className="flex items-center gap-3">
-              {/* Mobile hamburger button */}
-              <button
-                onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="lg:hidden p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                </svg>
-              </button>
-              <div>
-                <h1 className="text-xl lg:text-2xl font-bold text-gray-900">Hospital Dashboard</h1>
-                <p className="text-green-600 text-xs lg:text-sm">Hospital Dashboard</p>
-              </div>
-            </div>
-            
-            <div className="flex items-center space-x-2 lg:space-x-4">
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={handleTogglePanel}
-                  className="relative p-2 rounded-full hover:bg-gray-100 transition-colors"
-                  aria-label="Toggle notifications"
-                >
-                  <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M15 17h5l-5 5v-5zM4.5 19.5a3 3 0 01-3-3V5a3 3 0 013-3h4a3 3 0 013 3v1"
-                    />
-                  </svg>
-                  {unreadCount > 0 && (
-                    <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-xs font-semibold rounded-full w-5 h-5 flex items-center justify-center">
-                      {unreadCount}
-                    </span>
-                  )}
-                </button>
-
-                <NotificationPanel
-                  notifications={notifications}
-                  isOpen={isPanelOpen}
-                  onDismiss={handleDismissNotification}
-                  onClose={() => setIsPanelOpen(false)}
-                  onSelect={handleSelectNotification}
-                />
-              </div>
-            </div>
-          </div>
-        </header>
-
-        {/* Page Content */}
-        <main className="flex-1 p-4 lg:p-6">
+    <div className="p-4 lg:p-6">
           {/* Overview Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 mb-6 lg:mb-8">
             <div className="bg-white rounded-lg shadow p-6">
@@ -244,9 +170,10 @@ export default function HospitalDashboardPage() {
                 </div>
                 <button
                   onClick={handleVerifyPatient}
-                  className="w-full bg-green-600 text-white py-3 px-4 rounded-lg hover:bg-green-700 transition-colors font-semibold"
+                  disabled={isVerifying || !cnicNumber.trim()}
+                  className="w-full bg-green-600 text-white py-3 px-4 rounded-lg hover:bg-green-700 transition-colors font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Verify Patient
+                  {isVerifying ? 'Verifying...' : 'Verify Patient'}
                 </button>
               </div>
             </div>
@@ -255,19 +182,28 @@ export default function HospitalDashboardPage() {
             <div className="bg-white rounded-lg shadow p-4 lg:p-6">
               <h2 className="text-base lg:text-lg font-semibold text-gray-900 mb-4">Quick Actions</h2>
               <div className="space-y-3">
-                <button className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center">
+                <button 
+                  onClick={() => router.push('/hospital/claims?action=submit')}
+                  className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center"
+                >
                   <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                   </svg>
                   Submit New Claim
                 </button>
-                <button className="w-full bg-white text-gray-700 py-3 px-4 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors flex items-center justify-center">
+                <button 
+                  onClick={() => router.push('/hospital/claims')}
+                  className="w-full bg-white text-gray-700 py-3 px-4 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors flex items-center justify-center"
+                >
                   <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
                   View All Claims
                 </button>
-                <button className="w-full bg-gray-800 text-white py-3 px-4 rounded-lg hover:bg-gray-900 transition-colors flex items-center justify-center">
+                <button 
+                  onClick={() => router.push('/hospital/patients')}
+                  className="w-full bg-gray-800 text-white py-3 px-4 rounded-lg hover:bg-gray-900 transition-colors flex items-center justify-center"
+                >
                   <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                   </svg>
@@ -282,7 +218,12 @@ export default function HospitalDashboardPage() {
             <div className="p-4 lg:p-6 border-b border-gray-200">
               <div className="flex items-center justify-between">
                 <h2 className="text-base lg:text-lg font-semibold text-gray-900">Recent Claims</h2>
-                <button className="text-xs lg:text-sm text-gray-500 hover:text-gray-700">View All</button>
+                <button 
+                  onClick={() => router.push('/hospital/claims')}
+                  className="text-xs lg:text-sm text-gray-500 hover:text-gray-700"
+                >
+                  View All
+                </button>
               </div>
             </div>
             
@@ -324,9 +265,25 @@ export default function HospitalDashboardPage() {
                         </td>
                         <td className="px-3 lg:px-6 py-4 whitespace-nowrap text-xs lg:text-sm font-medium">
                           <div className="flex space-x-1 lg:space-x-2">
-                            <button className="text-gray-500 hover:text-gray-700">View</button>
+                            <button 
+                              onClick={() => {
+                                setSelectedClaimId(claim.id);
+                                setIsClaimDetailsOpen(true);
+                              }}
+                              className="text-gray-500 hover:text-gray-700"
+                            >
+                              View
+                            </button>
                             {claim.status === 'Pending' && (
-                              <button className="text-blue-600 hover:text-blue-800">Edit</button>
+                              <button 
+                                onClick={() => {
+                                  setSelectedClaimId(claim.id);
+                                  setIsClaimEditOpen(true);
+                                }}
+                                className="text-blue-600 hover:text-blue-800"
+                              >
+                                Edit
+                              </button>
                             )}
                           </div>
                         </td>
@@ -340,8 +297,29 @@ export default function HospitalDashboardPage() {
               </table>
             </div>
           </div>
-    </main>
-      </div>
+      
+      {selectedClaimId && (
+        <>
+          <ClaimDetailsModal
+            isOpen={isClaimDetailsOpen}
+            onClose={() => {
+              setIsClaimDetailsOpen(false);
+              setSelectedClaimId(null);
+            }}
+            claimId={selectedClaimId}
+            claimData={recentClaims.find(c => c.id === selectedClaimId)}
+          />
+          <ClaimEditModal
+            isOpen={isClaimEditOpen}
+            onClose={() => {
+              setIsClaimEditOpen(false);
+              setSelectedClaimId(null);
+            }}
+            claimId={selectedClaimId}
+            claimData={recentClaims.find(c => c.id === selectedClaimId)}
+          />
+        </>
+      )}
     </div>
   );
 }
