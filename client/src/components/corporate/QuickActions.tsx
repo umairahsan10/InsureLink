@@ -43,28 +43,28 @@ export default function QuickActions() {
     router.push('/corporate/dashboard'); // Assuming analytics is on dashboard
   };
 
-  return (
-    <div className="bg-white rounded-lg shadow-sm p-5 md:p-6 border border-gray-200">
-      <h2 className="text-xl md:text-xl font-semibold text-gray-900 mb-5 md:mb-6">Quick Actions</h2>
+  // return (
+  //   <div className="bg-white rounded-lg shadow-sm p-5 md:p-6 border border-gray-200">
+  //     <h2 className="text-xl md:text-xl font-semibold text-gray-900 mb-5 md:mb-6">Quick Actions</h2>
       
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        <QuickActionButton
-          title="Manage Employee Policies"
-          icon="👥"
-          onClick={handleManagePolicies}
-          variant="primary"
-        />
-        <QuickActionButton
-          title="Generate Usage Report"
-          icon="📄"
-          onClick={handleGenerateReport}
-        />
-        <QuickActionButton
-          title="View Analytics Dashboard"
-          icon="📊"
-          onClick={handleViewAnalytics}
-        />
-      </div>
-    </div>
-  );
+  //     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+  //       <QuickActionButton
+  //         title="Manage Employee Policies"
+  //         icon="👥"
+  //         onClick={handleManagePolicies}
+  //         variant="primary"
+  //       />
+  //       <QuickActionButton
+  //         title="Generate Usage Report"
+  //         icon="📄"
+  //         onClick={handleGenerateReport}
+  //       />
+  //       <QuickActionButton
+  //         title="View Analytics Dashboard"
+  //         icon="📊"
+  //         onClick={handleViewAnalytics}
+  //       />
+  //     </div>
+  //   </div>
+  // );
 }
