@@ -103,6 +103,7 @@ export default function HospitalClaimsPage() {
                 <button className="bg-blue-600 text-white px-3 lg:px-4 py-2 rounded-lg hover:bg-blue-700 text-sm lg:text-base">
                   + Submit New Claim
                 </button>
+                {/* Temporarily hidden Upload Document button
                 <button
                   onClick={() => {
                     setFormError(null);
@@ -122,6 +123,8 @@ export default function HospitalClaimsPage() {
                 >
                   Upload Document
                 </button>
+                */}
+                {/* Temporarily hidden Reset Hashes button
                 <button
                   onClick={() => setShowResetConfirm(true)}
                   className="bg-gray-500 text-white px-3 lg:px-4 py-2 rounded-lg hover:bg-gray-600 text-sm lg:text-base"
@@ -129,6 +132,7 @@ export default function HospitalClaimsPage() {
                 >
                   Reset Hashes
                 </button>
+                */}
               </div>
             </div>
           </div>
@@ -138,6 +142,7 @@ export default function HospitalClaimsPage() {
               <button className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm">
                 + Submit New Claim
               </button>
+              {/* Temporarily hidden Upload Document button
               <button
                 onClick={() => {
                   setFormError(null);
@@ -157,12 +162,15 @@ export default function HospitalClaimsPage() {
               >
                 Upload Document
               </button>
+              */}
+              {/* Temporarily hidden Reset Hashes button
               <button
                 onClick={() => setShowResetConfirm(true)}
                 className="w-full bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 text-sm"
               >
                 Reset Hashes
               </button>
+              */}
             </div>
           </div>
         </header>
