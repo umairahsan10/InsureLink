@@ -1,5 +1,12 @@
 'use client';
 
+// Extend Window interface for our global types
+declare global {
+  interface Window {
+    clearDocumentHashes: () => void;
+  }
+}
+
 import {
   getBenchmarkForClaim,
   calculateZScore,
@@ -7,6 +14,7 @@ import {
   calculateLengthOfStay,
   getTypicalStayRange,
   type HospitalTier,
+  isHospitalTier
 } from './costBenchmarking';
 import hospitalsData from '@/data/hospitals.json';
 
@@ -275,13 +283,10 @@ const findNearDuplicate = (
 ): PerceptualHashResult => {
   const storedHashes = readPerceptualHashes();
   let maxSimilarity = 0;
-  let bestMatch: string | null = null;
-
   for (const storedHash of storedHashes) {
     const similarity = calculateSimilarity(perceptualHash, storedHash);
     if (similarity > maxSimilarity) {
       maxSimilarity = similarity;
-      bestMatch = storedHash;
     }
     if (similarity >= threshold) {
       console.log(
@@ -398,8 +403,9 @@ const getHospitalIdFromTemplate = (templateKey: TemplateKey | ''): string | null
 
 const getHospitalTier = (hospitalId: string | null): HospitalTier | null => {
   if (!hospitalId) return null;
-  const hospital = hospitalsData.find((h: any) => h.id === hospitalId);
-  return (hospital?.tier as HospitalTier) || null;
+  const hospital = hospitalsData.find((h: { id: string; tier?: string }) => h.id === hospitalId);
+  const tier = hospital?.tier;
+  return tier && isHospitalTier(tier) ? tier : null;
 };
 
 export const markHashAsSuspicious = (hash?: string) => {
@@ -429,7 +435,7 @@ export const clearDocumentHashes = () => {
 
 // Make it available globally for console access
 if (typeof window !== 'undefined') {
-  (window as any).clearDocumentHashes = clearDocumentHashes;
+  window.clearDocumentHashes = clearDocumentHashes;
 }
 
 export const getTemplateOptions = () => TEMPLATE_CONFIG;

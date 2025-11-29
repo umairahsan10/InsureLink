@@ -15,6 +15,11 @@ export type TreatmentCategory =
 
 export type HospitalTier = 'Tier-1' | 'Tier-2' | 'Tier-3';
 
+// Type guard to check if a string is a valid HospitalTier
+export function isHospitalTier(tier: string): tier is HospitalTier {
+  return ['Tier-1', 'Tier-2', 'Tier-3'].includes(tier);
+}
+
 interface Claim {
   id: string;
   amountClaimed: number;
@@ -24,10 +29,10 @@ interface Claim {
   dischargeDate: string;
 }
 
-interface Hospital {
-  id: string;
-  tier?: HospitalTier;
+interface ClaimWithCorporate extends Claim {
+  corporateId?: string;
 }
+
 
 interface BenchmarkStats {
   mean: number;
@@ -97,8 +102,8 @@ const loadBenchmarks = (): BenchmarkData => {
 
   // Build hospital tier map
   const hospitalTierMap: Record<string, HospitalTier> = {};
-  hospitalsData.forEach((hosp: Hospital) => {
-    if (hosp.tier) {
+  hospitalsData.forEach((hosp: { id: string; tier?: string }) => {
+    if (hosp.tier && isHospitalTier(hosp.tier)) {
       hospitalTierMap[hosp.id] = hosp.tier;
     }
   });
@@ -114,7 +119,7 @@ const loadBenchmarks = (): BenchmarkData => {
     const treatment = claim.treatmentCategory;
     const hospitalId = claim.hospitalId;
     const tier = hospitalTierMap[hospitalId];
-    const corporateId = (claim as any).corporateId;
+    const corporateId = (claim as ClaimWithCorporate).corporateId;
 
     // Treatment + Tier (primary)
     if (treatment && tier) {
