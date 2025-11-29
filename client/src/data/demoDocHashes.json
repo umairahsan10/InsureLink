@@ -1,0 +1,90 @@
+{
+  "generatedAt": "2025-11-24T09:42:53.435Z",
+  "files": [
+    {
+      "filename": "batch2-0024.jpg",
+      "sha256": "059b84d5b0af7a4821a91675bbf86e962c3882798abf40621c440c418a50fd58",
+      "perceptualHash": "8a98848681858500"
+    },
+    {
+      "filename": "batch2-0267.jpg",
+      "sha256": "57cbee577d77747b289e31beeef0160317adcaf672a9d6a0a3558f1e8a93a61f",
+      "perceptualHash": "e0a0807270644800"
+    },
+    {
+      "filename": "batch2-0365.jpg",
+      "sha256": "7f6360493fa5fa58d2de64426e6c40397cc1795dc5f0d1806b79f30aa8ee5915",
+      "perceptualHash": "80a488c4848ca430"
+    },
+    {
+      "filename": "batch2-0386.jpg",
+      "sha256": "24ba111ca22d3abec901757092273e164f4fd07e17bba866c194444118bbae75",
+      "perceptualHash": "80a48c84c48ca430"
+    },
+    {
+      "filename": "duplicate.jpg",
+      "sha256": "7eeb19a4368f821c627e713a11657840fa1ef9dd7be44b6eeb315df64dda2d64",
+      "perceptualHash": "80ac96c8ca060000"
+    },
+    {
+      "filename": "image.png",
+      "sha256": "93476effdf69175fa4b4ed5572e83154401705d806ae8d70f621f3b40c63642f",
+      "perceptualHash": "a2b192988c8c0131"
+    },
+    {
+      "filename": "test.jpg",
+      "sha256": "c44f9246dad2bb7f5d92c3b9ec7e60918981152fbd75450435b60395dd4184be",
+      "perceptualHash": "0c08322a2a2a2a2a"
+    },
+    {
+      "filename": "test_10.jpg",
+      "sha256": "0f7cde04ff9472657cf934cadbc62b7c19ee6ee6fc11f9ba5077406da0cc584e",
+      "perceptualHash": "8690b4da86e69601"
+    },
+    {
+      "filename": "test_11.jpg",
+      "sha256": "bdb9c6da9436d7a143fce68d1fab5c2b281f1b5fbb7f1f7f88ab108ddd0ee2d4",
+      "perceptualHash": "b032112510191881"
+    },
+    {
+      "filename": "test_12.jpg",
+      "sha256": "d98518ce7fc2dfe302f91aaee498641db1759ad8141ee55bc1d309409b17692b",
+      "perceptualHash": "8698e6c705050f71"
+    },
+    {
+      "filename": "test_13.jpeg",
+      "sha256": "247ad8409a1c4c59143892d23c7f9164f4351c030719b96387abb72e646de8fb",
+      "perceptualHash": "84c8c8dadad8fc82"
+    },
+    {
+      "filename": "test_3.jpg",
+      "sha256": "dcacaa635f0d8ff42ed2e0bf70561d74cda4d789c8db4d8de9f19cb3da8fd3bd",
+      "perceptualHash": "8682a6aaae666606"
+    },
+    {
+      "filename": "test_4.jpg",
+      "sha256": "e6cb20c20abb3f68c5f2029cbf02a36f48c6a1446b2d62f0ffe2489436cf6d05",
+      "perceptualHash": "beb0908ec4808000"
+    },
+    {
+      "filename": "test_5.jpg",
+      "sha256": "9027ee2be2b2bfc61fd9da09f9ba0cafc9ebf0b42ed75ae02672abd803afa448",
+      "perceptualHash": "8098a8b2868ac888"
+    },
+    {
+      "filename": "test_6.jpg",
+      "sha256": "13d99b24e163b208c3472f1bf20c1baf7c01953a9c667c96bc8bc20d9201cbfc",
+      "perceptualHash": "9a0c0797858f868e"
+    },
+    {
+      "filename": "test_7.jpg",
+      "sha256": "dce7e87a6348238600743fe41103a1018d6aec9d6c0a59a73e1dc3efcb44a4fb",
+      "perceptualHash": "8c8430a0cc862000"
+    },
+    {
+      "filename": "test_9.jpg",
+      "sha256": "08fe7137455e886fe1f2a5f19e1a5b2dfe363ed3c3f9fb8d8525dabf071331f9",
+      "perceptualHash": "0e8a988d81818101"
+    }
+  ]
+}
