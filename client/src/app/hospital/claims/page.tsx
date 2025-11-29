@@ -169,12 +169,6 @@ export default function HospitalClaimsPage() {
 
         {/* Page Content */}
         <main className="flex-1 p-4 lg:p-6">
-          {/* Welcome Section */}
-          <div className="mb-6">
-            <h2 className="text-2xl font-bold text-gray-900">Welcome back, City General Hospital!</h2>
-            <p className="text-gray-600 mt-1">{new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
-          </div>
-
           {/* Stats Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             <div className="bg-white rounded-lg shadow p-4">
