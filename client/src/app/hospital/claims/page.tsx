@@ -80,7 +80,7 @@ export default function HospitalClaimsPage() {
       <HospitalSidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
 
       {/* Main Content */}
-      <div className="ml-0 lg:ml-64 flex flex-col">
+      <div className="ml-0 flex flex-col">
         {/* Top Header */}
         <header className="bg-white shadow-sm border-b">
           <div className="px-4 lg:px-6 py-4">
@@ -169,188 +169,195 @@ export default function HospitalClaimsPage() {
 
         {/* Page Content */}
         <main className="flex-1 p-4 lg:p-6">
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <div className="bg-white rounded-lg shadow p-4">
-          <p className="text-sm text-gray-500">Today&apos;s Claims</p>
-          <p className="text-2xl font-bold text-gray-900">12</p>
-        </div>
-        <div className="bg-white rounded-lg shadow p-4">
-          <p className="text-sm text-gray-500">Pending Review</p>
-          <p className="text-2xl font-bold text-yellow-600">15</p>
-        </div>
-        <div className="bg-white rounded-lg shadow p-4">
-          <p className="text-sm text-gray-500">Approved Today</p>
-          <p className="text-2xl font-bold text-green-600">28</p>
-        </div>
-        <div className="bg-white rounded-lg shadow p-4">
-          <p className="text-sm text-gray-500">Total Amount</p>
-          <p className="text-2xl font-bold text-blue-600">Rs. 45.2K</p>
-        </div>
-      </div>
-      
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <div className="p-3 lg:p-4 border-b border-gray-200">
-          <div className="flex flex-col sm:flex-row gap-2 lg:gap-4">
-            <input
-              type="text"
-              placeholder="Search by claim ID or patient name..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="flex-1 px-3 lg:px-4 py-2 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm lg:text-base"
-            />
-            <select 
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="px-3 lg:px-4 py-2 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm lg:text-base"
-            >
-              <option>All Status</option>
-              <option>Pending</option>
-              <option>Under Review</option>
-              <option>Approved</option>
-              <option>Rejected</option>
-            </select>
-            <select 
-              value={insurerFilter}
-              onChange={(e) => setInsurerFilter(e.target.value)}
-              className="px-3 lg:px-4 py-2 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm lg:text-base"
-            >
-              <option>All Insurers</option>
-              <option>HealthGuard Insurance</option>
-              <option>MediCare Plus</option>
-              <option>SecureHealth</option>
-            </select>
+          {/* Welcome Section */}
+          <div className="mb-6">
+            <h2 className="text-2xl font-bold text-gray-900">Welcome back, City General Hospital!</h2>
+            <p className="text-gray-600 mt-1">{new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
           </div>
-        </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[640px]">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-3 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Claim ID</th>
-                <th className="px-3 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Patient</th>
-                <th className="hidden md:table-cell px-3 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Treatment</th>
-                <th className="hidden sm:table-cell px-3 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-                <th className="px-3 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
-                <th className="px-3 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                <th className="px-3 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
-                <th className="px-3 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Message</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {filteredClaims.length === 0 ? (
-                <tr>
-                  <td colSpan={8} className="px-6 py-8 text-center text-gray-500">
-                    No claims found matching your search criteria.
-                  </td>
-                </tr>
-              ) : (
-                filteredClaims.map((claim) => {
-                const hasAlert = hasUnreadAlert(claim.id, 'hospital');
-                return (
-                  <tr
-                    key={claim.id}
-                    className={`hover:bg-gray-50 ${hasAlert ? 'border-l-4 border-red-500' : ''}`}
-                  >
-                    <td className="px-3 lg:px-6 py-4 text-xs lg:text-sm font-medium text-gray-900">{claim.id}</td>
-                    <td className="px-3 lg:px-6 py-4 text-xs lg:text-sm text-gray-900">{claim.patient}</td>
-                    <td className="hidden md:table-cell px-3 lg:px-6 py-4 text-xs lg:text-sm text-gray-500">{claim.treatment}</td>
-                    <td className="hidden sm:table-cell px-3 lg:px-6 py-4 text-xs lg:text-sm text-gray-500">{claim.date}</td>
-                    <td className="px-3 lg:px-6 py-4 text-xs lg:text-sm text-gray-900">{claim.amount}</td>
-                    <td className="px-3 lg:px-6 py-4 text-xs lg:text-sm">
-                      <span className={`inline-block px-2 py-1 text-xs rounded-full ${
-                        claim.status === 'Approved' ? 'bg-green-100 text-green-800' :
-                        claim.status === 'Rejected' ? 'bg-red-100 text-red-800' :
-                        claim.status === 'Under Review' ? 'bg-blue-100 text-blue-800' :
-                        'bg-yellow-100 text-yellow-800'
-                      }`}>
-                        {claim.status}
-                      </span>
-                    </td>
-                    <td className="px-3 lg:px-6 py-4 text-xs lg:text-sm">
-                      <button 
-                        onClick={() => {
-                          setSelectedClaimId(claim.id);
-                          setIsClaimDetailsOpen(true);
-                        }}
-                        className="text-blue-600 hover:text-blue-800"
-                      >
-                        View
-                      </button>
-                    </td>
-                    <td className="px-3 lg:px-6 py-4 text-xs lg:text-sm">
-                      <MessageButton claimId={claim.id} userRole="hospital" />
-                    </td>
-                  </tr>
-                );
-              }))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-      
-      {selectedClaimId && (
-        <ClaimDetailsModal
-          isOpen={isClaimDetailsOpen}
-          onClose={() => {
-            setIsClaimDetailsOpen(false);
-            setSelectedClaimId(null);
-          }}
-          claimId={selectedClaimId}
-          claimData={allClaims.find(c => c.id === selectedClaimId)}
-        />
-      )}
-    </div>
-      {/* Upload Modal */}
-      {uploadModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 py-6">
-          <div className="w-full max-w-3xl rounded-2xl bg-white shadow-2xl">
-            <div className="flex items-center justify-between border-b px-6 py-4">
-              <div>
-                <h2 className="text-lg font-semibold text-gray-900">Run Document Trust Checks</h2>
-                <p className="text-sm text-gray-500">Upload the hospital document and provide quick details for validation.</p>
-              </div>
-              <button
-                onClick={() => setUploadModalOpen(false)}
-                className="rounded-full p-2 text-gray-500 hover:bg-gray-100"
-                aria-label="Close upload modal"
-              >
-                ✕
-              </button>
+          {/* Stats Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <div className="bg-white rounded-lg shadow p-4">
+              <p className="text-sm text-gray-500">Today&apos;s Claims</p>
+              <p className="text-2xl font-bold text-gray-900">12</p>
             </div>
-            <div className="max-h-[80vh] overflow-y-auto px-6 py-4 space-y-6">
-              {formError && <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{formError}</p>}
-              <div className="space-y-3">
-                <label className="text-sm font-medium text-gray-700">Document File</label>
-                <input
-                  type="file"
-                  accept=".pdf,image/*"
-                  onChange={(event) => {
-                    const nextFile = event.target.files?.[0] ?? null;
-                    setFormState((prev) => ({ ...prev, file: nextFile }));
-                  }}
-                  className="block w-full rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-900 file:mr-4 file:rounded-md file:border-0 file:bg-green-100 file:px-3 file:py-2 file:text-sm file:font-medium file:text-green-700 hover:file:bg-green-200"
+            <div className="bg-white rounded-lg shadow p-4">
+              <p className="text-sm text-gray-500">Pending Review</p>
+              <p className="text-2xl font-bold text-yellow-600">15</p>
+            </div>
+            <div className="bg-white rounded-lg shadow p-4">
+              <p className="text-sm text-gray-500">Approved Today</p>
+              <p className="text-2xl font-bold text-green-600">28</p>
+            </div>
+            <div className="bg-white rounded-lg shadow p-4">
+              <p className="text-sm text-gray-500">Total Amount</p>
+              <p className="text-2xl font-bold text-blue-600">Rs. 45.2K</p>
+            </div>
+          </div>
+          
+          {/* Claims Table */}
+          <div className="bg-white rounded-lg shadow overflow-hidden">
+            <div className="p-3 lg:p-4 border-b border-gray-200">
+              <div className="flex flex-col sm:flex-row gap-2 lg:gap-4">
+            <input
+                  type="text"
+                  placeholder="Search by claim ID or patient name..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="flex-1 px-3 lg:px-4 py-2 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm lg:text-base"
                 />
-                {formState.file && (
-                  <div className="rounded-lg bg-gray-50 px-4 py-2 text-xs text-gray-600">
-                    {formState.file.name} · {(formState.file.size / 1024).toFixed(1)} KB
-                  </div>
-                )}
+                <select 
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className="px-3 lg:px-4 py-2 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm lg:text-base"
+                >
+                  <option>All Status</option>
+                  <option>Pending</option>
+                  <option>Under Review</option>
+                  <option>Approved</option>
+                  <option>Rejected</option>
+                </select>
+                <select 
+                  value={insurerFilter}
+                  onChange={(e) => setInsurerFilter(e.target.value)}
+                  className="px-3 lg:px-4 py-2 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm lg:text-base"
+                >
+                  <option>All Insurers</option>
+                  <option>HealthGuard Insurance</option>
+                  <option>MediCare Plus</option>
+                  <option>SecureHealth</option>
+                </select>
               </div>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700">Total Amount (PKR)</label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={formState.totalAmount}
-                    onChange={(event) => setFormState((prev) => ({ ...prev, totalAmount: event.target.value }))}
-                    className="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-900 focus:border-green-500 focus:ring-2 focus:ring-green-200"
-                    placeholder="e.g., 45000"
-                  />
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[640px]">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-3 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Claim ID</th>
+                    <th className="px-3 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Patient</th>
+                    <th className="hidden md:table-cell px-3 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Treatment</th>
+                    <th className="hidden sm:table-cell px-3 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                    <th className="px-3 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
+                    <th className="px-3 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                    <th className="px-3 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                    <th className="px-3 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Message</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+              {filteredClaims.length === 0 ? (
+                    <tr>
+                      <td colSpan={8} className="px-6 py-8 text-center text-gray-500">
+                        No claims found matching your search criteria.
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredClaims.map((claim) => {
+                      const hasAlert = hasUnreadAlert(claim.id, 'hospital');
+                      return (
+                        <tr
+                          key={claim.id}
+                          className={`hover:bg-gray-50 ${hasAlert ? 'border-l-4 border-red-500' : ''}`}
+                        >
+                          <td className="px-3 lg:px-6 py-4 text-xs lg:text-sm font-medium text-gray-900">{claim.id}</td>
+                          <td className="px-3 lg:px-6 py-4 text-xs lg:text-sm text-gray-900">{claim.patient}</td>
+                          <td className="hidden md:table-cell px-3 lg:px-6 py-4 text-xs lg:text-sm text-gray-500">{claim.treatment}</td>
+                          <td className="hidden sm:table-cell px-3 lg:px-6 py-4 text-xs lg:text-sm text-gray-500">{claim.date}</td>
+                          <td className="px-3 lg:px-6 py-4 text-xs lg:text-sm text-gray-900">{claim.amount}</td>
+                          <td className="px-3 lg:px-6 py-4 text-xs lg:text-sm">
+                            <span className={`inline-block px-2 py-1 text-xs rounded-full ${
+                              claim.status === 'Approved' ? 'bg-green-100 text-green-800' :
+                              claim.status === 'Rejected' ? 'bg-red-100 text-red-800' :
+                              claim.status === 'Under Review' ? 'bg-blue-100 text-blue-800' :
+                              'bg-yellow-100 text-yellow-800'
+                            }`}>
+                              {claim.status}
+                            </span>
+                          </td>
+                          <td className="px-3 lg:px-6 py-4 text-xs lg:text-sm">
+                            <button 
+                              onClick={() => {
+                                setSelectedClaimId(claim.id);
+                                setIsClaimDetailsOpen(true);
+                              }}
+                              className="text-blue-600 hover:text-blue-800"
+                            >
+                              View
+                            </button>
+                          </td>
+                          <td className="px-3 lg:px-6 py-4 text-xs lg:text-sm">
+                            <MessageButton claimId={claim.id} userRole="hospital" />
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+          
+          {selectedClaimId && (
+            <ClaimDetailsModal
+              isOpen={isClaimDetailsOpen}
+              onClose={() => {
+                setIsClaimDetailsOpen(false);
+                setSelectedClaimId(null);
+              }}
+              claimId={selectedClaimId}
+              claimData={allClaims.find(c => c.id === selectedClaimId)}
+            />
+          )}
+      {/* Upload Modal */}
+          {uploadModalOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 py-6">
+              <div className="w-full max-w-3xl rounded-2xl bg-white shadow-2xl">
+                <div className="flex items-center justify-between border-b px-6 py-4">
+                  <div>
+                    <h2 className="text-lg font-semibold text-gray-900">Run Document Trust Checks</h2>
+                    <p className="text-sm text-gray-500">Upload the hospital document and provide quick details for validation.</p>
+                  </div>
+                  <button
+                    onClick={() => setUploadModalOpen(false)}
+                    className="rounded-full p-2 text-gray-500 hover:bg-gray-100"
+                    aria-label="Close upload modal"
+                  >
+                    ✕
+                  </button>
                 </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700">Sum of Line Items (PKR)</label>
+                <div className="max-h-[80vh] overflow-y-auto px-6 py-4 space-y-6">
+                  {formError && <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{formError}</p>}
+                  <div className="space-y-3">
+                    <label className="text-sm font-medium text-gray-700">Document File</label>
+                    <input
+                      type="file"
+                      accept=".pdf,image/*"
+                      onChange={(event) => {
+                        const nextFile = event.target.files?.[0] ?? null;
+                        setFormState((prev) => ({ ...prev, file: nextFile }));
+                      }}
+                      className="block w-full rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-900 file:mr-4 file:rounded-md file:border-0 file:bg-green-100 file:px-3 file:py-2 file:text-sm file:font-medium file:text-green-700 hover:file:bg-green-200"
+                    />
+                    {formState.file && (
+                      <div className="rounded-lg bg-gray-50 px-4 py-2 text-xs text-gray-600">
+                        {formState.file.name} · {(formState.file.size / 1024).toFixed(1)} KB
+                      </div>
+                    )}
+                  </div>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-gray-700">Total Amount (PKR)</label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={formState.totalAmount}
+                        onChange={(event) => setFormState((prev) => ({ ...prev, totalAmount: event.target.value }))}
+                        className="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-900 focus:border-green-500 focus:ring-2 focus:ring-green-200"
+                        placeholder="e.g., 45000"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-gray-700">Sum of Line Items (PKR)</label>
                   <input
                     type="number"
                     min="0"
@@ -659,7 +666,10 @@ export default function HospitalClaimsPage() {
           </div>
         </div>
       )}
-    </>
+        </main>
+      </div>
+    </div>
+  </>
   );
 }
 
