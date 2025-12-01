@@ -82,7 +82,7 @@ export default function CorporateDashboard() {
       <RecentClaimsOverview claims={sampleClaimsData} />
 
       {/* Quick Actions */}
-      <QuickActions />
+      {/* <QuickActions /> */}
     </div>
   );
 }
