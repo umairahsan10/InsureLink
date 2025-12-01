@@ -7,9 +7,9 @@ interface HospitalInfo {
   name: string;
   location: string;
   specializations: string;
-  claims: number;
-  rating: number;
-  status: string;
+  phone: string;
+  address: string;
+  status: 'Active' | 'Pending' | 'Rejected';
 }
 
 interface HospitalInfoDrawerProps {
@@ -29,7 +29,7 @@ export default function HospitalInfoDrawer({ hospital, isOpen, onClose, onDecisi
         return 'bg-emerald-50 text-emerald-700 border border-emerald-200';
       case 'Pending':
         return 'bg-amber-50 text-amber-700 border border-amber-200';
-      case 'Inactive':
+      case 'Rejected':
         return 'bg-rose-50 text-rose-700 border border-rose-200';
       default:
         return 'bg-gray-50 text-gray-700 border border-gray-200';
@@ -99,11 +99,8 @@ export default function HospitalInfoDrawer({ hospital, isOpen, onClose, onDecisi
             <span className={`inline-flex items-center rounded-full px-4 py-1 text-sm font-semibold ${statusChip}`}>
               {hospital.status}
             </span>
-            <span className="inline-flex items-center rounded-full bg-blue-50 px-4 py-1 text-sm font-medium text-blue-700 border border-blue-200">
-              ★ {hospital.rating > 0 ? hospital.rating : 'Not rated'}
-            </span>
             <span className="inline-flex items-center rounded-full border border-slate-200 bg-white/70 px-4 py-1 text-sm font-medium text-slate-700">
-              {hospital.claims.toLocaleString()} claims/mo
+              📞 {hospital.phone}
             </span>
           </div>
         </div>
@@ -131,7 +128,7 @@ export default function HospitalInfoDrawer({ hospital, isOpen, onClose, onDecisi
             <ul className="mt-3 space-y-3 text-sm text-gray-700">
               <li className="flex items-center gap-3">
                 <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                98% of claims approved on first submission this quarter
+                98% of patients report positive experience
               </li>
               <li className="flex items-center gap-3">
                 <span className="h-2 w-2 rounded-full bg-blue-500" />
