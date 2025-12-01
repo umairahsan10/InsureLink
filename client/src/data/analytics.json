@@ -1,34 +1,55 @@
 {
   "claimsByStatus": {
-    "Submitted": 3,
-    "DocumentsUploaded": 3,
-    "UnderReview": 3,
-    "MoreInfoRequested": 1,
-    "PendingApproval": 1,
-    "Approved": 2,
-    "Rejected": 1,
-    "Paid": 1
+    "Pending": 11,
+    "Approved": 3,
+    "Rejected": 1
   },
   "totalClaims": 12,
   "totalClaimValue": 425300,
   "approvedValueTotal": 38700,
   "monthlyTrends": [
-    {"month": "2025-08", "count": 2, "value": 30000},
-    {"month": "2025-09", "count": 8, "value": 350500},
-    {"month": "2025-10", "count": 2, "value": 4500}
+    { "month": "2025-08", "count": 2, "value": 30000 },
+    { "month": "2025-09", "count": 8, "value": 350500 },
+    { "month": "2025-10", "count": 2, "value": 4500 }
   ],
   "avgProcessingTimeHours": 48,
   "topHospitalsByAmount": [
-    {"hospitalId":"hosp-001","hospitalName":"City General Hospital","totalAmount":131500},
-    {"hospitalId":"hosp-005","hospitalName":"Lakeside Hospital","totalAmount":117500},
-    {"hospitalId":"hosp-004","hospitalName":"Crescent Clinic","totalAmount":66000}
+    {
+      "hospitalId": "hosp-001",
+      "hospitalName": "City General Hospital",
+      "totalAmount": 131500
+    },
+    {
+      "hospitalId": "hosp-005",
+      "hospitalName": "Lakeside Hospital",
+      "totalAmount": 117500
+    },
+    {
+      "hospitalId": "hosp-004",
+      "hospitalName": "Crescent Clinic",
+      "totalAmount": 66000
+    }
   ],
   "claimsPerCorporate": [
-    {"corporateId":"corp-001","corporateName":"Acme Ltd","count":6,"value":154000},
-    {"corporateId":"corp-002","corporateName":"Beta Systems","count":4,"value":82000},
-    {"corporateId":"corp-003","corporateName":"Noor Foods","count":2,"value":189300}
+    {
+      "corporateId": "corp-001",
+      "corporateName": "Acme Ltd",
+      "count": 6,
+      "value": 154000
+    },
+    {
+      "corporateId": "corp-002",
+      "corporateName": "Beta Systems",
+      "count": 4,
+      "value": 82000
+    },
+    {
+      "corporateId": "corp-003",
+      "corporateName": "Noor Foods",
+      "count": 2,
+      "value": 189300
+    }
   ],
   "rejectionRate": 0.083,
   "fraudFlaggedCount": 0
 }
-

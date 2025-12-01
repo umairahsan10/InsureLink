@@ -1,9 +1,11 @@
-'use client';
+"use client";
 
-import * as mobilenet from '@tensorflow-models/mobilenet';
-import * as tf from '@tensorflow/tfjs';
+import * as mobilenet from "@tensorflow-models/mobilenet";
+import * as tf from "@tensorflow/tfjs";
 
-type MobileNetModel = mobilenet.MobileNet;
+type MobileNetModel = {
+  infer: (input: unknown, embedding?: boolean) => unknown;
+};
 
 let mobilenetModelPromise: Promise<MobileNetModel> | null = null;
 
@@ -21,7 +23,7 @@ const fileToImage = (file: File): Promise<HTMLImageElement> => {
   return new Promise((resolve, reject) => {
     const url = URL.createObjectURL(file);
     const img = new Image();
-    img.crossOrigin = 'anonymous';
+    img.crossOrigin = "anonymous";
     img.onload = () => {
       URL.revokeObjectURL(url);
       resolve(img);
@@ -34,7 +36,9 @@ const fileToImage = (file: File): Promise<HTMLImageElement> => {
   });
 };
 
-export const getMobilenetEmbedding = async (file: File): Promise<number[] | undefined> => {
+export const getMobilenetEmbedding = async (
+  file: File
+): Promise<number[] | undefined> => {
   try {
     const model = await loadModel();
     const image = await fileToImage(file);
@@ -54,12 +58,15 @@ export const getMobilenetEmbedding = async (file: File): Promise<number[] | unde
 
     return embeddingData;
   } catch (error) {
-    console.warn('Failed to generate MobileNet embedding:', error);
+    console.warn("Failed to generate MobileNet embedding:", error);
     return undefined;
   }
 };
 
-export const cosineSimilarity = (vectorA: number[], vectorB: number[]): number => {
+export const cosineSimilarity = (
+  vectorA: number[],
+  vectorB: number[]
+): number => {
   if (!vectorA.length || vectorA.length !== vectorB.length) return 0;
   let dot = 0;
   let magA = 0;
@@ -72,4 +79,3 @@ export const cosineSimilarity = (vectorA: number[], vectorB: number[]): number =
   if (magA === 0 || magB === 0) return 0;
   return dot / (Math.sqrt(magA) * Math.sqrt(magB));
 };
-

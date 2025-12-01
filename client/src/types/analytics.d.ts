@@ -1,12 +1,7 @@
 export interface ClaimsByStatus {
-  Submitted: number;
-  DocumentsUploaded: number;
-  UnderReview: number;
-  MoreInfoRequested: number;
-  PendingApproval: number;
+  Pending: number;
   Approved: number;
   Rejected: number;
-  Paid: number;
 }
 
 export interface MonthlyTrend {
@@ -40,4 +35,3 @@ export interface Analytics {
   rejectionRate: number;
   fraudFlaggedCount: number;
 }
-

@@ -9,15 +9,22 @@
     "hospitalId": "hosp-001",
     "hospitalName": "City General Hospital",
     "planId": "plan-acme-gold-2025",
-    "status": "Submitted",
+    "status": "Pending",
     "amountClaimed": 125000,
     "approvedAmount": 0,
     "treatmentCategory": "Surgery",
     "admissionDate": "2025-09-28",
     "dischargeDate": "2025-09-30",
-    "documents": ["doc-1001","doc-1002"],
+    "documents": ["doc-1001", "doc-1002"],
     "events": [
-      {"ts":"2025-09-30T08:30:00Z","actorName":"Ali Raza","actorRole":"Employee","action":"Submitted claim","from":null,"to":"Submitted"}
+      {
+        "ts": "2025-09-30T08:30:00Z",
+        "actorName": "Ali Raza",
+        "actorRole": "Employee",
+        "action": "Submitted claim",
+        "from": null,
+        "to": "Pending"
+      }
     ],
     "createdAt": "2025-09-30T08:30:00Z",
     "updatedAt": "2025-09-30T08:30:00Z",
@@ -34,7 +41,7 @@
     "hospitalId": "hosp-002",
     "hospitalName": "Eastside Medical Center",
     "planId": "plan-acme-gold-2025",
-    "status": "DocumentsUploaded",
+    "status": "Pending",
     "amountClaimed": 18000,
     "approvedAmount": 0,
     "treatmentCategory": "Routine Checkup",
@@ -42,11 +49,25 @@
     "dischargeDate": "2025-10-01",
     "documents": ["doc-1003"],
     "events": [
-      {"ts":"2025-10-01T09:10:00Z","actorName":"Sara Khan","actorRole":"Employee","action":"Submitted claim","from":null,"to":"Submitted"},
-      {"ts":"2025-10-01T11:00:00Z","actorName":"Dr. Naveed","actorRole":"Hospital","action":"Uploaded documents","from":"Submitted","to":"DocumentsUploaded"}
+      {
+        "ts": "2025-10-01T09:10:00Z",
+        "actorName": "Sara Khan",
+        "actorRole": "Employee",
+        "action": "Submitted claim",
+        "from": null,
+        "to": "Pending"
+      },
+      {
+        "ts": "2025-10-01T11:00:00Z",
+        "actorName": "Dr. Naveed",
+        "actorRole": "Hospital",
+        "action": "Uploaded documents",
+        "from": "Pending",
+        "to": "Pending"
+      }
     ],
-    "createdAt":"2025-10-01T09:10:00Z",
-    "updatedAt":"2025-10-01T11:00:00Z",
+    "createdAt": "2025-10-01T09:10:00Z",
+    "updatedAt": "2025-10-01T11:00:00Z",
     "fraudRiskScore": 0.12,
     "priority": "Normal"
   },
@@ -60,20 +81,41 @@
     "hospitalId": "hosp-004",
     "hospitalName": "Crescent Clinic",
     "planId": "plan-beta-silver-2025",
-    "status": "UnderReview",
+    "status": "Pending",
     "amountClaimed": 42000,
     "approvedAmount": 0,
     "treatmentCategory": "Routine Checkup",
     "admissionDate": "2025-09-20",
     "dischargeDate": "2025-09-22",
-    "documents": ["doc-1004","doc-1005"],
+    "documents": ["doc-1004", "doc-1005"],
     "events": [
-      {"ts":"2025-09-22T10:00:00Z","actorName":"Bilal Khan","actorRole":"Employee","action":"Submitted claim","from":null,"to":"Submitted"},
-      {"ts":"2025-09-22T15:30:00Z","actorName":"Crescent Staff","actorRole":"Hospital","action":"Uploaded documents","from":"Submitted","to":"DocumentsUploaded"},
-      {"ts":"2025-09-23T09:00:00Z","actorName":"Leena Shah","actorRole":"Claims Adjuster","action":"Started review","from":"DocumentsUploaded","to":"UnderReview"}
+      {
+        "ts": "2025-09-22T10:00:00Z",
+        "actorName": "Bilal Khan",
+        "actorRole": "Employee",
+        "action": "Submitted claim",
+        "from": null,
+        "to": "Pending"
+      },
+      {
+        "ts": "2025-09-22T15:30:00Z",
+        "actorName": "Crescent Staff",
+        "actorRole": "Hospital",
+        "action": "Uploaded documents",
+        "from": "Pending",
+        "to": "Pending"
+      },
+      {
+        "ts": "2025-09-23T09:00:00Z",
+        "actorName": "Leena Shah",
+        "actorRole": "Claims Adjuster",
+        "action": "Started review",
+        "from": "Pending",
+        "to": "Pending"
+      }
     ],
-    "createdAt":"2025-09-22T10:00:00Z",
-    "updatedAt":"2025-09-23T09:00:00Z",
+    "createdAt": "2025-09-22T10:00:00Z",
+    "updatedAt": "2025-09-23T09:00:00Z",
     "fraudRiskScore": 0.25,
     "priority": "Normal"
   },
@@ -87,7 +129,7 @@
     "hospitalId": "hosp-003",
     "hospitalName": "NorthCare Hospital",
     "planId": "plan-noor-gold-2025",
-    "status": "MoreInfoRequested",
+    "status": "Pending",
     "amountClaimed": 32000,
     "approvedAmount": 0,
     "treatmentCategory": "Routine Checkup",
@@ -95,12 +137,34 @@
     "dischargeDate": "2025-09-26",
     "documents": ["doc-1006"],
     "events": [
-      {"ts":"2025-09-26T08:45:00Z","actorName":"Fahad Ahmed","actorRole":"Employee","action":"Submitted claim","from":null,"to":"Submitted"},
-      {"ts":"2025-09-26T12:00:00Z","actorName":"NorthCare Staff","actorRole":"Hospital","action":"Uploaded documents","from":"Submitted","to":"DocumentsUploaded"},
-      {"ts":"2025-09-27T14:30:00Z","actorName":"Leena Shah","actorRole":"Claims Adjuster","action":"Requested more information","from":"DocumentsUploaded","to":"MoreInfoRequested","note":"Missing lab report"}
+      {
+        "ts": "2025-09-26T08:45:00Z",
+        "actorName": "Fahad Ahmed",
+        "actorRole": "Employee",
+        "action": "Submitted claim",
+        "from": null,
+        "to": "Pending"
+      },
+      {
+        "ts": "2025-09-26T12:00:00Z",
+        "actorName": "NorthCare Staff",
+        "actorRole": "Hospital",
+        "action": "Uploaded documents",
+        "from": "Pending",
+        "to": "Pending"
+      },
+      {
+        "ts": "2025-09-27T14:30:00Z",
+        "actorName": "Leena Shah",
+        "actorRole": "Claims Adjuster",
+        "action": "Requested more information",
+        "from": "Pending",
+        "to": "Pending",
+        "note": "Missing lab report"
+      }
     ],
-    "createdAt":"2025-09-26T08:45:00Z",
-    "updatedAt":"2025-09-27T14:30:00Z",
+    "createdAt": "2025-09-26T08:45:00Z",
+    "updatedAt": "2025-09-27T14:30:00Z",
     "fraudRiskScore": 0.18,
     "priority": "Normal"
   },
@@ -114,20 +178,42 @@
     "hospitalId": "hosp-005",
     "hospitalName": "Lakeside Hospital",
     "planId": "plan-noor-gold-2025",
-    "status": "PendingApproval",
+    "status": "Pending",
     "amountClaimed": 90000,
     "approvedAmount": 0,
     "treatmentCategory": "Cardiology",
     "admissionDate": "2025-09-10",
     "dischargeDate": "2025-09-15",
-    "documents": ["doc-1007","doc-1008"],
+    "documents": ["doc-1007", "doc-1008"],
     "events": [
-      {"ts":"2025-09-15T09:00:00Z","actorName":"Sana Rafi","actorRole":"Employee","action":"Submitted claim","from":null,"to":"Submitted"},
-      {"ts":"2025-09-15T11:00:00Z","actorName":"Lakeside Staff","actorRole":"Hospital","action":"Uploaded documents","from":"Submitted","to":"DocumentsUploaded"},
-      {"ts":"2025-09-17T10:30:00Z","actorName":"Ayesha Khan","actorRole":"Claims Manager","action":"Approved by medical officer","from":"UnderReview","to":"PendingApproval","note":"Recommend approval subject to finance"}
+      {
+        "ts": "2025-09-15T09:00:00Z",
+        "actorName": "Sana Rafi",
+        "actorRole": "Employee",
+        "action": "Submitted claim",
+        "from": null,
+        "to": "Pending"
+      },
+      {
+        "ts": "2025-09-15T11:00:00Z",
+        "actorName": "Lakeside Staff",
+        "actorRole": "Hospital",
+        "action": "Uploaded documents",
+        "from": "Pending",
+        "to": "Pending"
+      },
+      {
+        "ts": "2025-09-17T10:30:00Z",
+        "actorName": "Ayesha Khan",
+        "actorRole": "Claims Manager",
+        "action": "Approved by medical officer",
+        "from": "Pending",
+        "to": "Pending",
+        "note": "Recommend approval subject to finance"
+      }
     ],
-    "createdAt":"2025-09-15T09:00:00Z",
-    "updatedAt":"2025-09-17T10:30:00Z",
+    "createdAt": "2025-09-15T09:00:00Z",
+    "updatedAt": "2025-09-17T10:30:00Z",
     "fraudRiskScore": 0.08,
     "priority": "High"
   },
@@ -149,12 +235,34 @@
     "dischargeDate": "2025-09-05",
     "documents": ["doc-1009"],
     "events": [
-      {"ts":"2025-09-05T07:50:00Z","actorName":"Nadia Farooq","actorRole":"Employee","action":"Submitted claim","from":null,"to":"Submitted"},
-      {"ts":"2025-09-05T10:00:00Z","actorName":"Crescent Staff","actorRole":"Hospital","action":"Uploaded documents","from":"Submitted","to":"DocumentsUploaded"},
-      {"ts":"2025-09-06T13:00:00Z","actorName":"Leena Shah","actorRole":"Claims Adjuster","action":"Approved claim","from":"UnderReview","to":"Approved","note":"Approved with 10% copay"}
+      {
+        "ts": "2025-09-05T07:50:00Z",
+        "actorName": "Nadia Farooq",
+        "actorRole": "Employee",
+        "action": "Submitted claim",
+        "from": null,
+        "to": "Pending"
+      },
+      {
+        "ts": "2025-09-05T10:00:00Z",
+        "actorName": "Crescent Staff",
+        "actorRole": "Hospital",
+        "action": "Uploaded documents",
+        "from": "Pending",
+        "to": "Pending"
+      },
+      {
+        "ts": "2025-09-06T13:00:00Z",
+        "actorName": "Leena Shah",
+        "actorRole": "Claims Adjuster",
+        "action": "Approved claim",
+        "from": "Pending",
+        "to": "Approved",
+        "note": "Approved with 10% copay"
+      }
     ],
-    "createdAt":"2025-09-05T07:50:00Z",
-    "updatedAt":"2025-09-06T13:00:00Z",
+    "createdAt": "2025-09-05T07:50:00Z",
+    "updatedAt": "2025-09-06T13:00:00Z",
     "fraudRiskScore": 0.03,
     "priority": "Normal"
   },
@@ -176,12 +284,34 @@
     "dischargeDate": "2025-08-20",
     "documents": ["doc-1010"],
     "events": [
-      {"ts":"2025-08-20T09:00:00Z","actorName":"Omar Malik","actorRole":"Employee","action":"Submitted claim","from":null,"to":"Submitted"},
-      {"ts":"2025-08-20T12:00:00Z","actorName":"Eastside Staff","actorRole":"Hospital","action":"Uploaded documents","from":"Submitted","to":"DocumentsUploaded"},
-      {"ts":"2025-08-22T10:00:00Z","actorName":"Bilal Ahmed","actorRole":"Medical Officer","action":"Rejected claim","from":"UnderReview","to":"Rejected","note":"Procedure not covered"}
+      {
+        "ts": "2025-08-20T09:00:00Z",
+        "actorName": "Omar Malik",
+        "actorRole": "Employee",
+        "action": "Submitted claim",
+        "from": null,
+        "to": "Pending"
+      },
+      {
+        "ts": "2025-08-20T12:00:00Z",
+        "actorName": "Eastside Staff",
+        "actorRole": "Hospital",
+        "action": "Uploaded documents",
+        "from": "Pending",
+        "to": "Pending"
+      },
+      {
+        "ts": "2025-08-22T10:00:00Z",
+        "actorName": "Bilal Ahmed",
+        "actorRole": "Medical Officer",
+        "action": "Rejected claim",
+        "from": "Pending",
+        "to": "Rejected",
+        "note": "Procedure not covered"
+      }
     ],
-    "createdAt":"2025-08-20T09:00:00Z",
-    "updatedAt":"2025-08-22T10:00:00Z",
+    "createdAt": "2025-08-20T09:00:00Z",
+    "updatedAt": "2025-08-22T10:00:00Z",
     "fraudRiskScore": 0.4,
     "priority": "Normal"
   },
@@ -195,21 +325,50 @@
     "hospitalId": "hosp-001",
     "hospitalName": "City General Hospital",
     "planId": "plan-beta-basic-2025",
-    "status": "Paid",
+    "status": "Approved",
     "amountClaimed": 22000,
     "approvedAmount": 19800,
     "treatmentCategory": "Routine Checkup",
     "admissionDate": "2025-08-30",
     "dischargeDate": "2025-09-02",
-    "documents": ["doc-1011","doc-1012"],
+    "documents": ["doc-1011", "doc-1012"],
     "events": [
-      {"ts":"2025-08-30T08:00:00Z","actorName":"Imran Qureshi","actorRole":"Employee","action":"Submitted claim","from":null,"to":"Submitted"},
-      {"ts":"2025-08-30T10:00:00Z","actorName":"City General Staff","actorRole":"Hospital","action":"Uploaded documents","from":"Submitted","to":"DocumentsUploaded"},
-      {"ts":"2025-09-02T14:00:00Z","actorName":"Leena Shah","actorRole":"Claims Adjuster","action":"Approved claim","from":"UnderReview","to":"Approved"},
-      {"ts":"2025-09-04T09:30:00Z","actorName":"Finance","actorRole":"InsurerFinance","action":"Payment issued","from":"Approved","to":"Paid","note":"Transaction tr-2001"}
+      {
+        "ts": "2025-08-30T08:00:00Z",
+        "actorName": "Imran Qureshi",
+        "actorRole": "Employee",
+        "action": "Submitted claim",
+        "from": null,
+        "to": "Pending"
+      },
+      {
+        "ts": "2025-08-30T10:00:00Z",
+        "actorName": "City General Staff",
+        "actorRole": "Hospital",
+        "action": "Uploaded documents",
+        "from": "Pending",
+        "to": "Pending"
+      },
+      {
+        "ts": "2025-09-02T14:00:00Z",
+        "actorName": "Leena Shah",
+        "actorRole": "Claims Adjuster",
+        "action": "Approved claim",
+        "from": "Pending",
+        "to": "Approved"
+      },
+      {
+        "ts": "2025-09-04T09:30:00Z",
+        "actorName": "Finance",
+        "actorRole": "InsurerFinance",
+        "action": "Payment issued",
+        "from": "Approved",
+        "to": "Approved",
+        "note": "Transaction tr-2001"
+      }
     ],
-    "createdAt":"2025-08-30T08:00:00Z",
-    "updatedAt":"2025-09-04T09:30:00Z",
+    "createdAt": "2025-08-30T08:00:00Z",
+    "updatedAt": "2025-09-04T09:30:00Z",
     "fraudRiskScore": 0.07,
     "priority": "Normal"
   },
@@ -231,12 +390,33 @@
     "dischargeDate": "2025-09-07",
     "documents": ["doc-1013"],
     "events": [
-      {"ts":"2025-09-07T07:30:00Z","actorName":"Amna Iqbal","actorRole":"Employee","action":"Submitted claim","from":null,"to":"Submitted"},
-      {"ts":"2025-09-07T09:00:00Z","actorName":"Crescent Staff","actorRole":"Hospital","action":"Uploaded documents","from":"Submitted","to":"DocumentsUploaded"},
-      {"ts":"2025-09-08T12:00:00Z","actorName":"Ayesha Khan","actorRole":"Claims Manager","action":"Approved claim","from":"UnderReview","to":"Approved"}
+      {
+        "ts": "2025-09-07T07:30:00Z",
+        "actorName": "Amna Iqbal",
+        "actorRole": "Employee",
+        "action": "Submitted claim",
+        "from": null,
+        "to": "Pending"
+      },
+      {
+        "ts": "2025-09-07T09:00:00Z",
+        "actorName": "Crescent Staff",
+        "actorRole": "Hospital",
+        "action": "Uploaded documents",
+        "from": "Pending",
+        "to": "Pending"
+      },
+      {
+        "ts": "2025-09-08T12:00:00Z",
+        "actorName": "Ayesha Khan",
+        "actorRole": "Claims Manager",
+        "action": "Approved claim",
+        "from": "Pending",
+        "to": "Approved"
+      }
     ],
-    "createdAt":"2025-09-07T07:30:00Z",
-    "updatedAt":"2025-09-08T12:00:00Z",
+    "createdAt": "2025-09-07T07:30:00Z",
+    "updatedAt": "2025-09-08T12:00:00Z",
     "fraudRiskScore": 0.02,
     "priority": "Normal"
   },
@@ -250,7 +430,7 @@
     "hospitalId": "hosp-002",
     "hospitalName": "Eastside Medical Center",
     "planId": "plan-beta-silver-2025",
-    "status": "DocumentsUploaded",
+    "status": "Pending",
     "amountClaimed": 4500,
     "approvedAmount": 0,
     "treatmentCategory": "Lab Test",
@@ -258,11 +438,25 @@
     "dischargeDate": "2025-10-02",
     "documents": ["doc-1014"],
     "events": [
-      {"ts":"2025-10-02T08:10:00Z","actorName":"Zara Khan","actorRole":"Employee","action":"Submitted claim","from":null,"to":"Submitted"},
-      {"ts":"2025-10-02T09:40:00Z","actorName":"Eastside Staff","actorRole":"Hospital","action":"Uploaded documents","from":"Submitted","to":"DocumentsUploaded"}
+      {
+        "ts": "2025-10-02T08:10:00Z",
+        "actorName": "Zara Khan",
+        "actorRole": "Employee",
+        "action": "Submitted claim",
+        "from": null,
+        "to": "Pending"
+      },
+      {
+        "ts": "2025-10-02T09:40:00Z",
+        "actorName": "Eastside Staff",
+        "actorRole": "Hospital",
+        "action": "Uploaded documents",
+        "from": "Pending",
+        "to": "Pending"
+      }
     ],
-    "createdAt":"2025-10-02T08:10:00Z",
-    "updatedAt":"2025-10-02T09:40:00Z",
+    "createdAt": "2025-10-02T08:10:00Z",
+    "updatedAt": "2025-10-02T09:40:00Z",
     "fraudRiskScore": 0.11,
     "priority": "Normal"
   },
@@ -276,7 +470,7 @@
     "hospitalId": "hosp-005",
     "hospitalName": "Lakeside Hospital",
     "planId": "plan-noor-basic-2025",
-    "status": "UnderReview",
+    "status": "Pending",
     "amountClaimed": 27500,
     "approvedAmount": 0,
     "treatmentCategory": "Routine Checkup",
@@ -284,12 +478,33 @@
     "dischargeDate": "2025-09-19",
     "documents": ["doc-1015"],
     "events": [
-      {"ts":"2025-09-19T08:00:00Z","actorName":"Ayesha Mir","actorRole":"Employee","action":"Submitted claim","from":null,"to":"Submitted"},
-      {"ts":"2025-09-19T10:30:00Z","actorName":"Lakeside Staff","actorRole":"Hospital","action":"Uploaded documents","from":"Submitted","to":"DocumentsUploaded"},
-      {"ts":"2025-09-20T09:00:00Z","actorName":"Leena Shah","actorRole":"Claims Adjuster","action":"Started review","from":"DocumentsUploaded","to":"UnderReview"}
+      {
+        "ts": "2025-09-19T08:00:00Z",
+        "actorName": "Ayesha Mir",
+        "actorRole": "Employee",
+        "action": "Submitted claim",
+        "from": null,
+        "to": "Pending"
+      },
+      {
+        "ts": "2025-09-19T10:30:00Z",
+        "actorName": "Lakeside Staff",
+        "actorRole": "Hospital",
+        "action": "Uploaded documents",
+        "from": "Pending",
+        "to": "Pending"
+      },
+      {
+        "ts": "2025-09-20T09:00:00Z",
+        "actorName": "Leena Shah",
+        "actorRole": "Claims Adjuster",
+        "action": "Started review",
+        "from": "Pending",
+        "to": "Pending"
+      }
     ],
-    "createdAt":"2025-09-19T08:00:00Z",
-    "updatedAt":"2025-09-20T09:00:00Z",
+    "createdAt": "2025-09-19T08:00:00Z",
+    "updatedAt": "2025-09-20T09:00:00Z",
     "fraudRiskScore": 0.14,
     "priority": "Normal"
   },
@@ -303,7 +518,7 @@
     "hospitalId": "hosp-001",
     "hospitalName": "City General Hospital",
     "planId": "plan-acme-basic-2025",
-    "status": "Submitted",
+    "status": "Pending",
     "amountClaimed": 6500,
     "approvedAmount": 0,
     "treatmentCategory": "Lab Test",
@@ -311,10 +526,17 @@
     "dischargeDate": "2025-10-04",
     "documents": [],
     "events": [
-      {"ts":"2025-10-04T07:40:00Z","actorName":"Zubair Ahmed","actorRole":"Employee","action":"Submitted claim","from":null,"to":"Submitted"}
+      {
+        "ts": "2025-10-04T07:40:00Z",
+        "actorName": "Zubair Ahmed",
+        "actorRole": "Employee",
+        "action": "Submitted claim",
+        "from": null,
+        "to": "Pending"
+      }
     ],
-    "createdAt":"2025-10-04T07:40:00Z",
-    "updatedAt":"2025-10-04T07:40:00Z",
+    "createdAt": "2025-10-04T07:40:00Z",
+    "updatedAt": "2025-10-04T07:40:00Z",
     "fraudRiskScore": 0.06,
     "priority": "Normal"
   }
