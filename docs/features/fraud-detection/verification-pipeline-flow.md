@@ -26,7 +26,7 @@ The verification pipeline runs multiple checks in sequence, each potentially mod
 **Process:**
 1. Check if `demoHashesSeeded` flag exists in localStorage
 2. If not seeded:
-   - Fetch 16 demo images from `/demo-docs/` folder
+  - Fetch 17 demo images from `/demo-docs/` folder
    - For each image:
      - Calculate SHA-256 hash
      - Calculate perceptual hash (dHash)
@@ -116,7 +116,7 @@ Calculate perceptual hash (dHash algorithm)
 Check hash against stored perceptual hashes (localStorage, last 100 hashes)
   ↓
 Decision Point:
-  ├─ Similar hash found? (similarity >= 90%)
+  ├─ Similar hash found? (similarity >= 80%)
   │   ├─ YES → Near-Duplicate Detected
   │   │   ├─ Set nearDuplicateDetected = true
   │   │   ├─ Calculate similarity percentage
@@ -125,6 +125,7 @@ Decision Point:
   │   │   └─ Store perceptual hash for future checks
   │   │
   │   └─ NO → New Document (visually different)
+  │       ├─ If highest similarity >= 70% → Warning band (log for review, no score deduction)
   │       └─ Store perceptual hash in localStorage for future checks
   │
   └─ Hash calculation failed?
@@ -132,11 +133,47 @@ Decision Point:
 ```
 
 **Score Impact:**
-- Near-duplicate (90%+ similar): -40 points
+- Near-duplicate (80%+ similar): -40 points
+- Possible reuse (70–80%): No deduction, warning logged
 - Calculation failure: No deduction (graceful degradation)
 - New document: No deduction (stored for future)
 
 **Note:** Perceptual hash catches slightly edited documents (cropped, brightness adjusted, watermarked, etc.) that SHA-256 would miss.
+
+### Step 1.3: MobileNet Embeddings (Semantic Similarity)
+
+**Function:** `computeMobilenetEmbedding()` → Semantic / Structural Near-Duplicate Detection
+
+**Prerequisites:** File provided AND SHA-256 and dHash checks completed (recommended but not required)
+
+**Process:**
+```
+Resize image to model input (e.g., 224x224)
+  ↓
+Run MobileNet model inference (penultimate/global pooled activations)
+  ↓
+Extract feature vector (e.g., 1280-D), L2-normalize
+  ↓
+Compare against stored embeddings (IndexedDB or server vector DB) using cosine similarity
+  ↓
+Decision Point:
+  ├─ Similar embedding found?
+  │   ├─ YES → Report similarity percentage (cosine), set nearDuplicateDetectedByEmbedding = true
+  │   │   ├─ Similarity ≥ 0.95 → Strong near-duplicate
+  │   │   ├─ Similarity 0.85–0.95 → Suspicious similarity
+  │   │   └─ Similarity 0.75–0.85 → Weak similarity (log)
+  │   └─ NO → New (store embedding for future checks)
+  └─ Embedding calculation failed?
+      └─ Log warning (graceful degradation)
+```
+
+**Score Impact:**
+- Strong near-duplicate (≥0.95): -40 points
+- Suspicious (0.85–0.95): -25 points
+- Weak similarity (0.75–0.85): -10 points
+- Calculation failure: No deduction (graceful degradation)
+
+**Note:** Use embeddings together with dHash — if both signals are strong, escalate deduction and confidence. For scale, persist embeddings server-side and use an ANN index (FAISS/HNSW/Milvus/Pinecone).
 
 ---
 
@@ -498,7 +535,7 @@ Determine Status:
 │  │                                                           │
 │  └─ 1.2: Perceptual Hash (Near-Duplicate)                   │
 │      • Calculate dHash (perceptual hash)                    │
-│      • Check for similar documents (90%+ similarity)        │
+│      • Check for similar documents (80%+ similarity)        │
 │      • Detect slightly edited versions                      │
 └─────────────────────────────────────────────────────────────┘
                             ↓
@@ -602,7 +639,7 @@ Determine Status:
 
 **Recently Completed:**
 - ✅ Perceptual hash for near-duplicate detection (dHash algorithm)
-- ✅ Demo hash seeding from 16 images in `demo-docs/` folder
+- ✅ Demo hash seeding from 17 images in `demo-docs/` folder
 - ✅ Reset function for testing (clears hash database)
 
 ---
