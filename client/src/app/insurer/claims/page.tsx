@@ -17,7 +17,7 @@ import {
   loadStoredClaims,
   persistClaims,
 } from "@/data/claimsData";
-import { formatPKR } from '@/lib/format';
+import { formatPKR } from "@/lib/format";
 
 export default function InsurerClaimsPage() {
   const router = useRouter();
@@ -272,7 +272,9 @@ export default function InsurerClaimsPage() {
                           {claim.date}
                         </td>
                         <td className="px-6 py-4 text-sm text-gray-900">
-                          {typeof claim.amount === 'number' ? formatPKR(claim.amount) : claim.amount}
+                          {typeof claim.amount === "number"
+                            ? formatPKR(claim.amount)
+                            : claim.amount}
                         </td>
                         <td className="px-6 py-4 text-sm">
                           <span

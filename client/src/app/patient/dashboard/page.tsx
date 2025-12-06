@@ -3,7 +3,7 @@
 import Card from "@/components/shared/Card";
 import ClaimStatusBadge from "@/components/claims/ClaimStatusBadge";
 import type { ClaimStatus } from "@/types/claims";
-import { formatPKR } from '@/lib/format';
+import { formatPKR } from "@/lib/format";
 
 // Mock data for a specific patient (employeeId: emp-001 - Ali Raza)
 // Adjusted to use canonical values from `claims.json` for emp-001
@@ -234,7 +234,7 @@ export default function PatientDashboardPage() {
                 </div>
 
                 <div className="flex justify-between sm:flex-col sm:text-right sm:items-end">
-                    <p className="text-sm font-medium text-gray-900">
+                  <p className="text-sm font-medium text-gray-900">
                     {formatPKR(claim.amount)}
                   </p>
                   <ClaimStatusBadge status={claim.status} />

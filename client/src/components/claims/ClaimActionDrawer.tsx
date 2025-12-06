@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 
-import { formatPKR } from '@/lib/format';
+import { formatPKR } from "@/lib/format";
 
 export interface ClaimRecord {
   id: string;
@@ -161,7 +161,10 @@ export default function ClaimActionDrawer({
     },
     {
       label: "Amount",
-      value: typeof claim.amount === 'number' ? formatPKR(claim.amount) : claim.amount,
+      value:
+        typeof claim.amount === "number"
+          ? formatPKR(claim.amount)
+          : claim.amount,
       icon: (
         <svg
           className="h-4 w-4 text-indigo-500"

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import ClaimStatusBadge from "@/components/claims/ClaimStatusBadge";
-import { formatPKR } from '@/lib/format';
+import { formatPKR } from "@/lib/format";
 import MessageButton from "@/components/messaging/MessageButton";
 import { useClaimsMessaging } from "@/contexts/ClaimsMessagingContext";
 import { apiFetch } from "@/lib/api/client";
@@ -12,6 +12,9 @@ import ClaimEditModal from "@/components/modals/ClaimEditModal";
 
 // Import data
 import analyticsData from "@/data/analytics.json";
+import claims from "@/data/claims.json";
+import type { Claim } from "@/types/claims";
+import { sortClaimsByDateDesc } from "@/lib/sort";
 
 export default function HospitalDashboardPage() {
   const [cnicNumber, setCnicNumber] = useState("");
@@ -51,41 +54,18 @@ export default function HospitalDashboardPage() {
     approvedToday: analyticsData.claimsByStatus.Approved,
   };
 
-  // Get recent claims for hospital - using same claim IDs as insurer
-  const recentClaims = [
-    {
-      id: "CLM-8921",
-      patientName: "John Doe",
-      cnic: "42401-1234567-8",
-      amount: 1250,
-      date: "2025-10-06",
-      status: "Pending",
-    },
-    {
-      id: "CLM-8920",
-      patientName: "Mary Johnson",
-      cnic: "42401-2345678-9",
-      amount: 450,
-      date: "2025-10-06",
-      status: "Pending",
-    },
-    {
-      id: "CLM-8919",
-      patientName: "Robert Smith",
-      cnic: "42401-3456789-0",
-      amount: 5200,
-      date: "2025-10-05",
-      status: "Approved",
-    },
-    {
-      id: "CLM-8918",
-      patientName: "Emily Davis",
-      cnic: "42401-4567890-1",
-      amount: 820,
-      date: "2025-10-05",
-      status: "Approved",
-    },
-  ];
+  // Recent claims for hospital - derived from canonical claims and sorted newest-first
+  const allClaims = claims as Claim[];
+  const recentClaims = sortClaimsByDateDesc(allClaims)
+    .slice(0, 4)
+    .map((c) => ({
+      id: c.id,
+      patientName: c.employeeName || c.claimNumber || "—",
+      cnic: "—",
+      amount: c.amountClaimed || 0,
+      date: c.admissionDate ?? c.createdAt ?? "—",
+      status: c.status,
+    }));
 
   return (
     <div className="p-4 lg:p-6">

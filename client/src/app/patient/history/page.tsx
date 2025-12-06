@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import claimsDataRaw from "@/data/claims.json";
 import ClaimDetailsModal from "@/components/patient/ClaimDetailsModal";
 import type { Claim } from "@/types/claims";
+import { sortClaimsByDateDesc } from '@/lib/sort';
 
 const claimsData = claimsDataRaw as Claim[];
 
@@ -53,7 +54,8 @@ export default function PatientHistoryPage() {
       });
     }
 
-    return filtered;
+    // Return a new array sorted by date (newest first) without mutating source
+    return sortClaimsByDateDesc(filtered);
   }, [searchTerm, selectedStatus, selectedDateRange]);
 
   const getStatusColor = (status: string) => {
@@ -255,16 +257,7 @@ export default function PatientHistoryPage() {
                       >
                         View Details
                       </button>
-                      {claim.status === "Pending" && (
-                        <>
-                          <button className="px-4 py-2 text-sm font-medium text-orange-600 bg-orange-50 hover:bg-orange-100 rounded-lg transition-colors">
-                            Provide Info
-                          </button>
-                          <button className="px-4 py-2 text-sm font-medium text-gray-600 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors">
-                            Track Progress
-                          </button>
-                        </>
-                      )}
+                      {/* Pending actions removed: Provide Info and Track Progress buttons */}
                     </div>
                   </div>
                 </div>

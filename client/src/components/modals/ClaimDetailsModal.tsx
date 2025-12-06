@@ -19,7 +19,7 @@ interface ClaimDetailsModalProps {
   claimData?: ClaimDetails;
 }
 
-import { formatPKR } from '@/lib/format';
+import { formatPKR } from "@/lib/format";
 
 export default function ClaimDetailsModal({
   isOpen,
@@ -99,7 +99,9 @@ export default function ClaimDetailsModal({
                 Amount
               </label>
               <p className="mt-1 text-sm text-gray-900">
-                {typeof claim.amount === 'number' ? formatPKR(claim.amount) : claim.amount}
+                {typeof claim.amount === "number"
+                  ? formatPKR(claim.amount)
+                  : claim.amount}
               </p>
             </div>
           )}

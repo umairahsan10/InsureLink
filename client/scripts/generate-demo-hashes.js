@@ -9,6 +9,8 @@
  * The output JSON is stored at `src/data/demoDocHashes.json`.
  */
 
+/* eslint-disable @typescript-eslint/no-require-imports */
+
 const fs = require("fs/promises");
 const path = require("path");
 const crypto = require("crypto");
