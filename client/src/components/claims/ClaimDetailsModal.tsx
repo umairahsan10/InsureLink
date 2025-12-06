@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import { ClaimRecord } from "./ClaimActionDrawer";
+import { formatPKR } from '@/lib/format';
 
 interface ClaimDetailsModalProps {
   claim: ClaimRecord | null;
@@ -29,7 +30,7 @@ export default function ClaimDetailsModal({
       default:
         return "bg-amber-50 text-amber-700 border border-amber-200";
     }
-  }, [claim?.status]);
+  }, [claim]);
 
   if (!isOpen || !claim) {
     return null;
@@ -40,7 +41,7 @@ export default function ClaimDetailsModal({
     { label: "Patient", value: claim.patient },
     { label: "Hospital", value: claim.hospital },
     { label: "Date", value: claim.date },
-    { label: "Amount", value: claim.amount },
+    { label: "Amount", value: typeof claim.amount === 'number' ? formatPKR(claim.amount) : claim.amount },
     { label: "Priority", value: claim.priority },
     { label: "Status", value: claim.status },
   ];
@@ -88,7 +89,7 @@ export default function ClaimDetailsModal({
                   {claim.id}
                 </h3>
                 <span className="inline-flex items-center rounded-full border border-slate-200 bg-white/80 px-3 py-1 text-xs font-semibold text-slate-700">
-                  {claim.amount}
+                  {typeof claim.amount === 'number' ? formatPKR(claim.amount) : claim.amount}
                 </span>
               </div>
               <p className="text-sm text-gray-500">

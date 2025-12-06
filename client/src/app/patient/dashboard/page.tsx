@@ -3,61 +3,45 @@
 import Card from "@/components/shared/Card";
 import ClaimStatusBadge from "@/components/claims/ClaimStatusBadge";
 import type { ClaimStatus } from "@/types/claims";
+import { formatPKR } from '@/lib/format';
 
 // Mock data for a specific patient (employeeId: emp-001 - Ali Raza)
+// Adjusted to use canonical values from `claims.json` for emp-001
 const patientData = {
   patientId: "emp-001",
   patientName: "Ali Raza",
-  // Overview statistics
-  totalClaims: 4,
-  approvedClaims: 2,
-  totalReimbursed: 450,
+  // Overview statistics derived from `claims.json` for this patient
+  totalClaims: 1,
+  approvedClaims: 0,
+  totalReimbursed: 0,
   pendingClaims: 1,
-  approvalRate: 75,
+  approvalRate: 0,
 
-  // Recent claims data mapped from existing claims
+  // Recent claims for this patient (from claims.json)
   recentClaims: [
     {
       id: "clm-0001",
-      claimNumber: "CLM-2024-001",
-      name: "Dental Cleaning",
-      amount: 150,
-      status: "Approved" as ClaimStatus,
-      date: "2025-09-30",
-      icon: "✓",
-    },
-    {
-      id: "clm-0006",
-      claimNumber: "CLM-2024-002",
-      name: "Annual Physical",
-      amount: 300,
-      status: "Approved" as ClaimStatus,
-      date: "2025-09-05",
-      icon: "✓",
-    },
-    {
-      id: "clm-0012",
-      claimNumber: "CLM-2024-003",
-      name: "Prescription Refill",
-      amount: 45,
+      claimNumber: "CLM-2025-0001",
+      name: "Surgery",
+      amount: 125000,
       status: "Pending" as ClaimStatus,
-      date: "2025-10-04",
+      date: "2025-09-30",
       icon: "⏰",
     },
   ],
 
-  // Coverage balance data
+  // Coverage balance data (kept as illustrative sample)
   coverageBalance: [
     {
       category: "Medical",
-      used: 2500,
-      total: 5000,
+      used: 2_500,
+      total: 5_000,
       percentage: 50,
     },
     {
       category: "Dental",
       used: 850,
-      total: 1500,
+      total: 1_500,
       percentage: 57,
     },
     {
@@ -144,7 +128,7 @@ export default function PatientDashboardPage() {
                 Total Reimbursed
               </p>
               <p className="text-3xl font-bold text-gray-900">
-                Rs. {patientData.totalReimbursed}
+                {formatPKR(patientData.totalReimbursed)}
               </p>
               <p className="text-sm text-gray-500 mt-1">This year</p>
             </div>
@@ -250,8 +234,8 @@ export default function PatientDashboardPage() {
                 </div>
 
                 <div className="flex justify-between sm:flex-col sm:text-right sm:items-end">
-                  <p className="text-sm font-medium text-gray-900">
-                    Rs. {claim.amount}
+                    <p className="text-sm font-medium text-gray-900">
+                    {formatPKR(claim.amount)}
                   </p>
                   <ClaimStatusBadge status={claim.status} />
                 </div>

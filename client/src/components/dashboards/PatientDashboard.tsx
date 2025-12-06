@@ -1,25 +1,42 @@
+import claims from '@/data/claims.json';
+import type { Claim } from '@/types/claims';
+import { formatPKR, formatPKRShort } from '@/lib/format';
+
 export default function PatientDashboard() {
+  const allClaims = claims as Claim[];
+  const totalClaims = allClaims.length;
+  const approved = allClaims.filter((c) => c.status === 'Approved').length;
+  const pending = allClaims.filter((c) => c.status === 'Pending').length;
+  const totalValue = allClaims.reduce((s, c) => s + (c.amountClaimed || 0), 0);
+  const paidTotal = allClaims.filter((c) => c.status === 'Approved').reduce((s, c) => s + (c.amountClaimed || 0), 0);
+
+  const recent = allClaims
+    .slice()
+    .sort((a, b) => new Date(b.createdAt || b.admissionDate).getTime() - new Date(a.createdAt || a.admissionDate).getTime())
+    .slice(0, 2)
+    .map((c) => ({ id: c.id, date: c.createdAt || c.admissionDate, amount: formatPKR(c.amountClaimed || 0), status: c.status }));
+
   return (
     <div className="p-8">
       <h1 className="text-3xl font-bold text-gray-900 mb-6">Patient Dashboard</h1>
-      
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <div className="bg-white rounded-lg shadow p-6">
           <p className="text-sm text-gray-500 mb-2">Active Claims</p>
-          <p className="text-3xl font-bold text-blue-600">3</p>
-          <p className="text-sm text-gray-600 mt-2">2 approved, 1 pending</p>
+          <p className="text-3xl font-bold text-blue-600">{pending + (totalClaims - approved - pending)}</p>
+          <p className="text-sm text-gray-600 mt-2">{approved} approved, {pending} pending</p>
         </div>
-        
+
         <div className="bg-white rounded-lg shadow p-6">
-          <p className="text-sm text-gray-500 mb-2">Total Coverage</p>
-          <p className="text-3xl font-bold text-green-600">Rs. 50,000</p>
-          <p className="text-sm text-gray-600 mt-2">Available this year</p>
+          <p className="text-sm text-gray-500 mb-2">Total Claims Value</p>
+          <p className="text-3xl font-bold text-green-600">{formatPKRShort(totalValue)}</p>
+          <p className="text-sm text-gray-600 mt-2">Aggregate across claims</p>
         </div>
-        
+
         <div className="bg-white rounded-lg shadow p-6">
-          <p className="text-sm text-gray-500 mb-2">Used This Year</p>
-          <p className="text-3xl font-bold text-purple-600">Rs. 12,450</p>
-          <p className="text-sm text-gray-600 mt-2">75% remaining</p>
+          <p className="text-sm text-gray-500 mb-2">Paid (Approved)</p>
+          <p className="text-3xl font-bold text-purple-600">{formatPKRShort(paidTotal)}</p>
+          <p className="text-sm text-gray-600 mt-2">Total approved payouts</p>
         </div>
       </div>
 
@@ -27,10 +44,7 @@ export default function PatientDashboard() {
         <div className="bg-white rounded-lg shadow p-6">
           <h2 className="text-xl font-semibold text-gray-900 mb-4">Recent Claims</h2>
           <div className="space-y-3">
-            {[
-              { id: 'CLM-001', date: '2025-10-01', amount: 'Rs. 1,200', status: 'Approved' },
-              { id: 'CLM-002', date: '2025-09-28', amount: 'Rs. 450', status: 'Processing' },
-            ].map((claim) => (
+            {recent.map((claim) => (
               <div key={claim.id} className="flex justify-between items-center p-3 bg-gray-50 rounded">
                 <div>
                   <p className="font-medium">{claim.id}</p>

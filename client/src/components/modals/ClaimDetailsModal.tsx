@@ -5,7 +5,7 @@ import BaseModal from "./BaseModal";
 interface ClaimDetails {
   id: string;
   patientName?: string;
-  amount?: string;
+  amount?: string | number;
   date?: string;
   status?: string;
   treatment?: string;
@@ -18,6 +18,8 @@ interface ClaimDetailsModalProps {
   claimId: string;
   claimData?: ClaimDetails;
 }
+
+import { formatPKR } from '@/lib/format';
 
 export default function ClaimDetailsModal({
   isOpen,
@@ -91,12 +93,14 @@ export default function ClaimDetailsModal({
               <p className="mt-1 text-sm text-gray-900">{claim.treatment}</p>
             </div>
           )}
-          {claim.amount && (
+          {claim.amount !== undefined && (
             <div>
               <label className="text-sm font-medium text-gray-500">
                 Amount
               </label>
-              <p className="mt-1 text-sm text-gray-900">{claim.amount}</p>
+              <p className="mt-1 text-sm text-gray-900">
+                {typeof claim.amount === 'number' ? formatPKR(claim.amount) : claim.amount}
+              </p>
             </div>
           )}
           {claim.date && (

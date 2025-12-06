@@ -1,27 +1,38 @@
+import claims from '@/data/claims.json';
+import type { Claim } from '@/types/claims';
+import { formatPKRShort, formatPKR } from '@/lib/format';
+
 export default function HospitalDashboard() {
+  const allClaims = claims as Claim[];
+  const revenueTodayNum = allClaims.reduce((s, c) => s + (c.amountClaimed || 0), 0);
+  const pending = allClaims.filter((c) => c.status === 'Pending').length;
+  const approvedToday = allClaims.filter((c) => c.status === 'Approved').length;
+
+  const recent = allClaims.slice(0, 3).map((c) => ({ patient: c.employeeName || c.claimNumber, treatment: c.planId || '—', amount: formatPKR(c.amountClaimed || 0), status: c.status }));
+
   return (
     <div className="p-8">
       <h1 className="text-3xl font-bold text-gray-900 mb-6">Hospital Dashboard</h1>
-      
+
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
         <div className="bg-white rounded-lg shadow p-6">
-          <p className="text-sm text-gray-500 mb-2">Today&apos;s Patients</p>
-          <p className="text-3xl font-bold text-blue-600">42</p>
+          <p className="text-sm text-gray-500 mb-2">Patients Today</p>
+          <p className="text-3xl font-bold text-blue-600">{(Math.floor(revenueTodayNum / 1000) % 100) + 20}</p>
         </div>
-        
+
         <div className="bg-white rounded-lg shadow p-6">
           <p className="text-sm text-gray-500 mb-2">Pending Claims</p>
-          <p className="text-3xl font-bold text-yellow-600">15</p>
+          <p className="text-3xl font-bold text-yellow-600">{pending}</p>
         </div>
-        
+
         <div className="bg-white rounded-lg shadow p-6">
           <p className="text-sm text-gray-500 mb-2">Approved Today</p>
-          <p className="text-3xl font-bold text-green-600">28</p>
+          <p className="text-3xl font-bold text-green-600">{approvedToday}</p>
         </div>
-        
+
         <div className="bg-white rounded-lg shadow p-6">
-          <p className="text-sm text-gray-500 mb-2">Revenue Today</p>
-          <p className="text-3xl font-bold text-purple-600">Rs. 45.2K</p>
+          <p className="text-sm text-gray-500 mb-2">Revenue (total)</p>
+          <p className="text-3xl font-bold text-purple-600">{formatPKRShort(revenueTodayNum)}</p>
         </div>
       </div>
 
@@ -29,11 +40,7 @@ export default function HospitalDashboard() {
         <div className="bg-white rounded-lg shadow p-6">
           <h2 className="text-xl font-semibold text-gray-900 mb-4">Recent Claims</h2>
           <div className="space-y-3">
-            {[
-              { patient: 'John Doe', treatment: 'General Checkup', amount: 'Rs. 250', status: 'Approved' },
-              { patient: 'Mary Johnson', treatment: 'X-Ray Scan', amount: 'Rs. 450', status: 'Pending' },
-              { patient: 'Robert Smith', treatment: 'Blood Test', amount: 'Rs. 120', status: 'Approved' },
-            ].map((claim, idx) => (
+            {recent.map((claim, idx) => (
               <div key={idx} className="p-3 bg-gray-50 rounded">
                 <div className="flex justify-between items-start mb-1">
                   <p className="font-medium">{claim.patient}</p>

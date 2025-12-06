@@ -1,16 +1,16 @@
 {
   "claimsByStatus": {
-    "Pending": 11,
+    "Pending": 8,
     "Approved": 3,
     "Rejected": 1
   },
   "totalClaims": 12,
-  "totalClaimValue": 425300,
+  "totalClaimValue": 396500,
   "approvedValueTotal": 38700,
   "monthlyTrends": [
     { "month": "2025-08", "count": 2, "value": 30000 },
-    { "month": "2025-09", "count": 8, "value": 350500 },
-    { "month": "2025-10", "count": 2, "value": 4500 }
+    { "month": "2025-09", "count": 7, "value": 337500 },
+    { "month": "2025-10", "count": 3, "value": 29000 }
   ],
   "avgProcessingTimeHours": 48,
   "topHospitalsByAmount": [
@@ -34,22 +34,22 @@
     {
       "corporateId": "corp-001",
       "corporateName": "Acme Ltd",
-      "count": 6,
-      "value": 154000
+      "count": 5,
+      "value": 163500
     },
     {
       "corporateId": "corp-002",
       "corporateName": "Beta Systems",
       "count": 4,
-      "value": 82000
+      "value": 83500
     },
     {
       "corporateId": "corp-003",
       "corporateName": "Noor Foods",
-      "count": 2,
-      "value": 189300
+      "count": 3,
+      "value": 149500
     }
   ],
-  "rejectionRate": 0.083,
-  "fraudFlaggedCount": 0
+  "rejectionRate": 0.08333333333333333,
+  "fraudFlaggedCount": 1
 }

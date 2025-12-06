@@ -5,7 +5,7 @@ import BaseModal from './BaseModal';
 
 interface EditableClaimData {
   id: string;
-  amount?: string;
+  amount?: string | number;
   treatment?: string;
 }
 
@@ -34,7 +34,7 @@ export default function ClaimEditModal({ isOpen, onClose, claimId, claimData, on
   useEffect(() => {
     if (claimData) {
       setFormData({
-        amount: claimData.amount?.replace('$', '') || '',
+        amount: (typeof claimData.amount === 'number' ? String(claimData.amount) : (claimData.amount || '')).replace('$', ''),
         treatment: claimData.treatment || '',
         description: '',
       });

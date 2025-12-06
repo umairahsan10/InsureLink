@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import ClaimStatusBadge from "@/components/claims/ClaimStatusBadge";
+import { formatPKR } from '@/lib/format';
 import MessageButton from "@/components/messaging/MessageButton";
 import { useClaimsMessaging } from "@/contexts/ClaimsMessagingContext";
 import { apiFetch } from "@/lib/api/client";
@@ -56,7 +57,7 @@ export default function HospitalDashboardPage() {
       id: "CLM-8921",
       patientName: "John Doe",
       cnic: "42401-1234567-8",
-      amount: "$1,250",
+      amount: 1250,
       date: "2025-10-06",
       status: "Pending",
     },
@@ -64,7 +65,7 @@ export default function HospitalDashboardPage() {
       id: "CLM-8920",
       patientName: "Mary Johnson",
       cnic: "42401-2345678-9",
-      amount: "$450",
+      amount: 450,
       date: "2025-10-06",
       status: "Pending",
     },
@@ -72,7 +73,7 @@ export default function HospitalDashboardPage() {
       id: "CLM-8919",
       patientName: "Robert Smith",
       cnic: "42401-3456789-0",
-      amount: "$5,200",
+      amount: 5200,
       date: "2025-10-05",
       status: "Approved",
     },
@@ -80,7 +81,7 @@ export default function HospitalDashboardPage() {
       id: "CLM-8918",
       patientName: "Emily Davis",
       cnic: "42401-4567890-1",
-      amount: "$820",
+      amount: 820,
       date: "2025-10-05",
       status: "Approved",
     },
@@ -381,7 +382,7 @@ export default function HospitalDashboardPage() {
                       {claim.cnic}
                     </td>
                     <td className="px-3 lg:px-6 py-4 whitespace-nowrap text-xs lg:text-sm text-gray-900">
-                      {claim.amount}
+                      {formatPKR(claim.amount as number)}
                     </td>
                     <td className="hidden sm:table-cell px-3 lg:px-6 py-4 whitespace-nowrap text-xs lg:text-sm text-gray-500">
                       {claim.date}

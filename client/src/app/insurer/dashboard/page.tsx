@@ -9,6 +9,7 @@ import notificationsData from '@/data/insurerNotifications.json';
 import { AlertNotification } from '@/types';
 import ClaimActionDrawer, { ClaimRecord } from '@/components/claims/ClaimActionDrawer';
 import { ClaimData, CLAIMS_STORAGE_KEY, CLAIMS_UPDATED_EVENT, defaultClaimData, loadStoredClaims, persistClaims } from '@/data/claimsData';
+import { formatPKR } from '@/lib/format';
 
 interface Claim extends ClaimData {
   claimNumber: string;
@@ -30,7 +31,8 @@ export default function InsurerDashboardPage() {
   });
 
   const toClaimData = (claim: Claim): ClaimData => {
-    const { claimNumber: _claimNumber, ...rest } = claim;
+    const { claimNumber, ...rest } = claim;
+    void claimNumber;
     return rest;
   };
 
@@ -73,10 +75,14 @@ export default function InsurerDashboardPage() {
     };
   }, []);
 
-  const formatCurrency = (value: number) => `Rs. ${value.toLocaleString('en-PK')}`;
+  const formatCurrency = (value: number) => formatPKR(value);
 
   const stats = useMemo(() => {
-    const parseAmount = (amount: string) => Number(amount.replace(/Rs\.\s?/i, '').replace(/,/g, '')) || 0;
+    const parseAmount = (amount: string | number) => {
+      if (typeof amount === 'number') return amount;
+      if (typeof amount === 'string') return Number(amount.replace(/Rs\.?\s?/i, '').replace(/,/g, '')) || 0;
+      return 0;
+    };
 
     const totalValue = claims.reduce((sum, claim) => sum + parseAmount(claim.amount), 0);
     const pendingCount = claims.filter((claim) => claim.status === 'Pending').length;
@@ -171,7 +177,7 @@ export default function InsurerDashboardPage() {
       claim.claimNumber,
       claim.patient,
       claim.hospital,
-      claim.amount,
+      typeof claim.amount === 'number' ? formatPKR(claim.amount) : claim.amount,
       claim.date,
       claim.priority,
       claim.status
@@ -351,7 +357,7 @@ export default function InsurerDashboardPage() {
                         {claim.hospital}
                       </td>
                       <td className="px-3 md:px-4 py-3 whitespace-nowrap text-gray-900">
-                        {claim.amount}
+                        {typeof claim.amount === 'number' ? formatPKR(claim.amount) : claim.amount}
                       </td>
                       <td className="px-3 md:px-4 py-3 whitespace-nowrap text-gray-500">
                         {claim.date}
