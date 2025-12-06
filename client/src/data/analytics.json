@@ -8,16 +8,27 @@
   "totalClaimValue": 396500,
   "approvedValueTotal": 38700,
   "monthlyTrends": [
-    { "month": "2025-08", "count": 2, "value": 30000 },
-    { "month": "2025-09", "count": 7, "value": 337500 },
-    { "month": "2025-10", "count": 3, "value": 29000 }
+    {
+      "month": "2025-08",
+      "count": 2,
+      "value": 30000
+    },
+    {
+      "month": "2025-09",
+      "count": 7,
+      "value": 337500
+    },
+    {
+      "month": "2025-10",
+      "count": 3,
+      "value": 29000
+    }
   ],
-  "avgProcessingTimeHours": 48,
   "topHospitalsByAmount": [
     {
       "hospitalId": "hosp-001",
       "hospitalName": "City General Hospital",
-      "totalAmount": 131500
+      "totalAmount": 153500
     },
     {
       "hospitalId": "hosp-005",
@@ -27,7 +38,7 @@
     {
       "hospitalId": "hosp-004",
       "hospitalName": "Crescent Clinic",
-      "totalAmount": 66000
+      "totalAmount": 63000
     }
   ],
   "claimsPerCorporate": [
