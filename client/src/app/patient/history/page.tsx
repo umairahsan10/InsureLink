@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import claimsDataRaw from "@/data/claims.json";
 import ClaimDetailsModal from "@/components/patient/ClaimDetailsModal";
 import type { Claim } from "@/types/claims";
-import { sortClaimsByDateDesc } from '@/lib/sort';
+import { sortClaimsByDateDesc } from "@/lib/sort";
 
 const claimsData = claimsDataRaw as Claim[];
 
@@ -14,6 +14,8 @@ export default function PatientHistoryPage() {
   const [selectedDateRange, setSelectedDateRange] = useState("All Time");
   const [selectedClaim, setSelectedClaim] = useState<Claim | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   // Filter claims based on search term, status, and date range
   const filteredClaims = useMemo(() => {
@@ -58,6 +60,21 @@ export default function PatientHistoryPage() {
     return sortClaimsByDateDesc(filtered);
   }, [searchTerm, selectedStatus, selectedDateRange]);
 
+  // Reset page when filters or page size change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, selectedStatus, selectedDateRange, itemsPerPage]);
+
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filteredClaims.length / itemsPerPage)
+  );
+
+  const displayedClaims = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return filteredClaims.slice(start, start + itemsPerPage);
+  }, [filteredClaims, currentPage, itemsPerPage]);
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case "Approved":
@@ -92,12 +109,10 @@ export default function PatientHistoryPage() {
     setSelectedClaim(claim as Claim);
     setIsModalOpen(true);
   };
-
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setSelectedClaim(null);
   };
-
   return (
     <div className="p-4 sm:p-6 bg-gray-50 min-h-screen">
       <div className="max-w-6xl mx-auto">
@@ -199,7 +214,7 @@ export default function PatientHistoryPage() {
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
           {filteredClaims.length > 0 ? (
             <div className="divide-y divide-gray-200">
-              {filteredClaims.map((claim: Claim) => (
+              {displayedClaims.map((claim: Claim) => (
                 <div
                   key={claim.id}
                   className="p-4 sm:p-6 hover:bg-gray-50 transition-colors"
@@ -286,27 +301,86 @@ export default function PatientHistoryPage() {
         {/* Pagination Info */}
         {filteredClaims.length > 0 && (
           <div className="mt-6 bg-white rounded-lg shadow-sm border border-gray-200 px-6 py-3">
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-gray-700">
-                Showing <span className="font-medium">1</span> to{" "}
-                <span className="font-medium">{filteredClaims.length}</span> of{" "}
-                <span className="font-medium">{filteredClaims.length}</span>{" "}
-                claims
-                {filteredClaims.length !== claimsData.length && (
-                  <span className="text-gray-500">
-                    {" "}
-                    (filtered from {claimsData.length} total)
-                  </span>
-                )}
-              </p>
-              <div className="flex space-x-2">
-                <button className="px-3 py-1 text-sm text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50">
+            <div className="flex flex-col sm:flex-row items-center sm:justify-between gap-3">
+              <div className="flex items-center space-x-4">
+                <p className="text-sm text-gray-700">
+                  Showing{" "}
+                  <span className="font-medium">
+                    {filteredClaims.length === 0
+                      ? 0
+                      : (currentPage - 1) * itemsPerPage + 1}
+                  </span>{" "}
+                  to{" "}
+                  <span className="font-medium">
+                    {Math.min(
+                      filteredClaims.length,
+                      currentPage * itemsPerPage
+                    )}
+                  </span>{" "}
+                  of{" "}
+                  <span className="font-medium">{filteredClaims.length}</span>{" "}
+                  claims
+                  {filteredClaims.length !== claimsData.length && (
+                    <span className="text-gray-500">
+                      {" "}
+                      (filtered from {claimsData.length} total)
+                    </span>
+                  )}
+                </p>
+
+                <label className="text-sm text-gray-600">Items per page:</label>
+                <select
+                  value={itemsPerPage}
+                  onChange={(e) => setItemsPerPage(Number(e.target.value))}
+                  className="px-2 py-1 border border-gray-300 rounded-md text-sm"
+                >
+                  <option value={5}>5</option>
+                  <option value={10}>10</option>
+                  <option value={20}>20</option>
+                  <option value={50}>50</option>
+                </select>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className={`px-3 py-1 text-sm rounded-md border ${
+                    currentPage === 1
+                      ? "text-gray-300 border-gray-200 bg-gray-50"
+                      : "text-gray-500 border-gray-300 bg-white hover:bg-gray-50"
+                  }`}
+                >
                   Previous
                 </button>
-                <button className="px-3 py-1 text-sm text-white bg-blue-600 border border-blue-600 rounded-md">
-                  1
-                </button>
-                <button className="px-3 py-1 text-sm text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50">
+
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                  (p) => (
+                    <button
+                      key={p}
+                      onClick={() => setCurrentPage(p)}
+                      className={`px-3 py-1 text-sm rounded-md border ${
+                        p === currentPage
+                          ? "text-white bg-blue-600 border-blue-600"
+                          : "text-gray-500 bg-white border-gray-300 hover:bg-gray-50"
+                      }`}
+                    >
+                      {p}
+                    </button>
+                  )
+                )}
+
+                <button
+                  onClick={() =>
+                    setCurrentPage((p) => Math.min(totalPages, p + 1))
+                  }
+                  disabled={currentPage === totalPages}
+                  className={`px-3 py-1 text-sm rounded-md border ${
+                    currentPage === totalPages
+                      ? "text-gray-300 border-gray-200 bg-gray-50"
+                      : "text-gray-500 border-gray-300 bg-white hover:bg-gray-50"
+                  }`}
+                >
                   Next
                 </button>
               </div>
