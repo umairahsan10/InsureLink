@@ -1,4 +1,45 @@
+import employeesDataRaw from '@/data/employees.json';
+import claimsDataRaw from '@/data/claims.json';
+
+interface Employee {
+  id: string;
+  corporateId: string;
+  planId: string;
+}
+
+interface Claim {
+  id: string;
+  corporateId: string;
+  status: string;
+  createdAt: string;
+}
+
+const employeesData = employeesDataRaw as Employee[];
+const claimsData = claimsDataRaw as Claim[];
+
 export default function CorporateProfilePage() {
+  // Total employees in system
+  const totalEmployees = employeesData.length;
+  
+  // For Acme Ltd (corp-001)
+  const corporateId = 'corp-001';
+  const corpEmployees = employeesData.filter(emp => emp.corporateId === corporateId);
+  
+  // Count employees by plan for Acme Ltd
+  const goldPlanEmployees = corpEmployees.filter(emp => emp.planId === 'plan-acme-gold-2025').length;
+  const basicPlanEmployees = corpEmployees.filter(emp => emp.planId === 'plan-acme-basic-2025').length;
+  
+  // Count claims for this month
+  const currentDate = new Date('2025-10-06');
+  const currentMonth = currentDate.getMonth();
+  const currentYear = currentDate.getFullYear();
+  
+  const thisMonthClaims = claimsData.filter(claim => {
+    const claimDate = new Date(claim.createdAt);
+    return claim.corporateId === corporateId &&
+           claimDate.getMonth() === currentMonth &&
+           claimDate.getFullYear() === currentYear;
+  }).length;
   return (
     <div className="p-8">
       <div className="max-w-7xl mx-auto">
@@ -162,15 +203,15 @@ export default function CorporateProfilePage() {
               <div className="space-y-4">
                 <div>
                   <p className="text-sm text-gray-500 mb-1">Total Employees</p>
-                  <p className="text-2xl font-bold text-purple-600">248</p>
+                  <p className="text-2xl font-bold text-purple-600">{totalEmployees}</p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-500 mb-1">Active Policies</p>
-                  <p className="text-2xl font-bold text-green-600">248</p>
+                  <p className="text-2xl font-bold text-green-600">{totalEmployees}</p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-500 mb-1">This Month Claims</p>
-                  <p className="text-2xl font-bold text-orange-600">15</p>
+                  <p className="text-2xl font-bold text-orange-600">{thisMonthClaims}</p>
                 </div>
               </div>
             </div>
@@ -182,14 +223,14 @@ export default function CorporateProfilePage() {
                 <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
                   <div>
                     <p className="font-medium text-gray-900">Gold Plan</p>
-                    <p className="text-sm text-gray-500">150 employees</p>
+                    <p className="text-sm text-gray-500">{goldPlanEmployees} employees</p>
                   </div>
                   <span className="text-sm text-green-600 font-medium">Active</span>
                 </div>
                 <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
                   <div>
                     <p className="font-medium text-gray-900">Basic Plan</p>
-                    <p className="text-sm text-gray-500">98 employees</p>
+                    <p className="text-sm text-gray-500">{basicPlanEmployees} employees</p>
                   </div>
                   <span className="text-sm text-green-600 font-medium">Active</span>
                 </div>

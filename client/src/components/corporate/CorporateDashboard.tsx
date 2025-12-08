@@ -2,6 +2,7 @@ import KeyMetrics from "@/components/corporate/KeyMetrics";
 import CoverageOverview from "@/components/corporate/CoverageOverview";
 import EmployeeCoverageStatus from "@/components/corporate/EmployeeCoverageStatus";
 import RecentClaimsOverview from "@/components/corporate/RecentClaimsOverview";
+import employeesDataRaw from "@/data/employees.json";
 import claims from "@/data/claims.json";
 import corporates from "@/data/corporates.json";
 import { formatPKR, formatPKRShort } from "@/lib/format";
@@ -14,11 +15,21 @@ interface CorporateRecord {
   totalEmployees?: number;
 }
 
+interface Employee {
+  id: string;
+  corporateId: string;
+}
+
 // Use the first corporate as the default sample (Acme Ltd)
 const corporatesData = corporates as CorporateRecord[];
+const employeesData = employeesDataRaw as Employee[];
 const corp = corporatesData[0];
+
+// Get actual total employees from data
+const totalEmployees = employeesData.length;
+
+// Get claims for this corporate
 const corpClaims = (claims as Claim[]).filter((c) => c.corporateId === corp.id);
-const totalEmployees = corp?.totalEmployees ?? 0;
 const activeClaims = corpClaims.filter((c) => c.status === "Pending").length;
 const totalClaimsCostNum = corpClaims.reduce(
   (s, c) => s + (c.amountClaimed || 0),

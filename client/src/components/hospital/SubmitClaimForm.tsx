@@ -2,21 +2,22 @@
 
 import { useState, useMemo } from "react";
 import { formatPKR } from "@/lib/format";
-import claimsDataRaw from "@/data/claims.json";
-import type { Claim } from "@/types/claims";
+import patientsDataRaw from "@/data/patients.json";
+import type { Patient } from "@/types/patient";
 
 interface SubmitClaimFormProps {
   onSuccess?: (claimId: string) => void;
   onCancel?: () => void;
 }
 
-const claimsData = claimsDataRaw as Claim[];
+const patientsData = patientsDataRaw as Patient[];
 
 export default function SubmitClaimForm({
   onSuccess,
   onCancel,
 }: SubmitClaimFormProps) {
   const [formData, setFormData] = useState({
+    patientId: "",
     employeeId: "",
     employeeName: "",
     amountClaimed: "",
@@ -30,18 +31,18 @@ export default function SubmitClaimForm({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
 
-  // Get unique employees from claims data
-  const employees = useMemo(() => {
-    const uniqueEmployees = new Map<string, string>();
-    claimsData.forEach((claim) => {
-      if (!uniqueEmployees.has(claim.employeeId)) {
-        uniqueEmployees.set(claim.employeeId, claim.employeeName);
-      }
-    });
-    return Array.from(uniqueEmployees.entries()).map(([id, name]) => ({
-      id,
-      name,
-    }));
+  // Get patients who are insured (have employee records)
+  const insuredPatients = useMemo(() => {
+    return patientsData
+      .filter(patient => patient.insured && patient.employeeId)
+      .map(patient => ({
+        id: patient.id,
+        employeeId: patient.employeeId!,
+        name: patient.name,
+        corporateId: patient.corporateId,
+        corporateName: patient.corporateName,
+        planId: patient.planId,
+      }));
   }, []);
 
   const treatmentCategories = [
@@ -59,8 +60,8 @@ export default function SubmitClaimForm({
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
 
-    if (!formData.employeeId.trim()) {
-      newErrors.employeeId = "Please select an employee/patient";
+    if (!formData.patientId.trim()) {
+      newErrors.patientId = "Please select a patient";
     }
     if (!formData.amountClaimed.trim()) {
       newErrors.amountClaimed = "Amount claimed is required";
@@ -107,18 +108,19 @@ export default function SubmitClaimForm({
     }
   };
 
-  const handleEmployeeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+  const handlePatientChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const selectedId = e.target.value;
-    const selectedEmployee = employees.find((emp) => emp.id === selectedId);
+    const selectedPatient = insuredPatients.find((patient) => patient.id === selectedId);
     setFormData((prev) => ({
       ...prev,
-      employeeId: selectedId,
-      employeeName: selectedEmployee?.name || "",
+      patientId: selectedId,
+      employeeId: selectedPatient?.employeeId || "",
+      employeeName: selectedPatient?.name || "",
     }));
-    if (errors.employeeId) {
+    if (errors.patientId) {
       setErrors((prev) => ({
         ...prev,
-        employeeId: "",
+        patientId: "",
       }));
     }
   };
@@ -138,7 +140,7 @@ export default function SubmitClaimForm({
       // Generate new claim ID
       const newClaimId = `clm-${Date.now()}`;
       const claimNumber = `CLM-${new Date().getFullYear()}-${String(
-        claimsData.length + 1
+        Math.floor(Math.random() * 9999) + 1
       ).padStart(4, "0")}`;
 
       console.log("New claim submitted:", {
@@ -153,6 +155,7 @@ export default function SubmitClaimForm({
 
       // Reset form
       setFormData({
+        patientId: "",
         employeeId: "",
         employeeName: "",
         amountClaimed: "",
@@ -206,29 +209,32 @@ export default function SubmitClaimForm({
       )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Patient/Employee Selection */}
+        {/* Patient Selection */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Patient/Employee <span className="text-red-600">*</span>
+            Patient (Insured) <span className="text-red-600">*</span>
           </label>
           <select
-            name="employeeId"
-            value={formData.employeeId}
-            onChange={handleEmployeeChange}
+            name="patientId"
+            value={formData.patientId}
+            onChange={handlePatientChange}
             className={`w-full px-4 py-2 border rounded-lg text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-              errors.employeeId ? "border-red-500" : "border-gray-300"
+              errors.patientId ? "border-red-500" : "border-gray-300"
             }`}
           >
             <option value="">Select a patient...</option>
-            {employees.map((emp) => (
-              <option key={emp.id} value={emp.id}>
-                {emp.name} ({emp.id})
+            {insuredPatients.map((patient) => (
+              <option key={patient.id} value={patient.id}>
+                {patient.name} - {patient.corporateName} ({patient.id})
               </option>
             ))}
           </select>
-          {errors.employeeId && (
-            <p className="mt-1 text-sm text-red-600">{errors.employeeId}</p>
+          {errors.patientId && (
+            <p className="mt-1 text-sm text-red-600">{errors.patientId}</p>
           )}
+          <p className="mt-1 text-xs text-gray-500">
+            Only showing insured patients with active corporate coverage
+          </p>
         </div>
 
         {/* Amount Claimed */}
