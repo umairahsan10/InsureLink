@@ -1,59 +1,92 @@
 "use client";
 
+import { useMemo } from "react";
 import Card from "@/components/shared/Card";
 import ClaimStatusBadge from "@/components/claims/ClaimStatusBadge";
 import type { ClaimStatus } from "@/types/claims";
+import type { Claim } from "@/types/claims";
 import { formatPKR } from "@/lib/format";
+import claimsDataRaw from "@/data/claims.json";
+import { sortClaimsByDateDesc } from "@/lib/sort";
 
-// Mock data for a specific patient (employeeId: emp-001 - Ali Raza)
-// Adjusted to use canonical values from `claims.json` for emp-001
-const patientData = {
-  patientId: "emp-001",
-  patientName: "Ali Raza",
-  // Overview statistics derived from `claims.json` for this patient
-  totalClaims: 1,
-  approvedClaims: 0,
-  totalReimbursed: 0,
-  pendingClaims: 1,
-  approvalRate: 0,
-
-  // Recent claims for this patient (from claims.json)
-  recentClaims: [
-    {
-      id: "clm-0001",
-      claimNumber: "CLM-2025-0001",
-      name: "Surgery",
-      amount: 125000,
-      status: "Pending" as ClaimStatus,
-      date: "2025-09-30",
-      icon: "⏰",
-    },
-  ],
-
-  // Coverage balance data (kept as illustrative sample)
-  coverageBalance: [
-    {
-      category: "Medical",
-      used: 2_500,
-      total: 5_000,
-      percentage: 50,
-    },
-    {
-      category: "Dental",
-      used: 850,
-      total: 1_500,
-      percentage: 57,
-    },
-    {
-      category: "Vision",
-      used: 200,
-      total: 500,
-      percentage: 40,
-    },
-  ],
-};
+const claimsData = claimsDataRaw as Claim[];
 
 export default function PatientDashboardPage() {
+  // Get claims for patient emp-001 (Ali Raza)
+  const patientId = "emp-001";
+  
+  const patientClaims = useMemo(() => {
+    return claimsData.filter((claim) => claim.employeeId === patientId);
+  }, []);
+
+  // Get the latest 3 claims sorted by date
+  const recentClaims = useMemo(() => {
+    return sortClaimsByDateDesc(patientClaims)
+      .slice(0, 3)
+      .map((claim) => ({
+        id: claim.id,
+        claimNumber: claim.claimNumber,
+        name: claim.hospitalName,
+        amount: claim.amountClaimed,
+        status: claim.status as ClaimStatus,
+        date: claim.createdAt,
+        icon:
+          claim.status === "Approved"
+            ? "✓"
+            : claim.status === "Rejected"
+            ? "✕"
+            : "⏰",
+      }));
+  }, [patientClaims]);
+
+  // Calculate statistics based on actual claims data
+  const patientData = useMemo(() => {
+    const approvedClaims = patientClaims.filter(
+      (claim) => claim.status === "Approved"
+    ).length;
+    const totalReimbursed = patientClaims
+      .filter((claim) => claim.status === "Approved")
+      .reduce((sum, claim) => sum + (claim.approvedAmount || 0), 0);
+    const pendingClaims = patientClaims.filter(
+      (claim) => claim.status === "Pending"
+    ).length;
+    const approvalRate =
+      patientClaims.length > 0
+        ? Math.round((approvedClaims / patientClaims.length) * 100)
+        : 0;
+
+    return {
+      patientId,
+      patientName: "Ali Raza",
+      totalClaims: patientClaims.length,
+      approvedClaims,
+      totalReimbursed,
+      pendingClaims,
+      approvalRate,
+      recentClaims,
+      coverageBalance: [
+        {
+          category: "Medical",
+          used: 2_500,
+          total: 5_000,
+          percentage: 50,
+        },
+        {
+          category: "Dental",
+          used: 850,
+          total: 1_500,
+          percentage: 57,
+        },
+        {
+          category: "Vision",
+          used: 200,
+          total: 500,
+          percentage: 40,
+        },
+      ],
+    };
+  }, [patientClaims, recentClaims]);
+
   return (
     <div className="p-4 sm:p-6">
       {/* Overview Cards */}

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import HospitalSidebar from "@/components/hospital/HospitalSidebar";
+import SubmitClaimForm from "@/components/hospital/SubmitClaimForm";
 import MessageButton from "@/components/messaging/MessageButton";
 import { useClaimsMessaging } from "@/contexts/ClaimsMessagingContext";
 import {
@@ -15,12 +16,20 @@ import {
   clearDocumentHashes,
 } from "@/utils/documentVerification";
 import ClaimDetailsModal from "@/components/modals/ClaimDetailsModal";
+import claimsDataRaw from "@/data/claims.json";
+import { formatPKR } from "@/lib/format";
+import type { Claim } from "@/types/claims";
+
+const claimsData = claimsDataRaw as Claim[];
 
 export default function HospitalClaimsPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [showSubmitForm, setShowSubmitForm] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("All Status");
   const [insurerFilter, setInsurerFilter] = useState("All Insurers");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [resultModalOpen, setResultModalOpen] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
@@ -49,48 +58,46 @@ export default function HospitalClaimsPage() {
     seedDemoHashesFromImages();
   }, []);
 
-  const allClaims = [
-    {
-      id: "CLM-8921",
-      patient: "John Doe",
-      treatment: "General Checkup",
-      date: "2025-10-06",
-      amount: "$1,250",
-      status: "Pending",
-    },
-    {
-      id: "CLM-8920",
-      patient: "Mary Johnson",
-      treatment: "X-Ray Scan",
-      date: "2025-10-06",
-      amount: "$450",
-      status: "Pending",
-    },
-    {
-      id: "CLM-8919",
-      patient: "Robert Smith",
-      treatment: "Surgery",
-      date: "2025-10-05",
-      amount: "$5,200",
-      status: "Approved",
-    },
-    {
-      id: "CLM-8918",
-      patient: "Emily Davis",
-      treatment: "Blood Test",
-      date: "2025-10-05",
-      amount: "$820",
-      status: "Approved",
-    },
-    {
-      id: "CLM-8917",
-      patient: "Michael Wilson",
-      treatment: "Emergency Care",
-      date: "2025-10-04",
-      amount: "$3,100",
-      status: "Rejected",
-    },
-  ];
+  const allClaims = claimsData
+    .map((claim) => ({
+      id: claim.id,
+      patient: claim.employeeName,
+      treatment: "Insurance Claim",
+      date: claim.createdAt.split("T")[0],
+      amount: formatPKR(claim.amountClaimed),
+      status: claim.status,
+      createdAt: claim.createdAt,
+    }))
+    .sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    )
+    .map(({ createdAt, ...claim }) => claim);
+
+  // Calculate statistics
+  const claimsStats = useMemo(() => {
+    const totalClaims = claimsData.length;
+
+    const totalApprovedClaims = claimsData.filter(
+      (claim) => claim.status === "Approved"
+    ).length;
+
+    const pendingClaims = claimsData.filter(
+      (claim) => claim.status === "Pending"
+    ).length;
+
+    const totalAmount = claimsData.reduce(
+      (sum, claim) => sum + claim.amountClaimed,
+      0
+    );
+
+    return {
+      totalClaims,
+      totalApprovedClaims,
+      pendingClaims,
+      totalAmount: Math.round(totalAmount / 1000),
+    };
+  }, []);
 
   // Filter claims based on search and filters
   const filteredClaims = allClaims.filter((claim) => {
@@ -106,6 +113,21 @@ export default function HospitalClaimsPage() {
 
     return matchesSearch && matchesStatus;
   });
+
+  // Reset page when filters or page size change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, statusFilter, itemsPerPage]);
+
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filteredClaims.length / itemsPerPage)
+  );
+
+  const displayedClaims = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return filteredClaims.slice(start, start + itemsPerPage);
+  }, [filteredClaims, currentPage, itemsPerPage]);
 
   return (
     <>
@@ -151,8 +173,11 @@ export default function HospitalClaimsPage() {
                   </div>
                 </div>
                 <div className="hidden lg:flex items-center space-x-2 lg:space-x-4">
-                  <button className="bg-blue-600 text-white px-3 lg:px-4 py-2 rounded-lg hover:bg-blue-700 text-sm lg:text-base">
-                    + Submit New Claim
+                  <button
+                    onClick={() => setShowSubmitForm(!showSubmitForm)}
+                    className="bg-blue-600 text-white px-3 lg:px-4 py-2 rounded-lg hover:bg-blue-700 text-sm lg:text-base"
+                  >
+                    {showSubmitForm ? "View Claims" : "+ Submit New Claim"}
                   </button>
                   {/* Temporarily hidden Upload Document button
                 <button
@@ -190,8 +215,11 @@ export default function HospitalClaimsPage() {
             {/* Mobile button */}
             <div className="lg:hidden px-4 pt-2 pb-3">
               <div className="space-y-2">
-                <button className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm">
-                  + Submit New Claim
+                <button
+                  onClick={() => setShowSubmitForm(!showSubmitForm)}
+                  className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm"
+                >
+                  {showSubmitForm ? "View Claims" : "+ Submit New Claim"}
                 </button>
                 {/* Temporarily hidden Upload Document button
               <button
@@ -231,39 +259,47 @@ export default function HospitalClaimsPage() {
             {/* Stats Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
               <div className="bg-white rounded-lg shadow p-4">
-                <p className="text-sm text-gray-500">Today&apos;s Claims</p>
-                <p className="text-2xl font-bold text-gray-900">12</p>
+                <p className="text-sm text-gray-500">Total Claims</p>
+                <p className="text-2xl font-bold text-gray-900">{claimsStats.totalClaims}</p>
+              </div>
+              <div className="bg-white rounded-lg shadow p-4">
+                <p className="text-sm text-gray-500">Approved Claims</p>
+                <p className="text-2xl font-bold text-green-600">{claimsStats.totalApprovedClaims}</p>
               </div>
               <div className="bg-white rounded-lg shadow p-4">
                 <p className="text-sm text-gray-500">Pending Review</p>
-                <p className="text-2xl font-bold text-yellow-600">15</p>
-              </div>
-              <div className="bg-white rounded-lg shadow p-4">
-                <p className="text-sm text-gray-500">Approved Today</p>
-                <p className="text-2xl font-bold text-green-600">28</p>
+                <p className="text-2xl font-bold text-yellow-600">{claimsStats.pendingClaims}</p>
               </div>
               <div className="bg-white rounded-lg shadow p-4">
                 <p className="text-sm text-gray-500">Total Amount</p>
-                <p className="text-2xl font-bold text-blue-600">Rs. 45.2K</p>
+                <p className="text-2xl font-bold text-blue-600">Rs. {claimsStats.totalAmount}K</p>
               </div>
             </div>
 
-            {/* Claims Table */}
-            <div className="bg-white rounded-lg shadow overflow-hidden">
-              <div className="p-3 lg:p-4 border-b border-gray-200">
-                <div className="flex flex-col sm:flex-row gap-2 lg:gap-4">
-                  <input
-                    type="text"
-                    placeholder="Search by claim ID or patient name..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="flex-1 px-3 lg:px-4 py-2 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm lg:text-base"
-                  />
-                  <select
-                    value={statusFilter}
-                    onChange={(e) => setStatusFilter(e.target.value)}
-                    className="px-3 lg:px-4 py-2 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm lg:text-base"
-                  >
+            {/* Claims Table or Submit Form */}
+            {showSubmitForm ? (
+              <SubmitClaimForm
+                onCancel={() => setShowSubmitForm(false)}
+                onSuccess={() => {
+                  setShowSubmitForm(false);
+                }}
+              />
+            ) : (
+              <div className="bg-white rounded-lg shadow overflow-hidden">
+                <div className="p-3 lg:p-4 border-b border-gray-200">
+                  <div className="flex flex-col sm:flex-row gap-2 lg:gap-4">
+                    <input
+                      type="text"
+                      placeholder="Search by claim ID or patient name..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="flex-1 px-3 lg:px-4 py-2 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm lg:text-base"
+                    />
+                    <select
+                      value={statusFilter}
+                      onChange={(e) => setStatusFilter(e.target.value)}
+                      className="px-3 lg:px-4 py-2 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm lg:text-base"
+                    >
                     <option>All Status</option>
                     <option>Pending</option>
                     <option>Approved</option>
@@ -323,7 +359,7 @@ export default function HospitalClaimsPage() {
                         </td>
                       </tr>
                     ) : (
-                      filteredClaims.map((claim) => {
+                      displayedClaims.map((claim) => {
                         const hasAlert = hasUnreadAlert(claim.id, "hospital");
                         return (
                           <tr
@@ -383,8 +419,99 @@ export default function HospitalClaimsPage() {
                     )}
                   </tbody>
                 </table>
+
+                {/* Pagination Info */}
+                {filteredClaims.length > 0 && (
+                  <div className="mt-6 bg-white rounded-lg shadow-sm border border-gray-200 px-6 py-3">
+                    <div className="flex flex-col sm:flex-row items-center sm:justify-between gap-3">
+                      <div className="flex items-center space-x-4">
+                        <p className="text-sm text-gray-700">
+                          Showing{" "}
+                          <span className="font-medium">
+                            {filteredClaims.length === 0
+                              ? 0
+                              : (currentPage - 1) * itemsPerPage + 1}
+                          </span>{" "}
+                          to{" "}
+                          <span className="font-medium">
+                            {Math.min(
+                              filteredClaims.length,
+                              currentPage * itemsPerPage
+                            )}
+                          </span>{" "}
+                          of{" "}
+                          <span className="font-medium">{filteredClaims.length}</span>{" "}
+                          claims
+                          {filteredClaims.length !== allClaims.length && (
+                            <span className="text-gray-500">
+                              {" "}
+                              (filtered from {allClaims.length} total)
+                            </span>
+                          )}
+                        </p>
+
+                        <label className="text-sm text-gray-600">Items per page:</label>
+                        <select
+                          value={itemsPerPage}
+                          onChange={(e) => setItemsPerPage(Number(e.target.value))}
+                          className="px-2 py-1 border border-gray-300 rounded-md text-sm"
+                        >
+                          <option value={5}>5</option>
+                          <option value={10}>10</option>
+                          <option value={20}>20</option>
+                          <option value={50}>50</option>
+                        </select>
+                      </div>
+
+                      <div className="flex items-center space-x-2">
+                        <button
+                          onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                          disabled={currentPage === 1}
+                          className={`px-3 py-1 text-sm rounded-md border ${
+                            currentPage === 1
+                              ? "text-gray-300 border-gray-200 bg-gray-50"
+                              : "text-gray-500 border-gray-300 bg-white hover:bg-gray-50"
+                          }`}
+                        >
+                          Previous
+                        </button>
+
+                        {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                          (p) => (
+                            <button
+                              key={p}
+                              onClick={() => setCurrentPage(p)}
+                              className={`px-3 py-1 text-sm rounded-md border ${
+                                p === currentPage
+                                  ? "text-white bg-blue-600 border-blue-600"
+                                  : "text-gray-500 bg-white border-gray-300 hover:bg-gray-50"
+                              }`}
+                            >
+                              {p}
+                            </button>
+                          )
+                        )}
+
+                        <button
+                          onClick={() =>
+                            setCurrentPage((p) => Math.min(totalPages, p + 1))
+                          }
+                          disabled={currentPage === totalPages}
+                          className={`px-3 py-1 text-sm rounded-md border ${
+                            currentPage === totalPages
+                              ? "text-gray-300 border-gray-200 bg-gray-50"
+                              : "text-gray-500 border-gray-300 bg-white hover:bg-gray-50"
+                          }`}
+                        >
+                          Next
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
+            )}
 
             {selectedClaimId && (
               <ClaimDetailsModal
@@ -397,6 +524,7 @@ export default function HospitalClaimsPage() {
                 claimData={allClaims.find((c) => c.id === selectedClaimId)}
               />
             )}
+
             {/* Upload Modal */}
             {uploadModalOpen && (
               <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 py-6">

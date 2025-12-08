@@ -13,12 +13,12 @@
     "amountClaimed": 125000,
     "approvedAmount": 0,
     "treatmentCategory": "Surgery",
-    "admissionDate": "2025-09-28",
-    "dischargeDate": "2025-09-30",
+    "admissionDate": "2025-10-02",
+    "dischargeDate": "2025-10-04",
     "documents": ["doc-1001", "doc-1002"],
     "events": [
       {
-        "ts": "2025-09-30T08:30:00Z",
+        "ts": "2025-10-04T08:30:00Z",
         "actorName": "Ali Raza",
         "actorRole": "Employee",
         "action": "Submitted claim",
@@ -26,9 +26,89 @@
         "to": "Pending"
       }
     ],
-    "createdAt": "2025-09-30T08:30:00Z",
-    "updatedAt": "2025-09-30T08:30:00Z",
+    "createdAt": "2025-10-04T08:30:00Z",
+    "updatedAt": "2025-10-04T08:30:00Z",
     "fraudRiskScore": 0.05,
+    "priority": "Normal"
+  },
+  {
+    "id": "clm-0001a",
+    "claimNumber": "CLM-2025-0001A",
+    "employeeId": "emp-001",
+    "employeeName": "Ali Raza",
+    "corporateId": "corp-001",
+    "corporateName": "Acme Ltd",
+    "hospitalId": "hosp-002",
+    "hospitalName": "Eastside Medical Center",
+    "planId": "plan-acme-gold-2025",
+    "status": "Approved",
+    "amountClaimed": 45000,
+    "approvedAmount": 45000,
+    "treatmentCategory": "Consultation",
+    "admissionDate": "2025-10-01",
+    "dischargeDate": "2025-10-02",
+    "documents": ["doc-1010", "doc-1011"],
+    "events": [
+      {
+        "ts": "2025-10-02T10:00:00Z",
+        "actorName": "Ali Raza",
+        "actorRole": "Employee",
+        "action": "Submitted claim",
+        "from": null,
+        "to": "Pending"
+      },
+      {
+        "ts": "2025-10-03T14:30:00Z",
+        "actorName": "Claims Team",
+        "actorRole": "Insurer",
+        "action": "Approved claim",
+        "from": "Pending",
+        "to": "Approved"
+      }
+    ],
+    "createdAt": "2025-10-02T10:00:00Z",
+    "updatedAt": "2025-10-03T14:30:00Z",
+    "fraudRiskScore": 0.08,
+    "priority": "Normal"
+  },
+  {
+    "id": "clm-0001b",
+    "claimNumber": "CLM-2025-0001B",
+    "employeeId": "emp-001",
+    "employeeName": "Ali Raza",
+    "corporateId": "corp-001",
+    "corporateName": "Acme Ltd",
+    "hospitalId": "hosp-003",
+    "hospitalName": "NorthCare Hospital",
+    "planId": "plan-acme-gold-2025",
+    "status": "Approved",
+    "amountClaimed": 78000,
+    "approvedAmount": 78000,
+    "treatmentCategory": "Lab Tests",
+    "admissionDate": "2025-09-30",
+    "dischargeDate": "2025-10-01",
+    "documents": ["doc-1012", "doc-1013"],
+    "events": [
+      {
+        "ts": "2025-10-01T11:15:00Z",
+        "actorName": "Ali Raza",
+        "actorRole": "Employee",
+        "action": "Submitted claim",
+        "from": null,
+        "to": "Pending"
+      },
+      {
+        "ts": "2025-10-01T09:45:00Z",
+        "actorName": "Claims Team",
+        "actorRole": "Insurer",
+        "action": "Approved claim",
+        "from": "Pending",
+        "to": "Approved"
+      }
+    ],
+    "createdAt": "2025-10-01T11:15:00Z",
+    "updatedAt": "2025-10-01T09:45:00Z",
+    "fraudRiskScore": 0.03,
     "priority": "Normal"
   },
   {

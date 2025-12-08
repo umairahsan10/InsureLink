@@ -9,6 +9,9 @@ import { sortClaimsByDateDesc } from "@/lib/sort";
 const claimsData = claimsDataRaw as Claim[];
 
 export default function PatientHistoryPage() {
+  // Get claims for patient emp-001 (Ali Raza)
+  const patientId = "emp-001";
+  
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("All Status");
   const [selectedDateRange, setSelectedDateRange] = useState("All Time");
@@ -19,7 +22,7 @@ export default function PatientHistoryPage() {
 
   // Filter claims based on search term, status, and date range
   const filteredClaims = useMemo(() => {
-    let filtered = claimsData;
+    let filtered = claimsData.filter((claim) => claim.employeeId === patientId);
 
     // Filter by search term (claim ID or hospital name)
     if (searchTerm) {
@@ -132,19 +135,19 @@ export default function PatientHistoryPage() {
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
             <p className="text-sm text-gray-500 mb-1">Total Claims</p>
             <p className="text-2xl font-bold text-gray-900">
-              {claimsData.length}
+              {claimsData.filter((claim) => claim.employeeId === patientId).length}
             </p>
           </div>
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
             <p className="text-sm text-gray-500 mb-1">Approved</p>
             <p className="text-2xl font-bold text-green-600">
-              {claimsData.filter((claim) => claim.status === "Approved").length}
+              {claimsData.filter((claim) => claim.employeeId === patientId && claim.status === "Approved").length}
             </p>
           </div>
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
             <p className="text-sm text-gray-500 mb-1">Pending</p>
             <p className="text-2xl font-bold text-yellow-600">
-              {claimsData.filter((claim) => claim.status === "Pending").length}
+              {claimsData.filter((claim) => claim.employeeId === patientId && claim.status === "Pending").length}
             </p>
           </div>
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
@@ -152,10 +155,12 @@ export default function PatientHistoryPage() {
             <p className="text-2xl font-bold text-blue-600">
               Rs.{" "}
               {Math.round(
-                claimsData.reduce(
-                  (sum, claim) => sum + claim.amountClaimed,
-                  0
-                ) / 1000
+                claimsData
+                  .filter((claim) => claim.employeeId === patientId)
+                  .reduce(
+                    (sum, claim) => sum + claim.amountClaimed,
+                    0
+                  ) / 1000
               )}
               K
             </p>
