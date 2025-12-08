@@ -77,8 +77,7 @@ export default function SubmitClaimForm({
     }
     if (formData.admissionDate && formData.dischargeDate) {
       if (new Date(formData.admissionDate) > new Date(formData.dischargeDate)) {
-        newErrors.dischargeDate =
-          "Discharge date must be after admission date";
+        newErrors.dischargeDate = "Discharge date must be after admission date";
       }
     }
     if (!formData.treatmentCategory.trim()) {
@@ -138,7 +137,9 @@ export default function SubmitClaimForm({
 
       // Generate new claim ID
       const newClaimId = `clm-${Date.now()}`;
-      const claimNumber = `CLM-${new Date().getFullYear()}-${String(claimsData.length + 1).padStart(4, "0")}`;
+      const claimNumber = `CLM-${new Date().getFullYear()}-${String(
+        claimsData.length + 1
+      ).padStart(4, "0")}`;
 
       console.log("New claim submitted:", {
         id: newClaimId,
@@ -215,9 +216,7 @@ export default function SubmitClaimForm({
             value={formData.employeeId}
             onChange={handleEmployeeChange}
             className={`w-full px-4 py-2 border rounded-lg text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-              errors.employeeId
-                ? "border-red-500"
-                : "border-gray-300"
+              errors.employeeId ? "border-red-500" : "border-gray-300"
             }`}
           >
             <option value="">Select a patient...</option>
@@ -247,13 +246,13 @@ export default function SubmitClaimForm({
               min="0"
               step="100"
               className={`w-full px-4 py-2 border rounded-lg text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                errors.amountClaimed
-                  ? "border-red-500"
-                  : "border-gray-300"
+                errors.amountClaimed ? "border-red-500" : "border-gray-300"
               }`}
             />
             {errors.amountClaimed && (
-              <p className="mt-1 text-sm text-red-600">{errors.amountClaimed}</p>
+              <p className="mt-1 text-sm text-red-600">
+                {errors.amountClaimed}
+              </p>
             )}
             {formData.amountClaimed && !errors.amountClaimed && (
               <p className="mt-1 text-sm text-gray-600">
@@ -272,9 +271,7 @@ export default function SubmitClaimForm({
               value={formData.treatmentCategory}
               onChange={handleInputChange}
               className={`w-full px-4 py-2 border rounded-lg text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                errors.treatmentCategory
-                  ? "border-red-500"
-                  : "border-gray-300"
+                errors.treatmentCategory ? "border-red-500" : "border-gray-300"
               }`}
             >
               <option value="">Select treatment category...</option>
@@ -304,13 +301,13 @@ export default function SubmitClaimForm({
               value={formData.admissionDate}
               onChange={handleInputChange}
               className={`w-full px-4 py-2 border rounded-lg text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                errors.admissionDate
-                  ? "border-red-500"
-                  : "border-gray-300"
+                errors.admissionDate ? "border-red-500" : "border-gray-300"
               }`}
             />
             {errors.admissionDate && (
-              <p className="mt-1 text-sm text-red-600">{errors.admissionDate}</p>
+              <p className="mt-1 text-sm text-red-600">
+                {errors.admissionDate}
+              </p>
             )}
           </div>
 
@@ -324,13 +321,13 @@ export default function SubmitClaimForm({
               value={formData.dischargeDate}
               onChange={handleInputChange}
               className={`w-full px-4 py-2 border rounded-lg text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                errors.dischargeDate
-                  ? "border-red-500"
-                  : "border-gray-300"
+                errors.dischargeDate ? "border-red-500" : "border-gray-300"
               }`}
             />
             {errors.dischargeDate && (
-              <p className="mt-1 text-sm text-red-600">{errors.dischargeDate}</p>
+              <p className="mt-1 text-sm text-red-600">
+                {errors.dischargeDate}
+              </p>
             )}
           </div>
         </div>

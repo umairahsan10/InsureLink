@@ -14,7 +14,7 @@ const claimsData = claimsDataRaw as Claim[];
 export default function PatientDashboardPage() {
   // Get claims for patient emp-001 (Ali Raza)
   const patientId = "emp-001";
-  
+
   const patientClaims = useMemo(() => {
     return claimsData.filter((claim) => claim.employeeId === patientId);
   }, []);

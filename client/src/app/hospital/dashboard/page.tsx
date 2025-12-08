@@ -48,8 +48,10 @@ export default function HospitalDashboardPage() {
 
   // Calculate hospital-specific statistics
   const hospitalStats = {
-    patientsToday: 24, // This would come from hospital-specific data
-    claimsSubmitted: analyticsData.claimsByStatus.Pending,
+    patientsToday:
+      analyticsData.monthlyTrends[analyticsData.monthlyTrends.length - 1]
+        ?.count || 0, // Latest month's patient count
+    claimsSubmitted: analyticsData.totalClaims,
     pendingApproval: analyticsData.claimsByStatus.Pending,
     approvedToday: analyticsData.claimsByStatus.Approved,
   };
