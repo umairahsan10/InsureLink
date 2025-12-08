@@ -1,30 +1,38 @@
-import { NextRequest, NextResponse } from 'next/server';
-import claimsData from '@/data/claims.json';
+import { NextRequest, NextResponse } from "next/server";
+import claimsData from "@/data/claims.json";
 
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
-    const employeeId = searchParams.get('employeeId');
-    const corporateId = searchParams.get('corporateId');
-    const hospitalId = searchParams.get('hospitalId');
-    const status = searchParams.get('status');
+    const employeeId = searchParams.get("employeeId");
+    const corporateId = searchParams.get("corporateId");
+    const hospitalId = searchParams.get("hospitalId");
+    const status = searchParams.get("status");
 
     let filteredClaims = claimsData;
 
     if (employeeId) {
-      filteredClaims = filteredClaims.filter(claim => claim.employeeId === employeeId);
+      filteredClaims = filteredClaims.filter(
+        (claim) => claim.employeeId === employeeId
+      );
     }
 
     if (corporateId) {
-      filteredClaims = filteredClaims.filter(claim => claim.corporateId === corporateId);
+      filteredClaims = filteredClaims.filter(
+        (claim) => claim.corporateId === corporateId
+      );
     }
 
     if (hospitalId) {
-      filteredClaims = filteredClaims.filter(claim => claim.hospitalId === hospitalId);
+      filteredClaims = filteredClaims.filter(
+        (claim) => claim.hospitalId === hospitalId
+      );
     }
 
     if (status) {
-      filteredClaims = filteredClaims.filter(claim => claim.status === status);
+      filteredClaims = filteredClaims.filter(
+        (claim) => claim.status === status
+      );
     }
 
     return NextResponse.json({
@@ -35,7 +43,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(
       {
         success: false,
-        error: 'Failed to fetch claims',
+        error: "Failed to fetch claims",
       },
       { status: 500 }
     );
@@ -51,7 +59,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Missing required fields',
+          error: "Missing required fields",
         },
         { status: 400 }
       );
@@ -62,35 +70,35 @@ export async function POST(request: NextRequest) {
       id: `clm-${Date.now()}`,
       claimNumber: `CLM-2025-${Date.now().toString().slice(-4)}`,
       ...body,
-      status: 'Submitted',
+      status: "Pending",
       approvedAmount: 0,
       documents: [],
       events: [
         {
           ts: new Date().toISOString(),
-          actorName: body.employeeName || 'Employee',
-          actorRole: 'Employee',
-          action: 'Submitted claim',
+          actorName: body.employeeName || "Employee",
+          actorRole: "Employee",
+          action: "Submitted claim",
           from: null,
-          to: 'Submitted',
+          to: "Pending",
         },
       ],
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       fraudRiskScore: 0,
-      priority: 'Normal',
+      priority: "Normal",
     };
 
     return NextResponse.json({
       success: true,
       data: newClaim,
-      message: 'Claim submitted successfully',
+      message: "Claim submitted successfully",
     });
   } catch {
     return NextResponse.json(
       {
         success: false,
-        error: 'Failed to submit claim',
+        error: "Failed to submit claim",
       },
       { status: 500 }
     );

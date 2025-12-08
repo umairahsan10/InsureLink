@@ -1,85 +1,84 @@
-import KeyMetrics from '@/components/corporate/KeyMetrics';
-import CoverageOverview from '@/components/corporate/CoverageOverview';
-import EmployeeCoverageStatus from '@/components/corporate/EmployeeCoverageStatus';
-import RecentClaimsOverview from '@/components/corporate/RecentClaimsOverview';
-import QuickActions from '@/components/corporate/QuickActions';
+import KeyMetrics from "@/components/corporate/KeyMetrics";
+import CoverageOverview from "@/components/corporate/CoverageOverview";
+import EmployeeCoverageStatus from "@/components/corporate/EmployeeCoverageStatus";
+import RecentClaimsOverview from "@/components/corporate/RecentClaimsOverview";
+import claims from "@/data/claims.json";
+import corporates from "@/data/corporates.json";
+import { formatPKR, formatPKRShort } from "@/lib/format";
 
-// Sample data matching the image
-const sampleEmployeeData = [
-  {
-    name: 'Ahmed Khan',
-    cnic: '42101-1234567-8',
-    department: 'Engineering',
-    coverageUsed: 35,
-    totalCoverage: 'Rs. 200,000',
-  },
-  {
-    name: 'Sara Ahmed',
-    cnic: '42101-9876543-2',
-    department: 'Marketing',
-    coverageUsed: 68,
-    totalCoverage: 'Rs. 200,000',
-  },
-  {
-    name: 'Ali Hassan',
-    cnic: '42101-5555555-5',
-    department: 'Finance',
-    coverageUsed: 22,
-    totalCoverage: 'Rs. 200,000',
-  },
-];
+import type { Claim } from "@/types/claims";
 
-const sampleClaimsData = [
-  {
-    employee: 'Ahmed Khan',
-    claimId: 'CLM-301',
-    amount: 'Rs. 28,000',
-    hospital: 'City General Hospital',
-    date: '2024-01-15',
-    status: 'Approved' as const,
-  },
-  {
-    employee: 'Sara Ahmed',
-    claimId: 'CLM-302',
-    amount: 'Rs. 45,000',
-    hospital: 'Metro Medical Center',
-    date: '2024-01-14',
-    status: 'Pending' as const,
-  },
-  {
-    employee: 'Ali Hassan',
-    claimId: 'CLM-303',
-    amount: 'Rs. 15,000',
-    hospital: 'District Hospital',
-    date: '2024-01-13',
-    status: 'Paid' as const,
-  },
-];
+interface CorporateRecord {
+  id: string;
+  name: string;
+  totalEmployees?: number;
+}
+
+// Use the first corporate as the default sample (Acme Ltd)
+const corporatesData = corporates as CorporateRecord[];
+const corp = corporatesData[0];
+const corpClaims = (claims as Claim[]).filter((c) => c.corporateId === corp.id);
+const totalEmployees = corp?.totalEmployees ?? 0;
+const activeClaims = corpClaims.filter((c) => c.status === "Pending").length;
+const totalClaimsCostNum = corpClaims.reduce(
+  (s, c) => s + (c.amountClaimed || 0),
+  0
+);
+const totalClaimsCost = formatPKRShort(totalClaimsCostNum);
+
+// Derive a simple coverage overview from corp totals (used=claims total, pool=3x claims total)
+const totalCoveragePoolNum = Math.round(totalClaimsCostNum * 3);
+const usedCoverageNum = totalClaimsCostNum;
+const availableCoverageNum = Math.max(
+  0,
+  totalCoveragePoolNum - usedCoverageNum
+);
+const utilizationPercentage =
+  totalCoveragePoolNum > 0
+    ? Math.round((usedCoverageNum / totalCoveragePoolNum) * 100)
+    : 0;
+
+const recentClaims = corpClaims
+  .slice()
+  .sort(
+    (a, b) =>
+      new Date(b.createdAt || b.admissionDate).getTime() -
+      new Date(a.createdAt || a.admissionDate).getTime()
+  )
+  .slice(0, 5)
+  .map((c) => ({
+    employee: c.employeeName || "—",
+    claimId: c.claimNumber || c.id,
+    amount: formatPKR(c.amountClaimed || 0),
+    hospital: c.hospitalName || "—",
+    date: c.createdAt || c.admissionDate,
+    status: c.status,
+  }));
 
 export default function CorporateDashboard() {
   return (
     <div className="p-5 md:p-6 lg:p-8">
       {/* Key Metrics Cards */}
       <KeyMetrics
-        totalEmployees={248}
-        activeClaims={15}
-        totalClaimsCost="Rs. 1.2M"
-        coverageUtilization={42}
+        totalEmployees={totalEmployees}
+        activeClaims={activeClaims}
+        totalClaimsCost={totalClaimsCost}
+        coverageUtilization={utilizationPercentage}
       />
 
       {/* Company Coverage Overview */}
       <CoverageOverview
-        totalCoveragePool="Rs. 49.6M"
-        usedCoverage="Rs. 20.8M"
-        availableCoverage="Rs. 28.8M"
-        utilizationPercentage={41.9}
+        totalCoveragePool={formatPKR(totalCoveragePoolNum)}
+        usedCoverage={formatPKR(usedCoverageNum)}
+        availableCoverage={formatPKR(availableCoverageNum)}
+        utilizationPercentage={utilizationPercentage}
       />
 
-      {/* Employee Coverage Status Table */}
-      <EmployeeCoverageStatus employees={sampleEmployeeData} />
+      {/* Employee Coverage Status Table (uses placeholder employees) */}
+      <EmployeeCoverageStatus employees={[]} />
 
       {/* Recent Claims Overview Table */}
-      <RecentClaimsOverview claims={sampleClaimsData} />
+      <RecentClaimsOverview claims={recentClaims} />
 
       {/* Quick Actions */}
       {/* <QuickActions /> */}

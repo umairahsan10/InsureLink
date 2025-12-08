@@ -1,39 +1,68 @@
+import claims from "@/data/claims.json";
+import type { Claim } from "@/types/claims";
+import { formatPKRShort, formatPKR } from "@/lib/format";
+import { sortClaimsByDateDesc } from "@/lib/sort";
+
 export default function InsurerDashboard() {
+  const allClaims = claims as Claim[];
+  const totalClaims = allClaims.length;
+  const pending = allClaims.filter((c) => c.status === "Pending").length;
+  const approved = allClaims.filter((c) => c.status === "Approved").length;
+  const approvalRate =
+    totalClaims === 0 ? 0 : Math.round((approved / totalClaims) * 100);
+  const totalPayout = allClaims
+    .filter((c) => c.status === "Approved")
+    .reduce((s, c) => s + (c.amountClaimed || 0), 0);
+  const highPriority = sortClaimsByDateDesc(
+    allClaims.filter((c) => c.priority === "High")
+  )
+    .slice(0, 3)
+    .map((c) => ({
+      id: c.id,
+      patient: c.employeeName || c.claimNumber || c.id,
+      amount: formatPKR(c.amountClaimed || 0),
+      hospital: c.hospitalName || "—",
+    }));
+
   return (
     <div className="p-8">
-      <h1 className="text-3xl font-bold text-gray-900 mb-6">Insurer Dashboard</h1>
-      
+      <h1 className="text-3xl font-bold text-gray-900 mb-6">
+        Insurer Dashboard
+      </h1>
+
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
         <div className="bg-white rounded-lg shadow p-6">
-          <p className="text-sm text-gray-500 mb-2">Claims This Month</p>
-          <p className="text-3xl font-bold text-blue-600">1,247</p>
+          <p className="text-sm text-gray-500 mb-2">Claims Total</p>
+          <p className="text-3xl font-bold text-blue-600">
+            {totalClaims.toLocaleString()}
+          </p>
         </div>
-        
+
         <div className="bg-white rounded-lg shadow p-6">
           <p className="text-sm text-gray-500 mb-2">Pending Review</p>
-          <p className="text-3xl font-bold text-yellow-600">83</p>
+          <p className="text-3xl font-bold text-yellow-600">{pending}</p>
         </div>
-        
+
         <div className="bg-white rounded-lg shadow p-6">
           <p className="text-sm text-gray-500 mb-2">Approval Rate</p>
-          <p className="text-3xl font-bold text-green-600">87%</p>
+          <p className="text-3xl font-bold text-green-600">{approvalRate}%</p>
         </div>
-        
+
         <div className="bg-white rounded-lg shadow p-6">
           <p className="text-sm text-gray-500 mb-2">Total Payout</p>
-          <p className="text-3xl font-bold text-purple-600">Rs. 2.8M</p>
+          <p className="text-3xl font-bold text-purple-600">
+            {formatPKRShort(totalPayout)}
+          </p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">High Priority Claims</h2>
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">
+            High Priority Claims
+          </h2>
           <div className="space-y-3">
-            {[
-              { id: 'CLM-8921', patient: 'John Doe', amount: 'Rs. 5,200', hospital: 'City General' },
-              { id: 'CLM-8920', patient: 'Mary Johnson', amount: 'Rs. 3,100', hospital: 'St. Mary\'s' },
-              { id: 'CLM-8919', patient: 'Robert Smith', amount: 'Rs. 4,800', hospital: 'County Hospital' },
-            ].map((claim) => (
+            {highPriority.map((claim) => (
               <div key={claim.id} className="p-3 bg-gray-50 rounded">
                 <div className="flex justify-between items-start mb-1">
                   <div>
@@ -49,7 +78,9 @@ export default function InsurerDashboard() {
         </div>
 
         <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Network Summary</h2>
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">
+            Network Summary
+          </h2>
           <div className="space-y-4">
             <div className="p-3 bg-blue-50 rounded">
               <div className="flex justify-between items-center">
@@ -58,19 +89,23 @@ export default function InsurerDashboard() {
               </div>
               <p className="text-xs text-gray-600 mt-1">3 pending approval</p>
             </div>
-            
+
             <div className="p-3 bg-green-50 rounded">
               <div className="flex justify-between items-center">
                 <span className="text-gray-700">Corporate Clients</span>
                 <span className="text-2xl font-bold text-green-600">142</span>
               </div>
-              <p className="text-xs text-gray-600 mt-1">18,200 covered employees</p>
+              <p className="text-xs text-gray-600 mt-1">
+                18,200 covered employees
+              </p>
             </div>
-            
+
             <div className="p-3 bg-purple-50 rounded">
               <div className="flex justify-between items-center">
                 <span className="text-gray-700">Individual Policies</span>
-                <span className="text-2xl font-bold text-purple-600">10.3K</span>
+                <span className="text-2xl font-bold text-purple-600">
+                  10.3K
+                </span>
               </div>
               <p className="text-xs text-gray-600 mt-1">Active policyholders</p>
             </div>
@@ -80,4 +115,3 @@ export default function InsurerDashboard() {
     </div>
   );
 }
-

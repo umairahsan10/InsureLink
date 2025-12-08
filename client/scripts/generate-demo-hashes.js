@@ -9,6 +9,8 @@
  * The output JSON is stored at `src/data/demoDocHashes.json`.
  */
 
+/* eslint-disable @typescript-eslint/no-require-imports */
+
 const fs = require("fs/promises");
 const path = require("path");
 const crypto = require("crypto");
@@ -16,7 +18,12 @@ const { Jimp, intToRGBA } = require("jimp");
 
 const PROJECT_ROOT = path.resolve(__dirname, "..");
 const DEMO_DOCS_DIR = path.join(PROJECT_ROOT, "public", "demo-docs");
-const OUTPUT_PATH = path.join(PROJECT_ROOT, "src", "data", "demoDocHashes.json");
+const OUTPUT_PATH = path.join(
+  PROJECT_ROOT,
+  "src",
+  "data",
+  "demoDocHashes.json"
+);
 const VALID_EXTENSIONS = [".png", ".jpg", ".jpeg"];
 
 const bitsToHex = (bits) => {
@@ -44,8 +51,10 @@ const computeDHash = async (filePath) => {
     for (let x = 0; x < 8; x += 1) {
       const leftColor = intToRGBA(resized.getPixelColor(x, y));
       const rightColor = intToRGBA(resized.getPixelColor(x + 1, y));
-      const left = 0.299 * leftColor.r + 0.587 * leftColor.g + 0.114 * leftColor.b;
-      const right = 0.299 * rightColor.r + 0.587 * rightColor.g + 0.114 * rightColor.b;
+      const left =
+        0.299 * leftColor.r + 0.587 * leftColor.g + 0.114 * leftColor.b;
+      const right =
+        0.299 * rightColor.r + 0.587 * rightColor.g + 0.114 * rightColor.b;
       bits += left > right ? "1" : "0";
     }
   }
@@ -89,4 +98,3 @@ main().catch((error) => {
   console.error("Failed to generate hashes:", error);
   process.exitCode = 1;
 });
-

@@ -1,15 +1,28 @@
-import ClaimStatusBadge from './ClaimStatusBadge';
+import ClaimStatusBadge from "./ClaimStatusBadge";
 
 interface ClaimCardProps {
   id: string;
   patient: string;
   date: string;
   amount: string;
-  status: 'Approved' | 'Pending' | 'Rejected' | 'Under Review';
+  status: "Approved" | "Pending" | "Rejected" | string;
   description?: string;
 }
 
-export default function ClaimCard({ id, patient, date, amount, status, description }: ClaimCardProps) {
+export default function ClaimCard({
+  id,
+  patient,
+  date,
+  amount,
+  status,
+  description,
+}: ClaimCardProps) {
+  const normalizedStatus: "Approved" | "Pending" | "Rejected" =
+    status === "Approved"
+      ? "Approved"
+      : status === "Rejected"
+      ? "Rejected"
+      : "Pending";
   return (
     <div className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow">
       <div className="flex justify-between items-start mb-4">
@@ -17,7 +30,7 @@ export default function ClaimCard({ id, patient, date, amount, status, descripti
           <h3 className="text-lg font-semibold text-gray-900">{id}</h3>
           <p className="text-sm text-gray-600">{patient}</p>
         </div>
-        <ClaimStatusBadge status={status} />
+        <ClaimStatusBadge status={normalizedStatus} />
       </div>
 
       {description && (
@@ -41,4 +54,3 @@ export default function ClaimCard({ id, patient, date, amount, status, descripti
     </div>
   );
 }
-

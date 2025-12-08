@@ -1,12 +1,4 @@
-export type ClaimStatus = 
-  | 'Submitted' 
-  | 'DocumentsUploaded' 
-  | 'UnderReview' 
-  | 'MoreInfoRequested' 
-  | 'PendingApproval' 
-  | 'Approved' 
-  | 'Rejected' 
-  | 'Paid';
+export type ClaimStatus = "Pending" | "Approved" | "Rejected";
 
 export interface ClaimEvent {
   ts: string;
@@ -38,7 +30,7 @@ export interface Claim {
   createdAt: string;
   updatedAt: string;
   fraudRiskScore: number;
-  priority: 'Normal' | 'High' | 'Low';
+  priority: "Normal" | "High" | "Low";
 }
 
 export interface ClaimFormData {
@@ -64,10 +56,10 @@ export interface ClaimStatistics {
 export interface ClaimDocument {
   id: string;
   claimId: string;
-  type: 'discharge-summary' | 'bill' | 'lab-report' | 'prescription' | 'other';
+  type: "discharge-summary" | "bill" | "lab-report" | "prescription" | "other";
   filename: string;
   url: string;
   uploadedByRole: string;
   uploadedAt: string;
-  status: 'Uploaded' | 'Verified' | 'Rejected';
+  status: "Uploaded" | "Verified" | "Rejected";
 }
