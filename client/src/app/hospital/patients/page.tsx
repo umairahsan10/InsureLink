@@ -18,15 +18,15 @@ export default function HospitalPatientsPage() {
   const [isPatientDetailsOpen, setIsPatientDetailsOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [registeredPatients, setRegisteredPatients] = useState<Patient[]>([]);
 
-  const patients = useMemo(
-    () =>
-      patientsData.map((patient) => ({
-        ...patient,
-        lastVisitDate: new Date(patient.lastVisitDate),
-      })),
-    []
-  );
+  const patients = useMemo(() => {
+    const allPatients = [...patientsData, ...registeredPatients];
+    return allPatients.map((patient) => ({
+      ...patient,
+      lastVisitDate: new Date(patient.lastVisitDate),
+    }));
+  }, [registeredPatients]);
 
   // Get unique insurance types from patients data
   const insuranceTypes = useMemo(() => {
@@ -39,8 +39,8 @@ export default function HospitalPatientsPage() {
     const today = new Date("2025-10-06");
     return {
       totalPatients: patients.length,
-      todaysVisits: patients.filter((p) => 
-        p.lastVisitDate.toDateString() === today.toDateString()
+      todaysVisits: patients.filter(
+        (p) => p.lastVisitDate.toDateString() === today.toDateString()
       ).length,
       withInsurance: patients.filter((p) => p.insured).length,
       activeClaims: patients.filter((p) => p.status === "Active").length,
@@ -77,6 +77,57 @@ export default function HospitalPatientsPage() {
     return filteredPatients.slice(start, start + itemsPerPage);
   }, [filteredPatients, currentPage, itemsPerPage]);
 
+  const handlePatientRegistration = (newPatientData: any) => {
+    // Generate a unique patient ID based on total existing patients
+    const totalExistingPatients =
+      patientsData.length + registeredPatients.length;
+    const newPatientId = `PAT-${1001 + totalExistingPatients}`;
+
+    // Create new patient object with all required fields
+    const newPatient: Patient = {
+      id: newPatientId,
+      employeeId: null,
+      name: newPatientData.name,
+      age: parseInt(newPatientData.age),
+      gender: newPatientData.gender,
+      dateOfBirth: new Date(
+        new Date().getFullYear() - parseInt(newPatientData.age),
+        0,
+        1
+      )
+        .toISOString()
+        .split("T")[0],
+      email: newPatientData.email,
+      mobile: newPatientData.phone,
+      cnic: newPatientData.cnic,
+      address: newPatientData.address,
+      corporateId: null,
+      corporateName: null,
+      planId: null,
+      designation: null,
+      department: null,
+      coverageStart: null,
+      coverageEnd: null,
+      insured: newPatientData.insurance !== "None",
+      insurance: newPatientData.insurance,
+      status: newPatientData.status,
+      bloodGroup: "Unknown",
+      emergencyContact: {
+        name: "",
+        relation: "",
+        phone: "",
+      },
+      medicalHistory: [],
+      allergies: [],
+      lastVisit: new Date().toISOString().split("T")[0],
+      lastVisitDate: new Date().toISOString().split("T")[0],
+      registrationDate: new Date().toISOString().split("T")[0],
+      hasActiveClaims: false,
+    };
+
+    setRegisteredPatients([...registeredPatients, newPatient]);
+  };
+
   return (
     <div className="p-4 lg:p-6">
       <div className="mb-6 flex items-center justify-between">
@@ -90,7 +141,7 @@ export default function HospitalPatientsPage() {
         </div>
         <button
           onClick={() => setIsRegisterModalOpen(true)}
-          className="bg-blue-600 text-white px-3 lg:px-4 py-2 rounded-lg hover:bg-blue-700 text-sm lg:text-base"
+          className="bg-green-600 text-white px-3 lg:px-4 py-2 rounded-lg hover:bg-green-700 text-sm lg:text-base"
         >
           + Register Patient
         </button>
@@ -99,7 +150,9 @@ export default function HospitalPatientsPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <div className="bg-white rounded-lg shadow p-4">
           <p className="text-sm text-gray-500">Total Patients</p>
-          <p className="text-2xl font-bold text-gray-900">{analytics.totalPatients}</p>
+          <p className="text-2xl font-bold text-gray-900">
+            {analytics.totalPatients}
+          </p>
         </div>
         <div className="bg-white rounded-lg shadow p-4">
           <p className="text-sm text-gray-500">Today&apos;s Visits</p>
@@ -322,6 +375,7 @@ export default function HospitalPatientsPage() {
       <PatientRegistrationModal
         isOpen={isRegisterModalOpen}
         onClose={() => setIsRegisterModalOpen(false)}
+        onSuccess={handlePatientRegistration}
       />
 
       {selectedPatientId && (
