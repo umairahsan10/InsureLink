@@ -100,6 +100,8 @@ export default function InsurerClaimsPage() {
           amount: currentClaim.amount,
           priority: currentClaim.priority,
           status: currentClaim.status,
+          treatmentCategory: currentClaim.treatmentCategory,
+          notes: currentClaim.notes,
         });
       }
       return updated;

@@ -10,6 +10,8 @@ export interface ClaimData {
   priority: ClaimPriority;
   status: ClaimStatus;
   isPaid?: boolean;
+  treatmentCategory?: string;
+  notes?: string;
 }
 
 export const CLAIMS_STORAGE_KEY = "insurerClaimsData";
@@ -26,6 +28,8 @@ export const defaultClaimData: ClaimData[] = [
     priority: "Normal",
     status: "Pending",
     isPaid: false,
+    treatmentCategory: "Surgery",
+    notes: "Post-operative follow-up required",
   },
   {
     id: "CLM-2025-0002",
@@ -36,6 +40,8 @@ export const defaultClaimData: ClaimData[] = [
     priority: "Normal",
     status: "Pending",
     isPaid: false,
+    treatmentCategory: "Lab Test",
+    notes: "Routine diagnostic tests",
   },
   {
     id: "CLM-2025-0003",
@@ -46,6 +52,8 @@ export const defaultClaimData: ClaimData[] = [
     priority: "Normal",
     status: "Pending",
     isPaid: false,
+    treatmentCategory: "Consultation",
+    notes: "Specialist consultation included",
   },
   {
     id: "CLM-2025-0004",
@@ -56,6 +64,8 @@ export const defaultClaimData: ClaimData[] = [
     priority: "Normal",
     status: "Pending",
     isPaid: false,
+    treatmentCategory: "X-Ray",
+    notes: "Multiple imaging sessions",
   },
   {
     id: "CLM-2025-0005",
@@ -66,6 +76,8 @@ export const defaultClaimData: ClaimData[] = [
     priority: "High",
     status: "Pending",
     isPaid: false,
+    treatmentCategory: "Emergency Care",
+    notes: "Emergency admission and treatment",
   },
   {
     id: "CLM-2025-0006",
@@ -76,6 +88,8 @@ export const defaultClaimData: ClaimData[] = [
     priority: "Normal",
     status: "Approved",
     isPaid: true,
+    treatmentCategory: "General Checkup",
+    notes: "Annual health checkup",
   },
   {
     id: "CLM-2025-0007",
@@ -86,6 +100,8 @@ export const defaultClaimData: ClaimData[] = [
     priority: "Normal",
     status: "Rejected",
     isPaid: false,
+    treatmentCategory: "Dental",
+    notes: "Dental procedure - incomplete documentation",
   },
   {
     id: "CLM-2025-0008",
@@ -96,6 +112,8 @@ export const defaultClaimData: ClaimData[] = [
     priority: "Normal",
     status: "Approved",
     isPaid: true,
+    treatmentCategory: "Physical Therapy",
+    notes: "Rehabilitation sessions",
   },
   {
     id: "CLM-2025-0009",

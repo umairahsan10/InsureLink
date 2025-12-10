@@ -129,7 +129,9 @@ export default function SubmitClaimForm({
     employeeName: string,
     hospitalName: string,
     amountClaimed: number,
-    admissionDate: string
+    admissionDate: string,
+    treatmentCategory?: string,
+    notes?: string
   ) => {
     if (typeof window === "undefined") {
       return;
@@ -148,6 +150,8 @@ export default function SubmitClaimForm({
         priority: "Normal",
         status: "Pending",
         isPaid: false,
+        treatmentCategory,
+        notes,
       };
 
       // Add the new claim to insurer's claims
@@ -251,33 +255,16 @@ export default function SubmitClaimForm({
         claimNumber,
         employeeId: formData.employeeId,
         employeeName: formData.employeeName,
-        corporateId: "", // Will be set from patient data
-        corporateName: "", // Will be set from patient data
-        hospitalId: "hosp-001", // Current hospital
-        hospitalName: "City General Hospital", // Current hospital
-        planId: "",
+        hospitalId: "hosp-001",
+        hospitalName: "City General Hospital",
         status: "Pending",
         amountClaimed: Number(formData.amountClaimed),
-        approvedAmount: 0,
         treatmentCategory: finalTreatmentCategory,
         admissionDate: formData.admissionDate,
         dischargeDate: formData.dischargeDate,
-        documents: [],
-        events: [
-          {
-            ts: new Date().toISOString(),
-            actorName: "City General Hospital",
-            actorRole: "Hospital",
-            action: "Submitted claim",
-            from: null,
-            to: "Pending",
-          },
-        ],
+        notes: formData.notes,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
-        fraudRiskScore: 0.05,
-        priority: "Normal",
-        notes: formData.notes,
       };
 
       console.log("New claim submitted:", newClaim);
@@ -297,7 +284,9 @@ export default function SubmitClaimForm({
         formData.employeeName,
         "City General Hospital",
         Number(formData.amountClaimed),
-        formData.admissionDate
+        formData.admissionDate,
+        finalTreatmentCategory,
+        formData.notes
       );
 
       // Reset form

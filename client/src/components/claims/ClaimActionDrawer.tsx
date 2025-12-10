@@ -12,6 +12,8 @@ export interface ClaimRecord {
   amount: number | string;
   priority: string;
   status: string;
+  treatmentCategory?: string;
+  notes?: string;
 }
 
 interface ClaimActionDrawerProps {

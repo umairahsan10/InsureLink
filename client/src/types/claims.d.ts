@@ -31,6 +31,8 @@ export interface Claim {
   updatedAt: string;
   fraudRiskScore: number;
   priority: "Normal" | "High" | "Low";
+  treatmentCategory?: string;
+  notes?: string;
 }
 
 export interface ClaimFormData {
