@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import ClaimStatusBadge from "@/components/claims/ClaimStatusBadge";
 import { formatPKR } from "@/lib/format";
@@ -22,8 +22,33 @@ export default function HospitalDashboardPage() {
   const [selectedClaimId, setSelectedClaimId] = useState<string | null>(null);
   const [isClaimDetailsOpen, setIsClaimDetailsOpen] = useState(false);
   const [isClaimEditOpen, setIsClaimEditOpen] = useState(false);
+  const [localClaims, setLocalClaims] = useState<Claim[]>([]);
+  const [isHydrated, setIsHydrated] = useState(false);
   const { hasUnreadAlert } = useClaimsMessaging();
   const router = useRouter();
+  const currentHospitalId = "hosp-001"; // City General Hospital
+
+  // Load claims from localStorage on mount
+  useEffect(() => {
+    const CLAIMS_STORAGE_KEY = "hospital_claims_hosp-001";
+    const savedClaims = localStorage.getItem(CLAIMS_STORAGE_KEY);
+    if (savedClaims) {
+      try {
+        setLocalClaims(JSON.parse(savedClaims));
+      } catch (e) {
+        console.error("Failed to parse saved claims", e);
+      }
+    }
+    setIsHydrated(true);
+  }, []);
+
+  // Save claims to localStorage whenever they change
+  useEffect(() => {
+    if (isHydrated && localClaims.length > 0) {
+      const CLAIMS_STORAGE_KEY = "hospital_claims_hosp-001";
+      localStorage.setItem(CLAIMS_STORAGE_KEY, JSON.stringify(localClaims));
+    }
+  }, [localClaims, isHydrated]);
 
   const handleVerifyPatient = async () => {
     if (!cnicNumber.trim()) return;
@@ -47,24 +72,31 @@ export default function HospitalDashboardPage() {
   };
 
   // Filter claims by hospital ID
-  const currentHospitalId = "hosp-001"; // City General Hospital
-  const allClaims = (claims as Claim[]).filter(
+  const defaultClaims = (claims as Claim[]).filter(
     (claim) => claim.hospitalId === currentHospitalId
   );
 
+  // Combine default claims with locally saved claims
+  const allClaims = [...defaultClaims, ...localClaims];
+
+  // Remove duplicates by ID
+  const uniqueClaims = Array.from(
+    new Map(allClaims.map((claim) => [claim.id, claim])).values()
+  );
+
   // Calculate hospital-specific statistics from filtered claims
-  const pendingClaims = allClaims.filter((c) => c.status === "Pending");
-  const approvedClaims = allClaims.filter((c) => c.status === "Approved");
+  const pendingClaims = uniqueClaims.filter((c) => c.status === "Pending");
+  const approvedClaims = uniqueClaims.filter((c) => c.status === "Approved");
 
   const hospitalStats = {
-    patientsToday: allClaims.length, // Number of unique patients with claims
-    claimsSubmitted: allClaims.length,
+    patientsToday: uniqueClaims.length, // Number of unique patients with claims
+    claimsSubmitted: uniqueClaims.length,
     pendingApproval: pendingClaims.length,
     approvedToday: approvedClaims.length,
   };
 
   // Recent claims for hospital - sorted newest-first
-  const recentClaims = sortClaimsByDateDesc(allClaims)
+  const recentClaims = sortClaimsByDateDesc(uniqueClaims)
     .slice(0, 4)
     .map((c) => ({
       id: c.id,

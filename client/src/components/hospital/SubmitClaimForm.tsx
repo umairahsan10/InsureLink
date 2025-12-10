@@ -4,6 +4,14 @@ import { useState, useMemo } from "react";
 import { formatPKR } from "@/lib/format";
 import patientsDataRaw from "@/data/patients.json";
 import type { Patient } from "@/types/patient";
+import {
+  CLAIMS_STORAGE_KEY,
+  CLAIMS_UPDATED_EVENT,
+  CLAIMS_DATA_VERSION,
+  loadStoredClaims,
+  persistClaims,
+  type ClaimData,
+} from "@/data/claimsData";
 
 interface SubmitClaimFormProps {
   onSuccess?: (claimId: string) => void;
@@ -113,6 +121,41 @@ export default function SubmitClaimForm({
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
+  };
+
+  // Helper function to save claim to insurer's claims storage
+  const saveClaimToInsurerStorage = (
+    claimId: string,
+    employeeName: string,
+    hospitalName: string,
+    amountClaimed: number,
+    admissionDate: string
+  ) => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    try {
+      const storedClaims = loadStoredClaims();
+
+      // Create insurer ClaimData format from hospital submission
+      const insurerClaim: ClaimData = {
+        id: claimId,
+        patient: employeeName,
+        hospital: hospitalName,
+        date: admissionDate,
+        amount: amountClaimed,
+        priority: "Normal",
+        status: "Pending",
+        isPaid: false,
+      };
+
+      // Add the new claim to insurer's claims
+      const updatedClaims = [...storedClaims, insurerClaim];
+      persistClaims(updatedClaims);
+    } catch (error) {
+      console.error("Error saving claim to insurer storage:", error);
+    }
   };
 
   const handleInputChange = (
@@ -243,10 +286,19 @@ export default function SubmitClaimForm({
         `Claim ${claimNumber} submitted successfully! Claim ID: ${newClaimId}`
       );
 
-      // Call onClaimSubmitted callback to save to localStorage
+      // Save claim to hospital's local storage
       if (onClaimSubmitted) {
         onClaimSubmitted(newClaim);
       }
+
+      // Also save to insurer's claims storage so they can see it
+      saveClaimToInsurerStorage(
+        newClaimId,
+        formData.employeeName,
+        "City General Hospital",
+        Number(formData.amountClaimed),
+        formData.admissionDate
+      );
 
       // Reset form
       setFormData({

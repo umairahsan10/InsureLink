@@ -18,6 +18,12 @@ import {
 } from "@/utils/documentVerification";
 import ClaimDetailsModal from "@/components/modals/ClaimDetailsModal";
 import claimsDataRaw from "@/data/claims.json";
+import {
+  CLAIMS_STORAGE_KEY as INSURER_CLAIMS_STORAGE_KEY,
+  CLAIMS_UPDATED_EVENT,
+  loadStoredClaims,
+  type ClaimData,
+} from "@/data/claimsData";
 import { formatPKR } from "@/lib/format";
 import type { Claim } from "@/types/claims";
 
@@ -96,6 +102,75 @@ export default function HospitalClaimsPage() {
   useEffect(() => {
     ensureDemoHashSeeded();
     seedDemoHashesFromImages();
+  }, []);
+
+  // Listen for insurer claim updates and sync status back to hospital storage
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const handleInsurerClaimsUpdate = (event: Event) => {
+      const customEvent = event as CustomEvent<ClaimData[]>;
+      if (customEvent.detail) {
+        const insurerClaims = customEvent.detail;
+
+        // Update local claims with status changes from insurer
+        setLocalClaims((prevClaims) => {
+          const updated = prevClaims.map((claim) => {
+            const insurerClaim = insurerClaims.find((ic) => ic.id === claim.id);
+            if (insurerClaim && insurerClaim.status !== claim.status) {
+              // Update the claim status from insurer
+              return {
+                ...claim,
+                status: insurerClaim.status as
+                  | "Pending"
+                  | "Approved"
+                  | "Rejected",
+                updatedAt: new Date().toISOString(),
+              };
+            }
+            return claim;
+          });
+          return updated;
+        });
+      }
+    };
+
+    const handleStorage = (event: StorageEvent) => {
+      if (event.key === INSURER_CLAIMS_STORAGE_KEY) {
+        // Re-sync from insurer storage when it changes
+        const stored = loadStoredClaims();
+        setLocalClaims((prevClaims) => {
+          const updated = prevClaims.map((claim) => {
+            const insurerClaim = stored.find((ic) => ic.id === claim.id);
+            if (insurerClaim && insurerClaim.status !== claim.status) {
+              return {
+                ...claim,
+                status: insurerClaim.status as
+                  | "Pending"
+                  | "Approved"
+                  | "Rejected",
+                updatedAt: new Date().toISOString(),
+              };
+            }
+            return claim;
+          });
+          return updated;
+        });
+      }
+    };
+
+    window.addEventListener(CLAIMS_UPDATED_EVENT, handleInsurerClaimsUpdate);
+    window.addEventListener("storage", handleStorage);
+
+    return () => {
+      window.removeEventListener(
+        CLAIMS_UPDATED_EVENT,
+        handleInsurerClaimsUpdate
+      );
+      window.removeEventListener("storage", handleStorage);
+    };
   }, []);
 
   const handleClaimSubmitted = (newClaim: Claim) => {

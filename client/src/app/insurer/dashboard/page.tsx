@@ -329,7 +329,7 @@ export default function InsurerDashboardPage() {
               <div className="flex-1 min-w-0">
                 <p className="text-sm text-gray-500 mb-1">Approved Claims</p>
                 <p className="text-2xl md:text-3xl font-bold text-gray-900">
-                  {stats.paidCount}
+                  {stats.approvedCount}
                 </p>
                 <p className="text-xs md:text-sm text-gray-500">
                   {formatCurrency(stats.paidTotal)}
