@@ -4,7 +4,7 @@
     "name": "Acme Ltd",
     "industry": "Technology",
     "planType": "Comprehensive",
-    "premium": "$45K",
+    "premium": "Rs. 45,000",
     "status": "Active",
     "hrContact": {
       "name": "Sara Ahmed",
@@ -21,7 +21,7 @@
     "name": "Beta Systems",
     "industry": "Finance",
     "planType": "Premium",
-    "premium": "$52K",
+    "premium": "Rs. 52,000",
     "status": "Active",
     "hrContact": {
       "name": "Imran Shah",
@@ -38,7 +38,7 @@
     "name": "Noor Foods",
     "industry": "Healthcare",
     "planType": "Basic",
-    "premium": "$31K",
+    "premium": "Rs. 31,000",
     "status": "Active",
     "hrContact": {
       "name": "Fatima Noor",

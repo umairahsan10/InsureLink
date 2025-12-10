@@ -18,6 +18,7 @@ import {
   persistClaims,
 } from "@/data/claimsData";
 import { formatPKR } from "@/lib/format";
+import { sortClaimsByDateDesc } from "@/lib/sort";
 
 export default function InsurerClaimsPage() {
   const router = useRouter();
@@ -113,24 +114,49 @@ export default function InsurerClaimsPage() {
   };
 
   // Filter claims based on search and filters
-  const filteredClaims = claims.filter((claim) => {
-    // Search filter - matches claim ID, patient name, or hospital
-    const matchesSearch =
-      searchQuery === "" ||
-      claim.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      claim.patient.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      claim.hospital.toLowerCase().includes(searchQuery.toLowerCase());
+  const filteredClaims = useMemo(() => {
+    let filtered = claims.filter((claim) => {
+      // Search filter - matches claim ID, patient name, or hospital
+      const matchesSearch =
+        searchQuery === "" ||
+        claim.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        claim.patient.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        claim.hospital.toLowerCase().includes(searchQuery.toLowerCase());
 
-    // Status filter (compare with canonical status values)
-    const matchesStatus =
-      statusFilter === "All Status" || claim.status === statusFilter;
+      // Status filter (compare with canonical status values)
+      const matchesStatus =
+        statusFilter === "All Status" || claim.status === statusFilter;
 
-    // Hospital filter
-    const matchesHospital =
-      hospitalFilter === "All Hospitals" || claim.hospital === hospitalFilter;
+      // Hospital filter
+      const matchesHospital =
+        hospitalFilter === "All Hospitals" || claim.hospital === hospitalFilter;
 
-    return matchesSearch && matchesStatus && matchesHospital;
-  });
+      return matchesSearch && matchesStatus && matchesHospital;
+    });
+
+    // Sort by date (latest to earliest)
+    return sortClaimsByDateDesc(filtered);
+  }, [claims, searchQuery, statusFilter, hospitalFilter]);
+
+  // Calculate analytics from all claims
+  const analytics = useMemo(() => {
+    const totalClaims = claims.length;
+    const pendingCount = claims.filter((c) => c.status === "Pending").length;
+    const approvedCount = claims.filter((c) => c.status === "Approved").length;
+    const rejectedCount = claims.filter((c) => c.status === "Rejected").length;
+    const totalPayout = claims.reduce((sum, claim) => {
+      const amount = typeof claim.amount === "number" ? claim.amount : 0;
+      return claim.status === "Approved" ? sum + amount : sum;
+    }, 0);
+
+    return {
+      totalClaims,
+      pendingCount,
+      approvedCount,
+      rejectedCount,
+      totalPayout,
+    };
+  }, [claims]);
 
   return (
     <DashboardLayout
@@ -151,23 +177,33 @@ export default function InsurerClaimsPage() {
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
           <div className="bg-white rounded-lg shadow p-4">
             <p className="text-sm text-gray-500">Total Claims</p>
-            <p className="text-2xl font-bold text-gray-900">1,247</p>
+            <p className="text-2xl font-bold text-gray-900">
+              {analytics.totalClaims}
+            </p>
           </div>
           <div className="bg-white rounded-lg shadow p-4">
             <p className="text-sm text-gray-500">Pending Review</p>
-            <p className="text-2xl font-bold text-yellow-600">83</p>
+            <p className="text-2xl font-bold text-yellow-600">
+              {analytics.pendingCount}
+            </p>
           </div>
           <div className="bg-white rounded-lg shadow p-4">
             <p className="text-sm text-gray-500">Approved</p>
-            <p className="text-2xl font-bold text-green-600">1,089</p>
+            <p className="text-2xl font-bold text-green-600">
+              {analytics.approvedCount}
+            </p>
           </div>
           <div className="bg-white rounded-lg shadow p-4">
             <p className="text-sm text-gray-500">Rejected</p>
-            <p className="text-2xl font-bold text-red-600">75</p>
+            <p className="text-2xl font-bold text-red-600">
+              {analytics.rejectedCount}
+            </p>
           </div>
           <div className="bg-white rounded-lg shadow p-4">
             <p className="text-sm text-gray-500">Total Payout</p>
-            <p className="text-2xl font-bold text-blue-600">Rs. 2.8M</p>
+            <p className="text-2xl font-bold text-blue-600">
+              {formatPKR(analytics.totalPayout)}
+            </p>
           </div>
         </div>
 

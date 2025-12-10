@@ -26,10 +26,7 @@
       "relation": "Wife",
       "phone": "+92-300-1000099"
     },
-    "medicalHistory": [
-      "Hypertension",
-      "Mild Asthma"
-    ],
+    "medicalHistory": ["Hypertension", "Mild Asthma"],
     "allergies": ["Penicillin"],
     "lastVisit": "2025-10-06",
     "lastVisitDate": "2025-10-06",

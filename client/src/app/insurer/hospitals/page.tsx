@@ -257,7 +257,7 @@ export default function InsurerHospitalsPage() {
                   <td className="px-3 py-3 text-sm w-12">
                     <button 
                       onClick={() => setSelectedHospital(hospital)}
-                      className="text-blue-600 hover:text-blue-800 text-[10px]"
+                      className="text-blue-600 hover:text-blue-800 text-sm font-medium px-3 py-1 rounded hover:bg-blue-50"
                     >
                       View
                     </button>

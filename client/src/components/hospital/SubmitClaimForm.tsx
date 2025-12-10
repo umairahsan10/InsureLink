@@ -34,8 +34,8 @@ export default function SubmitClaimForm({
   // Get patients who are insured (have employee records)
   const insuredPatients = useMemo(() => {
     return patientsData
-      .filter(patient => patient.insured && patient.employeeId)
-      .map(patient => ({
+      .filter((patient) => patient.insured && patient.employeeId)
+      .map((patient) => ({
         id: patient.id,
         employeeId: patient.employeeId!,
         name: patient.name,
@@ -110,7 +110,9 @@ export default function SubmitClaimForm({
 
   const handlePatientChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const selectedId = e.target.value;
-    const selectedPatient = insuredPatients.find((patient) => patient.id === selectedId);
+    const selectedPatient = insuredPatients.find(
+      (patient) => patient.id === selectedId
+    );
     setFormData((prev) => ({
       ...prev,
       patientId: selectedId,
