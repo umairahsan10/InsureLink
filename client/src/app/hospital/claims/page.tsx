@@ -26,6 +26,10 @@ import {
 } from "@/data/claimsData";
 import { formatPKR } from "@/lib/format";
 import type { Claim } from "@/types/claims";
+import {
+  syncHardcodedClaimsToInsurer,
+  syncAllClaimsWithInsurer,
+} from "@/utils/claimsSyncUtils";
 
 const claimsData = claimsDataRaw as Claim[];
 
@@ -52,6 +56,15 @@ export default function HospitalClaimsPage() {
         console.error("Failed to parse saved claims", e);
       }
     }
+
+    // Sync hardcoded claims to insurer's localStorage on mount
+    const defaultClaims = claimsData.filter(
+      (claim) => claim.hospitalId === currentHospitalId
+    );
+    if (defaultClaims.length > 0) {
+      syncHardcodedClaimsToInsurer(defaultClaims);
+    }
+
     setIsHydrated(true);
   }, []);
 
@@ -63,7 +76,7 @@ export default function HospitalClaimsPage() {
     }
   }, [localClaims, isHydrated]);
 
-  // Combine default claims with locally saved claims
+  // Combine default claims with locally saved claims and sync insurer status
   const allClaimsData = useMemo(() => {
     const defaultClaims = claimsData.filter(
       (claim) => claim.hospitalId === currentHospitalId
@@ -74,7 +87,10 @@ export default function HospitalClaimsPage() {
     const uniqueClaims = Array.from(
       new Map(combined.map((claim) => [claim.id, claim])).values()
     );
-    return uniqueClaims;
+
+    // Sync all claims with insurer's latest status
+    const synced = syncAllClaimsWithInsurer(uniqueClaims);
+    return synced;
   }, [localClaims, isHydrated]);
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [resultModalOpen, setResultModalOpen] = useState(false);
@@ -127,6 +143,10 @@ export default function HospitalClaimsPage() {
                   | "Pending"
                   | "Approved"
                   | "Rejected",
+                approvedAmount:
+                  insurerClaim.status === "Approved"
+                    ? claim.amountClaimed
+                    : 0,
                 updatedAt: new Date().toISOString(),
               };
             }
@@ -134,6 +154,22 @@ export default function HospitalClaimsPage() {
           });
           return updated;
         });
+
+        // Also sync default/hardcoded claims that might be updated by insurer
+        // This ensures hardcoded claims are updated when insurer changes their status
+        const defaultClaims = claimsData.filter(
+          (claim) => claim.hospitalId === currentHospitalId
+        );
+        const defaultClaimsNeedUpdate = defaultClaims.some((claim) => {
+          const insurerClaim = insurerClaims.find((ic) => ic.id === claim.id);
+          return insurerClaim && insurerClaim.status !== claim.status;
+        });
+
+        if (defaultClaimsNeedUpdate) {
+          // Force a re-render of allClaimsData to pick up the new insurer status
+          // by triggering a dummy state update
+          setLocalClaims((prev) => [...prev]);
+        }
       }
     };
 
@@ -151,6 +187,10 @@ export default function HospitalClaimsPage() {
                   | "Pending"
                   | "Approved"
                   | "Rejected",
+                approvedAmount:
+                  insurerClaim.status === "Approved"
+                    ? claim.amountClaimed
+                    : 0,
                 updatedAt: new Date().toISOString(),
               };
             }
@@ -158,6 +198,19 @@ export default function HospitalClaimsPage() {
           });
           return updated;
         });
+
+        // Also check if any default claims need updating
+        const defaultClaims = claimsData.filter(
+          (claim) => claim.hospitalId === currentHospitalId
+        );
+        const defaultClaimsNeedUpdate = defaultClaims.some((claim) => {
+          const insurerClaim = stored.find((ic) => ic.id === claim.id);
+          return insurerClaim && insurerClaim.status !== claim.status;
+        });
+
+        if (defaultClaimsNeedUpdate) {
+          setLocalClaims((prev) => [...prev]);
+        }
       }
     };
 
