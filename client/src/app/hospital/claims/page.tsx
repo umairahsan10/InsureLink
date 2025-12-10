@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import HospitalSidebar from "@/components/hospital/HospitalSidebar";
 import SubmitClaimForm from "@/components/hospital/SubmitClaimForm";
+import SubmitClaimHeader from "@/components/hospital/SubmitClaimHeader";
 import MessageButton from "@/components/messaging/MessageButton";
 import { useClaimsMessaging } from "@/contexts/ClaimsMessagingContext";
 import {
@@ -30,13 +31,45 @@ export default function HospitalClaimsPage() {
   const [insurerFilter, setInsurerFilter] = useState("All Insurers");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [isHydrated, setIsHydrated] = useState(false);
+  const [localClaims, setLocalClaims] = useState<Claim[]>([]);
+  const currentHospitalId = "hosp-001"; // This would come from auth context in production
 
-  // Debug: log claims data
-  console.log(
-    "Hospital claims page loaded. claimsData length:",
-    claimsData.length
-  );
-  console.log("First few claims:", claimsData.slice(0, 2));
+  // Load claims from localStorage on mount
+  useEffect(() => {
+    const CLAIMS_STORAGE_KEY = "hospital_claims_hosp-001";
+    const savedClaims = localStorage.getItem(CLAIMS_STORAGE_KEY);
+    if (savedClaims) {
+      try {
+        setLocalClaims(JSON.parse(savedClaims));
+      } catch (e) {
+        console.error("Failed to parse saved claims", e);
+      }
+    }
+    setIsHydrated(true);
+  }, []);
+
+  // Save claims to localStorage whenever they change
+  useEffect(() => {
+    if (isHydrated && localClaims.length > 0) {
+      const CLAIMS_STORAGE_KEY = "hospital_claims_hosp-001";
+      localStorage.setItem(CLAIMS_STORAGE_KEY, JSON.stringify(localClaims));
+    }
+  }, [localClaims, isHydrated]);
+
+  // Combine default claims with locally saved claims
+  const allClaimsData = useMemo(() => {
+    const defaultClaims = claimsData.filter(
+      (claim) => claim.hospitalId === currentHospitalId
+    );
+    // Add locally saved claims that aren't in default data
+    const combined = [...defaultClaims, ...localClaims];
+    // Remove duplicates by ID
+    const uniqueClaims = Array.from(
+      new Map(combined.map((claim) => [claim.id, claim])).values()
+    );
+    return uniqueClaims;
+  }, [localClaims, isHydrated]);
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [resultModalOpen, setResultModalOpen] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
@@ -65,7 +98,14 @@ export default function HospitalClaimsPage() {
     seedDemoHashesFromImages();
   }, []);
 
-  const allClaims = claimsData
+  const handleClaimSubmitted = (newClaim: Claim) => {
+    // Add new claim to local claims
+    setLocalClaims((prevClaims) => [...prevClaims, newClaim]);
+    // Close modal
+    setShowSubmitForm(false);
+  };
+
+  const allClaims = allClaimsData
     .map((claim) => ({
       id: claim.id,
       patient: claim.employeeName,
@@ -83,17 +123,18 @@ export default function HospitalClaimsPage() {
 
   // Calculate statistics
   const claimsStats = useMemo(() => {
-    const totalClaims = claimsData.length;
+    const hospitalClaims = allClaimsData;
+    const totalClaims = hospitalClaims.length;
 
-    const totalApprovedClaims = claimsData.filter(
+    const totalApprovedClaims = hospitalClaims.filter(
       (claim) => claim.status === "Approved"
     ).length;
 
-    const pendingClaims = claimsData.filter(
+    const pendingClaims = hospitalClaims.filter(
       (claim) => claim.status === "Pending"
     ).length;
 
-    const totalAmount = claimsData.reduce(
+    const totalAmount = hospitalClaims.reduce(
       (sum, claim) => sum + claim.amountClaimed,
       0
     );
@@ -104,7 +145,7 @@ export default function HospitalClaimsPage() {
       pendingClaims,
       totalAmount: Math.round(totalAmount / 1000),
     };
-  }, []);
+  }, [allClaimsData]);
 
   // Filter claims based on search and filters
   const filteredClaims = allClaims.filter((claim) => {
@@ -147,117 +188,45 @@ export default function HospitalClaimsPage() {
 
         {/* Main Content */}
         <div className="ml-0 flex flex-col">
-          {/* Top Header */}
+          {/* Top Header with Sidebar Toggle */}
           <header className="bg-white shadow-sm border-b">
-            <div className="px-4 lg:px-6 py-4">
-              <div className="flex items-center justify-between gap-4">
-                <div className="flex items-center gap-3">
-                  <button
-                    onClick={() => setSidebarOpen(!sidebarOpen)}
-                    className="lg:hidden p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                  >
-                    <svg
-                      className="w-6 h-6 text-gray-700"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M4 6h16M4 12h16M4 18h16"
-                      />
-                    </svg>
-                  </button>
-                  <div>
-                    <h1 className="text-xl lg:text-2xl font-bold text-gray-900">
-                      Claims Management
-                    </h1>
-                    <p className="text-xs lg:text-sm text-gray-600">
-                      Manage and track insurance claims
-                    </p>
-                  </div>
-                </div>
-                <div className="hidden lg:flex items-center space-x-2 lg:space-x-4">
-                  <button
-                    onClick={() => setShowSubmitForm(!showSubmitForm)}
-                    className="bg-blue-600 text-white px-3 lg:px-4 py-2 rounded-lg hover:bg-blue-700 text-sm lg:text-base"
-                  >
-                    {showSubmitForm ? "View Claims" : "+ Submit New Claim"}
-                  </button>
-                  {/* Temporarily hidden Upload Document button
-                <button
-                  onClick={() => {
-                    setFormError(null);
-                    setFormState({
-                      file: null,
-                      totalAmount: '',
-                      lineItemsTotal: '',
-                      admissionDate: '',
-                      dischargeDate: '',
-                      templateKey: '' as DocumentTemplateKey | '',
-                      snippet: '',
-                      treatmentCategory: '',
-                    });
-                    setUploadModalOpen(true);
-                  }}
-                  className="bg-green-600 text-white px-3 lg:px-4 py-2 rounded-lg hover:bg-green-700 text-sm lg:text-base"
+            <div className="flex items-center gap-3 px-4 lg:px-6 py-4 lg:hidden">
+              <button
+                onClick={() => setSidebarOpen(!sidebarOpen)}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <svg
+                  className="w-6 h-6 text-gray-700"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
                 >
-                  Upload Document
-                </button>
-                */}
-                  {/* Temporarily hidden Reset Hashes button
-                <button
-                  onClick={() => setShowResetConfirm(true)}
-                  className="bg-gray-500 text-white px-3 lg:px-4 py-2 rounded-lg hover:bg-gray-600 text-sm lg:text-base"
-                  title="Clear hash database for testing"
-                >
-                  Reset Hashes
-                </button>
-                */}
-                </div>
-              </div>
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 6h16M4 12h16M4 18h16"
+                  />
+                </svg>
+              </button>
+              <h1 className="text-lg font-bold text-gray-900">
+                Claims Management
+              </h1>
             </div>
-            {/* Mobile button */}
-            <div className="lg:hidden px-4 pt-2 pb-3">
-              <div className="space-y-2">
-                <button
-                  onClick={() => setShowSubmitForm(!showSubmitForm)}
-                  className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm"
-                >
-                  {showSubmitForm ? "View Claims" : "+ Submit New Claim"}
-                </button>
-                {/* Temporarily hidden Upload Document button
+
+            {/* Desktop Header with Title and Button */}
+            <div className="hidden lg:block border-t border-gray-200">
+              <SubmitClaimHeader onOpenModal={() => setShowSubmitForm(true)} />
+            </div>
+
+            {/* Mobile Header with Title and Button */}
+            <div className="lg:hidden px-4 py-3 border-t border-gray-200">
               <button
-                onClick={() => {
-                  setFormError(null);
-                  setFormState({
-                    file: null,
-                    totalAmount: '',
-                    lineItemsTotal: '',
-                    admissionDate: '',
-                    dischargeDate: '',
-                    templateKey: '' as DocumentTemplateKey | '',
-                    snippet: '',
-                    treatmentCategory: '',
-                  });
-                  setUploadModalOpen(true);
-                }}
-                className="w-full bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 text-sm"
+                onClick={() => setShowSubmitForm(true)}
+                className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm font-medium transition-colors"
               >
-                Upload Document
+                + Submit New Claim
               </button>
-              */}
-                {/* Temporarily hidden Reset Hashes button
-              <button
-                onClick={() => setShowResetConfirm(true)}
-                className="w-full bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 text-sm"
-              >
-                Reset Hashes
-              </button>
-              */}
-              </div>
             </div>
           </header>
 
@@ -291,262 +260,293 @@ export default function HospitalClaimsPage() {
               </div>
             </div>
 
-            {/* Claims Table or Submit Form */}
-            {showSubmitForm ? (
-              <SubmitClaimForm
-                onCancel={() => setShowSubmitForm(false)}
-                onSuccess={() => {
-                  setShowSubmitForm(false);
-                }}
-              />
-            ) : (
-              <div className="bg-white rounded-lg shadow overflow-hidden">
-                <div className="p-3 lg:p-4 border-b border-gray-200">
-                  <div className="flex flex-col sm:flex-row gap-2 lg:gap-4">
-                    <input
-                      type="text"
-                      placeholder="Search by claim ID or patient name..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="flex-1 px-3 lg:px-4 py-2 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm lg:text-base"
-                    />
-                    <select
-                      value={statusFilter}
-                      onChange={(e) => setStatusFilter(e.target.value)}
-                      className="px-3 lg:px-4 py-2 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm lg:text-base"
-                    >
-                      <option>All Status</option>
-                      <option>Pending</option>
-                      <option>Approved</option>
-                      <option>Rejected</option>
-                    </select>
-                    <select
-                      value={insurerFilter}
-                      onChange={(e) => setInsurerFilter(e.target.value)}
-                      className="px-3 lg:px-4 py-2 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm lg:text-base"
-                    >
-                      <option>All Insurers</option>
-                      <option>HealthGuard Insurance</option>
-                      <option>MediCare Plus</option>
-                      <option>SecureHealth</option>
-                    </select>
-                  </div>
+            {/* Claims Table */}
+            <div className="bg-white rounded-lg shadow overflow-hidden">
+              <div className="p-3 lg:p-4 border-b border-gray-200">
+                <div className="flex flex-col sm:flex-row gap-2 lg:gap-4">
+                  <input
+                    type="text"
+                    placeholder="Search by claim ID or patient name..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="flex-1 px-3 lg:px-4 py-2 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm lg:text-base"
+                  />
+                  <select
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                    className="px-3 lg:px-4 py-2 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm lg:text-base"
+                  >
+                    <option>All Status</option>
+                    <option>Pending</option>
+                    <option>Approved</option>
+                    <option>Rejected</option>
+                  </select>
+                  <select
+                    value={insurerFilter}
+                    onChange={(e) => setInsurerFilter(e.target.value)}
+                    className="px-3 lg:px-4 py-2 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm lg:text-base"
+                  >
+                    <option>All Insurers</option>
+                    <option>HealthGuard Insurance</option>
+                    <option>MediCare Plus</option>
+                    <option>SecureHealth</option>
+                  </select>
                 </div>
+              </div>
 
-                <div className="overflow-x-auto">
-                  <table className="w-full min-w-[640px]">
-                    <thead className="bg-gray-50">
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[640px]">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-3 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        Claim ID
+                      </th>
+                      <th className="px-3 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        Patient
+                      </th>
+                      <th className="hidden md:table-cell px-3 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        Treatment
+                      </th>
+                      <th className="hidden sm:table-cell px-3 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        Date
+                      </th>
+                      <th className="px-3 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        Amount
+                      </th>
+                      <th className="px-3 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        Status
+                      </th>
+                      <th className="px-3 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        Actions
+                      </th>
+                      <th className="px-3 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        Message
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {filteredClaims.length === 0 ? (
                       <tr>
-                        <th className="px-3 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                          Claim ID
-                        </th>
-                        <th className="px-3 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                          Patient
-                        </th>
-                        <th className="hidden md:table-cell px-3 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                          Treatment
-                        </th>
-                        <th className="hidden sm:table-cell px-3 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                          Date
-                        </th>
-                        <th className="px-3 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                          Amount
-                        </th>
-                        <th className="px-3 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                          Status
-                        </th>
-                        <th className="px-3 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                          Actions
-                        </th>
-                        <th className="px-3 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                          Message
-                        </th>
+                        <td
+                          colSpan={8}
+                          className="px-6 py-8 text-center text-gray-500"
+                        >
+                          No claims found matching your search criteria.
+                        </td>
                       </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-200">
-                      {filteredClaims.length === 0 ? (
-                        <tr>
-                          <td
-                            colSpan={8}
-                            className="px-6 py-8 text-center text-gray-500"
+                    ) : (
+                      displayedClaims.map((claim) => {
+                        const hasAlert = hasUnreadAlert(claim.id, "hospital");
+                        return (
+                          <tr
+                            key={claim.id}
+                            className={`hover:bg-gray-50 ${
+                              hasAlert ? "border-l-4 border-red-500" : ""
+                            }`}
                           >
-                            No claims found matching your search criteria.
-                          </td>
-                        </tr>
-                      ) : (
-                        displayedClaims.map((claim) => {
-                          const hasAlert = hasUnreadAlert(claim.id, "hospital");
-                          return (
-                            <tr
-                              key={claim.id}
-                              className={`hover:bg-gray-50 ${
-                                hasAlert ? "border-l-4 border-red-500" : ""
-                              }`}
-                            >
-                              <td className="px-3 lg:px-6 py-4 text-xs lg:text-sm font-medium text-gray-900">
-                                {claim.id}
-                              </td>
-                              <td className="px-3 lg:px-6 py-4 text-xs lg:text-sm text-gray-900">
-                                {claim.patient}
-                              </td>
-                              <td className="hidden md:table-cell px-3 lg:px-6 py-4 text-xs lg:text-sm text-gray-500">
-                                {claim.treatment}
-                              </td>
-                              <td className="hidden sm:table-cell px-3 lg:px-6 py-4 text-xs lg:text-sm text-gray-500">
-                                {claim.date}
-                              </td>
-                              <td className="px-3 lg:px-6 py-4 text-xs lg:text-sm text-gray-900">
-                                {claim.amount}
-                              </td>
-                              <td className="px-3 lg:px-6 py-4 text-xs lg:text-sm">
-                                <span
-                                  className={`inline-block px-2 py-1 text-xs rounded-full ${
-                                    claim.status === "Approved"
-                                      ? "bg-green-100 text-green-800"
-                                      : claim.status === "Rejected"
-                                      ? "bg-red-100 text-red-800"
-                                      : "bg-yellow-100 text-yellow-800"
-                                  }`}
-                                >
-                                  {claim.status}
-                                </span>
-                              </td>
-                              <td className="px-3 lg:px-6 py-4 text-xs lg:text-sm">
-                                <button
-                                  onClick={() => {
-                                    console.log(
-                                      "Clicking View for claim:",
-                                      claim.id,
-                                      "Full claim data:",
-                                      claim
-                                    );
-                                    const foundClaim = claimsData.find(
-                                      (c) => c.id === claim.id
-                                    );
-                                    console.log(
-                                      "Found in claimsData:",
-                                      foundClaim
-                                    );
-                                    setSidebarOpen(false);
-                                    setSelectedClaimId(claim.id);
-                                    setIsClaimDetailsOpen(true);
-                                  }}
-                                  className="text-blue-600 hover:text-blue-800"
-                                >
-                                  View
-                                </button>
-                              </td>
-                              <td className="px-3 lg:px-6 py-4 text-xs lg:text-sm">
-                                <MessageButton
-                                  claimId={claim.id}
-                                  userRole="hospital"
-                                />
-                              </td>
-                            </tr>
-                          );
-                        })
-                      )}
-                    </tbody>
-                  </table>
-
-                  {/* Pagination Info */}
-                  {filteredClaims.length > 0 && (
-                    <div className="mt-6 bg-white rounded-lg shadow-sm border border-gray-200 px-6 py-3">
-                      <div className="flex flex-col sm:flex-row items-center sm:justify-between gap-3">
-                        <div className="flex items-center space-x-4">
-                          <p className="text-sm text-gray-700">
-                            Showing{" "}
-                            <span className="font-medium">
-                              {filteredClaims.length === 0
-                                ? 0
-                                : (currentPage - 1) * itemsPerPage + 1}
-                            </span>{" "}
-                            to{" "}
-                            <span className="font-medium">
-                              {Math.min(
-                                filteredClaims.length,
-                                currentPage * itemsPerPage
-                              )}
-                            </span>{" "}
-                            of{" "}
-                            <span className="font-medium">
-                              {filteredClaims.length}
-                            </span>{" "}
-                            claims
-                            {filteredClaims.length !== allClaims.length && (
-                              <span className="text-gray-500">
-                                {" "}
-                                (filtered from {allClaims.length} total)
+                            <td className="px-3 lg:px-6 py-4 text-xs lg:text-sm font-medium text-gray-900">
+                              {claim.id}
+                            </td>
+                            <td className="px-3 lg:px-6 py-4 text-xs lg:text-sm text-gray-900">
+                              {claim.patient}
+                            </td>
+                            <td className="hidden md:table-cell px-3 lg:px-6 py-4 text-xs lg:text-sm text-gray-500">
+                              {claim.treatment}
+                            </td>
+                            <td className="hidden sm:table-cell px-3 lg:px-6 py-4 text-xs lg:text-sm text-gray-500">
+                              {claim.date}
+                            </td>
+                            <td className="px-3 lg:px-6 py-4 text-xs lg:text-sm text-gray-900">
+                              {claim.amount}
+                            </td>
+                            <td className="px-3 lg:px-6 py-4 text-xs lg:text-sm">
+                              <span
+                                className={`inline-block px-2 py-1 text-xs rounded-full ${
+                                  claim.status === "Approved"
+                                    ? "bg-green-100 text-green-800"
+                                    : claim.status === "Rejected"
+                                    ? "bg-red-100 text-red-800"
+                                    : "bg-yellow-100 text-yellow-800"
+                                }`}
+                              >
+                                {claim.status}
                               </span>
+                            </td>
+                            <td className="px-3 lg:px-6 py-4 text-xs lg:text-sm">
+                              <button
+                                onClick={() => {
+                                  console.log(
+                                    "Clicking View for claim:",
+                                    claim.id,
+                                    "Full claim data:",
+                                    claim
+                                  );
+                                  const foundClaim = claimsData.find(
+                                    (c) => c.id === claim.id
+                                  );
+                                  console.log(
+                                    "Found in claimsData:",
+                                    foundClaim
+                                  );
+                                  setSidebarOpen(false);
+                                  setSelectedClaimId(claim.id);
+                                  setIsClaimDetailsOpen(true);
+                                }}
+                                className="text-blue-600 hover:text-blue-800"
+                              >
+                                View
+                              </button>
+                            </td>
+                            <td className="px-3 lg:px-6 py-4 text-xs lg:text-sm">
+                              <MessageButton
+                                claimId={claim.id}
+                                userRole="hospital"
+                              />
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+
+                {/* Pagination Info */}
+                {filteredClaims.length > 0 && (
+                  <div className="mt-6 bg-white rounded-lg shadow-sm border border-gray-200 px-6 py-3">
+                    <div className="flex flex-col sm:flex-row items-center sm:justify-between gap-3">
+                      <div className="flex items-center space-x-4">
+                        <p className="text-sm text-gray-700">
+                          Showing{" "}
+                          <span className="font-medium">
+                            {filteredClaims.length === 0
+                              ? 0
+                              : (currentPage - 1) * itemsPerPage + 1}
+                          </span>{" "}
+                          to{" "}
+                          <span className="font-medium">
+                            {Math.min(
+                              filteredClaims.length,
+                              currentPage * itemsPerPage
                             )}
-                          </p>
+                          </span>{" "}
+                          of{" "}
+                          <span className="font-medium">
+                            {filteredClaims.length}
+                          </span>{" "}
+                          claims
+                          {filteredClaims.length !== allClaims.length && (
+                            <span className="text-gray-500">
+                              {" "}
+                              (filtered from {allClaims.length} total)
+                            </span>
+                          )}
+                        </p>
 
-                          <label className="text-sm text-gray-600">
-                            Items per page:
-                          </label>
-                          <select
-                            value={itemsPerPage}
-                            onChange={(e) =>
-                              setItemsPerPage(Number(e.target.value))
-                            }
-                            className="px-2 py-1 border border-gray-300 rounded-md text-sm"
-                          >
-                            <option value={5}>5</option>
-                            <option value={10}>10</option>
-                            <option value={20}>20</option>
-                            <option value={50}>50</option>
-                          </select>
-                        </div>
+                        <label className="text-sm text-gray-600">
+                          Items per page:
+                        </label>
+                        <select
+                          value={itemsPerPage}
+                          onChange={(e) =>
+                            setItemsPerPage(Number(e.target.value))
+                          }
+                          className="px-2 py-1 border border-gray-300 rounded-md text-sm"
+                        >
+                          <option value={5}>5</option>
+                          <option value={10}>10</option>
+                          <option value={20}>20</option>
+                          <option value={50}>50</option>
+                        </select>
+                      </div>
 
-                        <div className="flex items-center space-x-2">
+                      <div className="flex items-center space-x-2">
+                        <button
+                          onClick={() =>
+                            setCurrentPage((p) => Math.max(1, p - 1))
+                          }
+                          disabled={currentPage === 1}
+                          className={`px-3 py-1 text-sm rounded-md border ${
+                            currentPage === 1
+                              ? "text-gray-300 border-gray-200 bg-gray-50"
+                              : "text-gray-500 border-gray-300 bg-white hover:bg-gray-50"
+                          }`}
+                        >
+                          Previous
+                        </button>
+
+                        {Array.from(
+                          { length: totalPages },
+                          (_, i) => i + 1
+                        ).map((p) => (
                           <button
-                            onClick={() =>
-                              setCurrentPage((p) => Math.max(1, p - 1))
-                            }
-                            disabled={currentPage === 1}
+                            key={p}
+                            onClick={() => setCurrentPage(p)}
                             className={`px-3 py-1 text-sm rounded-md border ${
-                              currentPage === 1
-                                ? "text-gray-300 border-gray-200 bg-gray-50"
-                                : "text-gray-500 border-gray-300 bg-white hover:bg-gray-50"
+                              p === currentPage
+                                ? "text-white bg-blue-600 border-blue-600"
+                                : "text-gray-500 bg-white border-gray-300 hover:bg-gray-50"
                             }`}
                           >
-                            Previous
+                            {p}
                           </button>
+                        ))}
 
-                          {Array.from(
-                            { length: totalPages },
-                            (_, i) => i + 1
-                          ).map((p) => (
-                            <button
-                              key={p}
-                              onClick={() => setCurrentPage(p)}
-                              className={`px-3 py-1 text-sm rounded-md border ${
-                                p === currentPage
-                                  ? "text-white bg-blue-600 border-blue-600"
-                                  : "text-gray-500 bg-white border-gray-300 hover:bg-gray-50"
-                              }`}
-                            >
-                              {p}
-                            </button>
-                          ))}
-
-                          <button
-                            onClick={() =>
-                              setCurrentPage((p) => Math.min(totalPages, p + 1))
-                            }
-                            disabled={currentPage === totalPages}
-                            className={`px-3 py-1 text-sm rounded-md border ${
-                              currentPage === totalPages
-                                ? "text-gray-300 border-gray-200 bg-gray-50"
-                                : "text-gray-500 border-gray-300 bg-white hover:bg-gray-50"
-                            }`}
-                          >
-                            Next
-                          </button>
-                        </div>
+                        <button
+                          onClick={() =>
+                            setCurrentPage((p) => Math.min(totalPages, p + 1))
+                          }
+                          disabled={currentPage === totalPages}
+                          className={`px-3 py-1 text-sm rounded-md border ${
+                            currentPage === totalPages
+                              ? "text-gray-300 border-gray-200 bg-gray-50"
+                              : "text-gray-500 border-gray-300 bg-white hover:bg-gray-50"
+                          }`}
+                        >
+                          Next
+                        </button>
                       </div>
                     </div>
-                  )}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Modal for Submit Claim Form */}
+            {showSubmitForm && (
+              <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                  <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center">
+                    <h2 className="text-xl font-bold text-gray-900">
+                      Submit New Claim
+                    </h2>
+                    <button
+                      onClick={() => setShowSubmitForm(false)}
+                      className="text-gray-400 hover:text-gray-600 transition-colors"
+                    >
+                      <svg
+                        className="w-6 h-6"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M6 18L18 6M6 6l12 12"
+                        />
+                      </svg>
+                    </button>
+                  </div>
+                  <div className="p-6">
+                    <SubmitClaimForm
+                      onCancel={() => setShowSubmitForm(false)}
+                      onSuccess={() => {
+                        setShowSubmitForm(false);
+                      }}
+                      onClaimSubmitted={handleClaimSubmitted}
+                    />
+                  </div>
                 </div>
               </div>
             )}
@@ -560,7 +560,7 @@ export default function HospitalClaimsPage() {
               claimId={selectedClaimId || ""}
               claimData={
                 selectedClaimId
-                  ? claimsData.find((c) => c.id === selectedClaimId)
+                  ? allClaimsData.find((c) => c.id === selectedClaimId)
                   : undefined
               }
             />

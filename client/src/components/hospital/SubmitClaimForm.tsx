@@ -8,6 +8,7 @@ import type { Patient } from "@/types/patient";
 interface SubmitClaimFormProps {
   onSuccess?: (claimId: string) => void;
   onCancel?: () => void;
+  onClaimSubmitted?: (claim: any) => void;
 }
 
 const patientsData = patientsDataRaw as Patient[];
@@ -15,6 +16,7 @@ const patientsData = patientsDataRaw as Patient[];
 export default function SubmitClaimForm({
   onSuccess,
   onCancel,
+  onClaimSubmitted,
 }: SubmitClaimFormProps) {
   const [formData, setFormData] = useState({
     patientId: "",
@@ -27,6 +29,9 @@ export default function SubmitClaimForm({
     notes: "",
   });
 
+  const [patientSearchInput, setPatientSearchInput] = useState("");
+  const [showPatientDropdown, setShowPatientDropdown] = useState(false);
+  const [customTreatmentCategory, setCustomTreatmentCategory] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
@@ -44,6 +49,20 @@ export default function SubmitClaimForm({
         planId: patient.planId,
       }));
   }, []);
+
+  // Filter patients based on search input
+  const filteredPatients = useMemo(() => {
+    if (!patientSearchInput.trim()) {
+      return insuredPatients;
+    }
+    const lowerSearch = patientSearchInput.toLowerCase();
+    return insuredPatients.filter(
+      (patient) =>
+        patient.name.toLowerCase().includes(lowerSearch) ||
+        (patient.corporateName?.toLowerCase().includes(lowerSearch) ?? false) ||
+        patient.id.toLowerCase().includes(lowerSearch)
+    );
+  }, [patientSearchInput, insuredPatients]);
 
   const treatmentCategories = [
     "General Checkup",
@@ -84,6 +103,13 @@ export default function SubmitClaimForm({
     if (!formData.treatmentCategory.trim()) {
       newErrors.treatmentCategory = "Treatment category is required";
     }
+    if (
+      formData.treatmentCategory === "Other" &&
+      !customTreatmentCategory.trim()
+    ) {
+      newErrors.customTreatmentCategory =
+        "Please specify the treatment category";
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -108,17 +134,42 @@ export default function SubmitClaimForm({
     }
   };
 
-  const handlePatientChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const selectedId = e.target.value;
-    const selectedPatient = insuredPatients.find(
-      (patient) => patient.id === selectedId
-    );
+  const handleCustomTreatmentChange = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    setCustomTreatmentCategory(e.target.value);
+    if (errors.customTreatmentCategory) {
+      setErrors((prev) => ({
+        ...prev,
+        customTreatmentCategory: "",
+      }));
+    }
+  };
+
+  const handlePatientChange = (
+    selectedPatient: (typeof insuredPatients)[0]
+  ) => {
     setFormData((prev) => ({
       ...prev,
-      patientId: selectedId,
-      employeeId: selectedPatient?.employeeId || "",
-      employeeName: selectedPatient?.name || "",
+      patientId: selectedPatient.id,
+      employeeId: selectedPatient.employeeId || "",
+      employeeName: selectedPatient.name || "",
     }));
+    setPatientSearchInput(selectedPatient.name);
+    setShowPatientDropdown(false);
+    if (errors.patientId) {
+      setErrors((prev) => ({
+        ...prev,
+        patientId: "",
+      }));
+    }
+  };
+
+  const handlePatientSearchChange = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    setPatientSearchInput(e.target.value);
+    setShowPatientDropdown(true);
     if (errors.patientId) {
       setErrors((prev) => ({
         ...prev,
@@ -139,21 +190,63 @@ export default function SubmitClaimForm({
       // Simulate API call
       await new Promise((resolve) => setTimeout(resolve, 1000));
 
-      // Generate new claim ID
-      const newClaimId = `clm-${Date.now()}`;
+      // Generate new claim ID - using 3-digit ID
+      const randomNum = Math.floor(Math.random() * 900) + 100; // 100-999
+      const newClaimId = `clm-${randomNum}`;
       const claimNumber = `CLM-${new Date().getFullYear()}-${String(
         Math.floor(Math.random() * 9999) + 1
       ).padStart(4, "0")}`;
 
-      console.log("New claim submitted:", {
+      const finalTreatmentCategory =
+        formData.treatmentCategory === "Other"
+          ? customTreatmentCategory
+          : formData.treatmentCategory;
+
+      // Create new claim object
+      const newClaim = {
         id: newClaimId,
         claimNumber,
-        ...formData,
-      });
+        employeeId: formData.employeeId,
+        employeeName: formData.employeeName,
+        corporateId: "", // Will be set from patient data
+        corporateName: "", // Will be set from patient data
+        hospitalId: "hosp-001", // Current hospital
+        hospitalName: "City General Hospital", // Current hospital
+        planId: "",
+        status: "Pending",
+        amountClaimed: Number(formData.amountClaimed),
+        approvedAmount: 0,
+        treatmentCategory: finalTreatmentCategory,
+        admissionDate: formData.admissionDate,
+        dischargeDate: formData.dischargeDate,
+        documents: [],
+        events: [
+          {
+            ts: new Date().toISOString(),
+            actorName: "City General Hospital",
+            actorRole: "Hospital",
+            action: "Submitted claim",
+            from: null,
+            to: "Pending",
+          },
+        ],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        fraudRiskScore: 0.05,
+        priority: "Normal",
+        notes: formData.notes,
+      };
+
+      console.log("New claim submitted:", newClaim);
 
       setSuccessMessage(
         `Claim ${claimNumber} submitted successfully! Claim ID: ${newClaimId}`
       );
+
+      // Call onClaimSubmitted callback to save to localStorage
+      if (onClaimSubmitted) {
+        onClaimSubmitted(newClaim);
+      }
 
       // Reset form
       setFormData({
@@ -166,6 +259,8 @@ export default function SubmitClaimForm({
         treatmentCategory: "",
         notes: "",
       });
+      setCustomTreatmentCategory("");
+      setPatientSearchInput("");
 
       // Call success callback if provided
       if (onSuccess) {
@@ -212,25 +307,48 @@ export default function SubmitClaimForm({
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Patient Selection */}
-        <div>
+        <div className="relative">
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Patient (Insured) <span className="text-red-600">*</span>
           </label>
-          <select
-            name="patientId"
-            value={formData.patientId}
-            onChange={handlePatientChange}
-            className={`w-full px-4 py-2 border rounded-lg text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+          <input
+            type="text"
+            placeholder="Search patient by name, corporate, or ID..."
+            value={patientSearchInput}
+            onChange={handlePatientSearchChange}
+            onFocus={() => setShowPatientDropdown(true)}
+            className={`w-full px-4 py-2 border rounded-lg text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
               errors.patientId ? "border-red-500" : "border-gray-300"
             }`}
-          >
-            <option value="">Select a patient...</option>
-            {insuredPatients.map((patient) => (
-              <option key={patient.id} value={patient.id}>
-                {patient.name} - {patient.corporateName} ({patient.id})
-              </option>
-            ))}
-          </select>
+          />
+
+          {/* Patient Dropdown */}
+          {showPatientDropdown && (
+            <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-10 max-h-64 overflow-y-auto">
+              {filteredPatients.length === 0 ? (
+                <div className="px-4 py-3 text-gray-500 text-sm">
+                  No patients found matching your search
+                </div>
+              ) : (
+                filteredPatients.map((patient) => (
+                  <button
+                    key={patient.id}
+                    type="button"
+                    onClick={() => handlePatientChange(patient)}
+                    className="w-full text-left px-4 py-3 hover:bg-blue-50 border-b border-gray-100 last:border-b-0 transition-colors"
+                  >
+                    <div className="font-medium text-gray-900">
+                      {patient.name}
+                    </div>
+                    <div className="text-sm text-gray-500">
+                      {patient.corporateName} ({patient.id})
+                    </div>
+                  </button>
+                ))
+              )}
+            </div>
+          )}
+
           {errors.patientId && (
             <p className="mt-1 text-sm text-red-600">{errors.patientId}</p>
           )}
@@ -296,6 +414,32 @@ export default function SubmitClaimForm({
             )}
           </div>
         </div>
+
+        {/* Custom Treatment Category (if "Other" is selected) */}
+        {formData.treatmentCategory === "Other" && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Please Specify Treatment Category{" "}
+              <span className="text-red-600">*</span>
+            </label>
+            <input
+              type="text"
+              value={customTreatmentCategory}
+              onChange={handleCustomTreatmentChange}
+              placeholder="e.g., Orthodontics, Physiotherapy, etc."
+              className={`w-full px-4 py-2 border rounded-lg text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                errors.customTreatmentCategory
+                  ? "border-red-500"
+                  : "border-gray-300"
+              }`}
+            />
+            {errors.customTreatmentCategory && (
+              <p className="mt-1 text-sm text-red-600">
+                {errors.customTreatmentCategory}
+              </p>
+            )}
+          </div>
+        )}
 
         {/* Dates */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

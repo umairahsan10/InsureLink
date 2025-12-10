@@ -46,18 +46,24 @@ export default function HospitalDashboardPage() {
     }
   };
 
-  // Calculate hospital-specific statistics
+  // Filter claims by hospital ID
+  const currentHospitalId = "hosp-001"; // City General Hospital
+  const allClaims = (claims as Claim[]).filter(
+    (claim) => claim.hospitalId === currentHospitalId
+  );
+
+  // Calculate hospital-specific statistics from filtered claims
+  const pendingClaims = allClaims.filter((c) => c.status === "Pending");
+  const approvedClaims = allClaims.filter((c) => c.status === "Approved");
+
   const hospitalStats = {
-    patientsToday:
-      analyticsData.monthlyTrends[analyticsData.monthlyTrends.length - 1]
-        ?.count || 0, // Latest month's patient count
-    claimsSubmitted: analyticsData.totalClaims,
-    pendingApproval: analyticsData.claimsByStatus.Pending,
-    approvedToday: analyticsData.claimsByStatus.Approved,
+    patientsToday: allClaims.length, // Number of unique patients with claims
+    claimsSubmitted: allClaims.length,
+    pendingApproval: pendingClaims.length,
+    approvedToday: approvedClaims.length,
   };
 
-  // Recent claims for hospital - derived from canonical claims and sorted newest-first
-  const allClaims = claims as Claim[];
+  // Recent claims for hospital - sorted newest-first
   const recentClaims = sortClaimsByDateDesc(allClaims)
     .slice(0, 4)
     .map((c) => ({

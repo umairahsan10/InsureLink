@@ -6,10 +6,13 @@ import claimsData from "@/data/claims.json";
 export default function CorporateClaimsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("All Status");
+  const currentCorporateId = "corp-001"; // This would come from auth context in production
 
-  // Filter claims based on search term and status
+  // Filter claims based on search term, status, and corporate ID
   const filteredClaims = useMemo(() => {
-    let filtered = claimsData;
+    let filtered = claimsData.filter(
+      (claim) => claim.corporateId === currentCorporateId
+    );
 
     // Filter by search term (employee name or claim ID)
     if (searchTerm) {
@@ -28,8 +31,8 @@ export default function CorporateClaimsPage() {
     return filtered;
   }, [searchTerm, selectedStatus]);
 
-  // Get first 10 claims for display
-  const displayedClaims = filteredClaims.slice(0, 10);
+  // Display all filtered claims (not just first 10)
+  const displayedClaims = filteredClaims;
 
   const getStatusColor = (status: string) => {
     switch (status) {
