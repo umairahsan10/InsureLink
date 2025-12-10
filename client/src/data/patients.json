@@ -19,7 +19,7 @@
     "coverageEnd": "2025-12-31",
     "insured": true,
     "insurance": "HealthGuard Gold",
-    "status": "Active",
+    "status": "Inactive",
     "bloodGroup": "B+",
     "emergencyContact": {
       "name": "Fatima Raza",
@@ -53,7 +53,7 @@
     "coverageEnd": "2025-12-31",
     "insured": true,
     "insurance": "HealthGuard Gold",
-    "status": "Active",
+    "status": "Inactive",
     "bloodGroup": "A+",
     "emergencyContact": {
       "name": "Ahmed Khan",
@@ -87,7 +87,7 @@
     "coverageEnd": "2025-12-31",
     "insured": true,
     "insurance": "HealthGuard Basic",
-    "status": "Active",
+    "status": "Inactive",
     "bloodGroup": "O+",
     "emergencyContact": {
       "name": "Sadia Malik",
@@ -121,7 +121,7 @@
     "coverageEnd": "2025-12-31",
     "insured": true,
     "insurance": "HealthGuard Basic",
-    "status": "Active",
+    "status": "Inactive",
     "bloodGroup": "AB+",
     "emergencyContact": {
       "name": "Yasir Javed",

@@ -10,7 +10,7 @@ const patientsData = patientsDataRaw as Patient[];
 
 export default function HospitalPatientsPage() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [timeframeFilter, setTimeframeFilter] = useState("All Patients");
+  const [insuranceFilter, setInsuranceFilter] = useState("All Insurance Types");
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
   const [selectedPatientId, setSelectedPatientId] = useState<string | null>(
     null
@@ -28,11 +28,26 @@ export default function HospitalPatientsPage() {
     []
   );
 
-  const filteredPatients = useMemo(() => {
-    const today = new Date("2025-10-06");
-    const sevenDaysAgo = new Date(today);
-    sevenDaysAgo.setDate(today.getDate() - 6);
+  // Get unique insurance types from patients data
+  const insuranceTypes = useMemo(() => {
+    const types = new Set(patients.map((p) => p.insurance));
+    return Array.from(types).sort();
+  }, [patients]);
 
+  // Calculate analytics
+  const analytics = useMemo(() => {
+    const today = new Date("2025-10-06");
+    return {
+      totalPatients: patients.length,
+      todaysVisits: patients.filter((p) => 
+        p.lastVisitDate.toDateString() === today.toDateString()
+      ).length,
+      withInsurance: patients.filter((p) => p.insured).length,
+      activeClaims: patients.filter((p) => p.status === "Active").length,
+    };
+  }, [patients]);
+
+  const filteredPatients = useMemo(() => {
     return patients.filter((patient) => {
       const matchesSearch =
         searchQuery.trim() === "" ||
@@ -40,23 +55,17 @@ export default function HospitalPatientsPage() {
         patient.id.toLowerCase().includes(searchQuery.toLowerCase());
 
       const matchesFilter =
-        timeframeFilter === "All Patients" ||
-        (timeframeFilter === "Today's Visits" &&
-          patient.lastVisitDate.toDateString() === today.toDateString()) ||
-        (timeframeFilter === "This Week" &&
-          patient.lastVisitDate >= sevenDaysAgo &&
-          patient.lastVisitDate <= today) ||
-        (timeframeFilter === "Insured" && patient.insured) ||
-        (timeframeFilter === "Uninsured" && !patient.insured);
+        insuranceFilter === "All Insurance Types" ||
+        patient.insurance === insuranceFilter;
 
       return matchesSearch && matchesFilter;
     });
-  }, [patients, searchQuery, timeframeFilter]);
+  }, [patients, searchQuery, insuranceFilter]);
 
   // Reset page when filters or page size change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, timeframeFilter, itemsPerPage]);
+  }, [searchQuery, insuranceFilter, itemsPerPage]);
 
   const totalPages = Math.max(
     1,
@@ -90,29 +99,24 @@ export default function HospitalPatientsPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <div className="bg-white rounded-lg shadow p-4">
           <p className="text-sm text-gray-500">Total Patients</p>
-          <p className="text-2xl font-bold text-gray-900">{patients.length}</p>
+          <p className="text-2xl font-bold text-gray-900">{analytics.totalPatients}</p>
         </div>
         <div className="bg-white rounded-lg shadow p-4">
           <p className="text-sm text-gray-500">Today&apos;s Visits</p>
           <p className="text-2xl font-bold text-blue-600">
-            {
-              patients.filter((p) => {
-                const today = new Date("2025-10-06");
-                return p.lastVisitDate.toDateString() === today.toDateString();
-              }).length
-            }
+            {analytics.todaysVisits}
           </p>
         </div>
         <div className="bg-white rounded-lg shadow p-4">
           <p className="text-sm text-gray-500">With Insurance</p>
           <p className="text-2xl font-bold text-green-600">
-            {patients.filter((p) => p.insured).length}
+            {analytics.withInsurance}
           </p>
         </div>
         <div className="bg-white rounded-lg shadow p-4">
           <p className="text-sm text-gray-500">Active Claims</p>
           <p className="text-2xl font-bold text-orange-600">
-            {patients.filter((p) => p.hasActiveClaims).length}
+            {analytics.activeClaims}
           </p>
         </div>
       </div>
@@ -128,15 +132,16 @@ export default function HospitalPatientsPage() {
               className="flex-1 px-3 lg:px-4 py-2 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm lg:text-base"
             />
             <select
-              value={timeframeFilter}
-              onChange={(event) => setTimeframeFilter(event.target.value)}
+              value={insuranceFilter}
+              onChange={(event) => setInsuranceFilter(event.target.value)}
               className="px-3 lg:px-4 py-2 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm lg:text-base"
             >
-              <option>All Patients</option>
-              <option>Today&apos;s Visits</option>
-              <option>This Week</option>
-              <option>Insured</option>
-              <option>Uninsured</option>
+              <option>All Insurance Types</option>
+              {insuranceTypes.map((type) => (
+                <option key={type} value={type}>
+                  {type}
+                </option>
+              ))}
             </select>
           </div>
         </div>
@@ -198,10 +203,10 @@ export default function HospitalPatientsPage() {
                     </td>
                     <td className="px-3 lg:px-6 py-4 text-xs lg:text-sm">
                       <span
-                        className={`inline-block px-2 py-1 text-xs rounded-full ${
+                        className={`inline-block px-3 py-1 text-xs font-semibold rounded-full ${
                           patient.status === "Active"
                             ? "bg-green-100 text-green-800"
-                            : "bg-gray-100 text-gray-800"
+                            : "bg-red-100 text-red-800"
                         }`}
                       >
                         {patient.status}

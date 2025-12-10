@@ -17,6 +17,9 @@ export default function PatientRegistrationModal({ isOpen, onClose, onSuccess }:
     phone: '',
     email: '',
     address: '',
+    gender: 'Male',
+    insurance: 'HealthGuard Gold',
+    status: 'Active',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -36,6 +39,9 @@ export default function PatientRegistrationModal({ isOpen, onClose, onSuccess }:
         phone: '',
         email: '',
         address: '',
+        gender: 'Male',
+        insurance: 'HealthGuard Gold',
+        status: 'Active',
       });
     } catch (error) {
       console.error('Failed to register patient', error);
@@ -108,6 +114,48 @@ export default function PatientRegistrationModal({ isOpen, onClose, onSuccess }:
               onChange={(e) => setFormData({ ...formData, address: e.target.value })}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
             />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Gender *</label>
+            <select
+              required
+              value={formData.gender}
+              onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+            >
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Insurance Type *</label>
+            <select
+              required
+              value={formData.insurance}
+              onChange={(e) => setFormData({ ...formData, insurance: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+            >
+              <option value="HealthGuard Gold">HealthGuard Gold</option>
+              <option value="HealthGuard Basic">HealthGuard Basic</option>
+              <option value="MediCare Silver">MediCare Silver</option>
+              <option value="MediCare Basic">MediCare Basic</option>
+              <option value="SecureHealth Gold">SecureHealth Gold</option>
+              <option value="SecureHealth Basic">SecureHealth Basic</option>
+              <option value="None">None</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Status *</label>
+            <select
+              required
+              value={formData.status}
+              onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+            >
+              <option value="Active">Active</option>
+              <option value="Inactive">Inactive</option>
+            </select>
           </div>
         </div>
         <div className="mt-6 flex justify-end space-x-3">

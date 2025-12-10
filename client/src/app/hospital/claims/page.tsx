@@ -38,7 +38,7 @@ export default function HospitalClaimsPage() {
   const [showSubmitForm, setShowSubmitForm] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("All Status");
-  const [insurerFilter, setInsurerFilter] = useState("All Insurers");
+  const [amountFilter, setAmountFilter] = useState("All Amounts");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [isHydrated, setIsHydrated] = useState(false);
@@ -144,9 +144,7 @@ export default function HospitalClaimsPage() {
                   | "Approved"
                   | "Rejected",
                 approvedAmount:
-                  insurerClaim.status === "Approved"
-                    ? claim.amountClaimed
-                    : 0,
+                  insurerClaim.status === "Approved" ? claim.amountClaimed : 0,
                 updatedAt: new Date().toISOString(),
               };
             }
@@ -188,9 +186,7 @@ export default function HospitalClaimsPage() {
                   | "Approved"
                   | "Rejected",
                 approvedAmount:
-                  insurerClaim.status === "Approved"
-                    ? claim.amountClaimed
-                    : 0,
+                  insurerClaim.status === "Approved" ? claim.amountClaimed : 0,
                 updatedAt: new Date().toISOString(),
               };
             }
@@ -287,13 +283,26 @@ export default function HospitalClaimsPage() {
     const matchesStatus =
       statusFilter === "All Status" || claim.status === statusFilter;
 
-    return matchesSearch && matchesStatus;
+    // Amount filter
+    const claimAmountNum = parseInt(claim.amount.replace(/[^0-9]/g, "")) || 0;
+    const matchesAmount =
+      amountFilter === "All Amounts" ||
+      (amountFilter === "Under 50K" && claimAmountNum < 50000) ||
+      (amountFilter === "50K - 100K" &&
+        claimAmountNum >= 50000 &&
+        claimAmountNum <= 100000) ||
+      (amountFilter === "100K - 500K" &&
+        claimAmountNum > 100000 &&
+        claimAmountNum <= 500000) ||
+      (amountFilter === "Over 500K" && claimAmountNum > 500000);
+
+    return matchesSearch && matchesStatus && matchesAmount;
   });
 
   // Reset page when filters or page size change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, statusFilter, itemsPerPage]);
+  }, [searchQuery, statusFilter, amountFilter, itemsPerPage]);
 
   const totalPages = Math.max(
     1,
@@ -361,32 +370,34 @@ export default function HospitalClaimsPage() {
           {/* Page Content */}
           <main className="flex-1 p-4 lg:p-6">
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-              <div className="bg-white rounded-lg shadow p-4">
-                <p className="text-sm text-gray-500">Total Claims</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {claimsStats.totalClaims}
-                </p>
+            {isHydrated && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                <div className="bg-white rounded-lg shadow p-4">
+                  <p className="text-sm text-gray-500">Total Claims</p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    {claimsStats.totalClaims}
+                  </p>
+                </div>
+                <div className="bg-white rounded-lg shadow p-4">
+                  <p className="text-sm text-gray-500">Approved Claims</p>
+                  <p className="text-2xl font-bold text-green-600">
+                    {claimsStats.totalApprovedClaims}
+                  </p>
+                </div>
+                <div className="bg-white rounded-lg shadow p-4">
+                  <p className="text-sm text-gray-500">Pending Review</p>
+                  <p className="text-2xl font-bold text-yellow-600">
+                    {claimsStats.pendingClaims}
+                  </p>
+                </div>
+                <div className="bg-white rounded-lg shadow p-4">
+                  <p className="text-sm text-gray-500">Total Amount</p>
+                  <p className="text-2xl font-bold text-blue-600">
+                    Rs. {claimsStats.totalAmount}K
+                  </p>
+                </div>
               </div>
-              <div className="bg-white rounded-lg shadow p-4">
-                <p className="text-sm text-gray-500">Approved Claims</p>
-                <p className="text-2xl font-bold text-green-600">
-                  {claimsStats.totalApprovedClaims}
-                </p>
-              </div>
-              <div className="bg-white rounded-lg shadow p-4">
-                <p className="text-sm text-gray-500">Pending Review</p>
-                <p className="text-2xl font-bold text-yellow-600">
-                  {claimsStats.pendingClaims}
-                </p>
-              </div>
-              <div className="bg-white rounded-lg shadow p-4">
-                <p className="text-sm text-gray-500">Total Amount</p>
-                <p className="text-2xl font-bold text-blue-600">
-                  Rs. {claimsStats.totalAmount}K
-                </p>
-              </div>
-            </div>
+            )}
 
             {/* Claims Table */}
             <div className="bg-white rounded-lg shadow overflow-hidden">
@@ -410,14 +421,15 @@ export default function HospitalClaimsPage() {
                     <option>Rejected</option>
                   </select>
                   <select
-                    value={insurerFilter}
-                    onChange={(e) => setInsurerFilter(e.target.value)}
+                    value={amountFilter}
+                    onChange={(e) => setAmountFilter(e.target.value)}
                     className="px-3 lg:px-4 py-2 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm lg:text-base"
                   >
-                    <option>All Insurers</option>
-                    <option>HealthGuard Insurance</option>
-                    <option>MediCare Plus</option>
-                    <option>SecureHealth</option>
+                    <option>All Amounts</option>
+                    <option>Under 50K</option>
+                    <option>50K - 100K</option>
+                    <option>100K - 500K</option>
+                    <option>Over 500K</option>
                   </select>
                 </div>
               </div>

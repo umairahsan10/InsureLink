@@ -1,14 +1,19 @@
-import { ClaimData, CLAIMS_STORAGE_KEY, loadStoredClaims, persistClaims } from "@/data/claimsData";
+import {
+  ClaimData,
+  CLAIMS_STORAGE_KEY,
+  loadStoredClaims,
+  persistClaims,
+} from "@/data/claimsData";
 import { Claim } from "@/types/claims";
 
 /**
  * CLAIMS SYNC SYSTEM DOCUMENTATION
- * 
- * Problem: Hardcoded claims in claims.json (hospital view) were not syncing 
+ *
+ * Problem: Hardcoded claims in claims.json (hospital view) were not syncing
  * with insurer's approval status updates stored in localStorage.
- * 
+ *
  * Solution: Sync hardcoded claims to insurer's localStorage and listen for updates
- * 
+ *
  * Data Flow:
  * 1. Hospital Page loads hardcoded claims from claims.json
  * 2. On mount, hospital page syncs hardcoded claims to insurer localStorage
@@ -39,7 +44,7 @@ export const convertClaimToClaimData = (claim: Claim): ClaimData => {
 /**
  * Syncs hardcoded hospital claims to the insurer's localStorage
  * This ensures that when insurer updates claim status, it's reflected on hospital page
- * 
+ *
  * Called on hospital page mount to register all hardcoded claims with insurer
  */
 export const syncHardcodedClaimsToInsurer = (hardcodedClaims: Claim[]) => {
@@ -49,13 +54,13 @@ export const syncHardcodedClaimsToInsurer = (hardcodedClaims: Claim[]) => {
 
   // Load existing insurer claims
   const existingClaims = loadStoredClaims();
-  
+
   // Convert hardcoded hospital claims to insurer format
   const hardcodedAsClaimData = hardcodedClaims.map(convertClaimToClaimData);
-  
+
   // Create a map of existing claims by ID for quick lookup
   const existingMap = new Map(existingClaims.map((c) => [c.id, c]));
-  
+
   // Merge: for each hardcoded claim, update if exists, otherwise add
   // But preserve any status changes made on the insurer side
   const merged = existingClaims.map((existing) => {
@@ -70,14 +75,14 @@ export const syncHardcodedClaimsToInsurer = (hardcodedClaims: Claim[]) => {
     }
     return existing;
   });
-  
+
   // Add any new hardcoded claims that don't exist in insurer's data
   for (const hardcoded of hardcodedAsClaimData) {
     if (!existingMap.has(hardcoded.id)) {
       merged.push(hardcoded);
     }
   }
-  
+
   // Persist the merged claims back to insurer storage
   persistClaims(merged);
 };
@@ -90,16 +95,17 @@ export const syncClaimStatusFromInsurer = (
   insurerClaims: ClaimData[]
 ): Claim => {
   const insurerClaim = insurerClaims.find((ic) => ic.id === hospitalClaim.id);
-  
+
   if (insurerClaim && insurerClaim.status !== hospitalClaim.status) {
     return {
       ...hospitalClaim,
       status: insurerClaim.status as "Pending" | "Approved" | "Rejected",
-      approvedAmount: insurerClaim.status === "Approved" ? hospitalClaim.amountClaimed : 0,
+      approvedAmount:
+        insurerClaim.status === "Approved" ? hospitalClaim.amountClaimed : 0,
       updatedAt: new Date().toISOString(),
     };
   }
-  
+
   return hospitalClaim;
 };
 
