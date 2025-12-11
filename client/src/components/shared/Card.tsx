@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import { ReactNode } from "react";
 
 interface CardProps {
   children: ReactNode;
@@ -6,9 +6,11 @@ interface CardProps {
   className?: string;
 }
 
-export default function Card({ children, title, className = '' }: CardProps) {
+export default function Card({ children, title, className = "" }: CardProps) {
   return (
-    <div className={`bg-white rounded-lg shadow p-6 ${className}`}>
+    <div
+      className={`bg-white rounded-lg shadow-sm hover:shadow-md border border-gray-100 hover:border-gray-200 transition-all duration-300 p-4 sm:p-5 ${className}`}
+    >
       {title && (
         <h3 className="text-lg font-semibold text-gray-900 mb-4">{title}</h3>
       )}
@@ -16,4 +18,3 @@ export default function Card({ children, title, className = '' }: CardProps) {
     </div>
   );
 }
-

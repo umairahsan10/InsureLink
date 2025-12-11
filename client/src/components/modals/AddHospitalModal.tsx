@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import BaseModal from './BaseModal';
+import { useState } from "react";
+import BaseModal from "./BaseModal";
 
 interface AddHospitalModalProps {
   isOpen: boolean;
@@ -9,12 +9,16 @@ interface AddHospitalModalProps {
   onSuccess?: () => void;
 }
 
-export default function AddHospitalModal({ isOpen, onClose, onSuccess }: AddHospitalModalProps) {
+export default function AddHospitalModal({
+  isOpen,
+  onClose,
+  onSuccess,
+}: AddHospitalModalProps) {
   const [formData, setFormData] = useState({
-    name: '',
-    address: '',
-    phone: '',
-    email: '',
+    name: "",
+    address: "",
+    phone: "",
+    email: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
@@ -43,7 +47,9 @@ export default function AddHospitalModal({ isOpen, onClose, onSuccess }: AddHosp
     // Phone validation
     if (!formData.phone.trim()) {
       newErrors.phone = "Phone is required";
-    } else if (!/^\+?92[-\s]?\d{3}[-\s]?\d{7}$/.test(formData.phone.replace(/\s/g, ""))) {
+    } else if (
+      !/^\+?92[-\s]?\d{3}[-\s]?\d{7}$/.test(formData.phone.replace(/\s/g, ""))
+    ) {
       newErrors.phone = "Phone must be a valid number (e.g., +92-300-1234567)";
     }
 
@@ -62,28 +68,28 @@ export default function AddHospitalModal({ isOpen, onClose, onSuccess }: AddHosp
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       return;
     }
 
     setIsSubmitting(true);
-    
+
     try {
       // TODO: API call to add hospital
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise((resolve) => setTimeout(resolve, 1000));
       onSuccess?.();
       onClose();
       setFormData({
-        name: '',
-        address: '',
-        phone: '',
-        email: '',
+        name: "",
+        address: "",
+        phone: "",
+        email: "",
       });
       setErrors({});
     } catch (error) {
-      console.error('Failed to add hospital', error);
-      alert('Failed to add hospital. Please try again.');
+      console.error("Failed to add hospital", error);
+      alert("Failed to add hospital. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -93,7 +99,9 @@ export default function AddHospitalModal({ isOpen, onClose, onSuccess }: AddHosp
     <BaseModal isOpen={isOpen} onClose={onClose} title="Add Hospital" size="md">
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Hospital Name *</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Hospital Name *
+          </label>
           <input
             type="text"
             required
@@ -103,44 +111,83 @@ export default function AddHospitalModal({ isOpen, onClose, onSuccess }: AddHosp
               errors.name ? "border-red-500" : "border-gray-300"
             }`}
           />
-          {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
+          {errors.name && (
+            <p className="text-red-500 text-xs mt-1">{errors.name}</p>
+          )}
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Address *</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Address *
+          </label>
           <input
             type="text"
             required
             value={formData.address}
-            onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+            onChange={(e) =>
+              setFormData({ ...formData, address: e.target.value })
+            }
             className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent ${
               errors.address ? "border-red-500" : "border-gray-300"
             }`}
           />
-          {errors.address && <p className="text-red-500 text-xs mt-1">{errors.address}</p>}
+          {errors.address && (
+            <p className="text-red-500 text-xs mt-1">{errors.address}</p>
+          )}
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Phone *</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Phone *
+          </label>
           <input
             type="tel"
             required
             value={formData.phone}
-            onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+            onChange={(e) =>
+              setFormData({ ...formData, phone: e.target.value })
+            }
             className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent ${
               errors.phone ? "border-red-500" : "border-gray-300"
             }`}
           />
-          {errors.phone && <p className="text-red-500 text-xs mt-1">{errors.phone}</p>}
+          {errors.phone && (
+            <p className="text-red-500 text-xs mt-1">{errors.phone}</p>
+          )}
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Email
+          </label>
           <input
             type="email"
             value={formData.email}
-            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+            onChange={(e) =>
+              setFormData({ ...formData, email: e.target.value })
+            }
             className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent ${
               errors.email ? "border-red-500" : "border-gray-300"
             }`}
           />
-          {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
+          {errors.email && (
+            <p className="text-red-500 text-xs mt-1">{errors.email}</p>
+          )}
         </div>
-        <div className="mt-6 flex j
+        <div className="mt-6 flex justify-end space-x-3">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isSubmitting ? "Adding..." : "Add Hospital"}
+          </button>
+        </div>
+      </form>
+    </BaseModal>
+  );
+}

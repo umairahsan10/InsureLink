@@ -60,7 +60,9 @@ export default function PatientRegistrationModal({
     // Phone validation
     if (!formData.phone.trim()) {
       newErrors.phone = "Phone is required";
-    } else if (!/^\+?92[-\s]?\d{3}[-\s]?\d{7}$/.test(formData.phone.replace(/\s/g, ""))) {
+    } else if (
+      !/^\+?92[-\s]?\d{3}[-\s]?\d{7}$/.test(formData.phone.replace(/\s/g, ""))
+    ) {
       newErrors.phone = "Phone must be a valid number (e.g., +92-300-1234567)";
     }
 
@@ -86,7 +88,7 @@ export default function PatientRegistrationModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Validate form before submission
     if (!validateForm()) {
       return;
@@ -142,7 +144,9 @@ export default function PatientRegistrationModal({
                 errors.name ? "border-red-500" : "border-gray-300"
               }`}
             />
-            {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
+            {errors.name && (
+              <p className="text-red-500 text-xs mt-1">{errors.name}</p>
+            )}
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -160,7 +164,9 @@ export default function PatientRegistrationModal({
                 errors.cnic ? "border-red-500" : "border-gray-300"
               }`}
             />
-            {errors.cnic && <p className="text-red-500 text-xs mt-1">{errors.cnic}</p>}
+            {errors.cnic && (
+              <p className="text-red-500 text-xs mt-1">{errors.cnic}</p>
+            )}
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -179,7 +185,9 @@ export default function PatientRegistrationModal({
                 errors.age ? "border-red-500" : "border-gray-300"
               }`}
             />
-            {errors.age && <p className="text-red-500 text-xs mt-1">{errors.age}</p>}
+            {errors.age && (
+              <p className="text-red-500 text-xs mt-1">{errors.age}</p>
+            )}
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -196,7 +204,9 @@ export default function PatientRegistrationModal({
                 errors.phone ? "border-red-500" : "border-gray-300"
               }`}
             />
-            {errors.phone && <p className="text-red-500 text-xs mt-1">{errors.phone}</p>}
+            {errors.phone && (
+              <p className="text-red-500 text-xs mt-1">{errors.phone}</p>
+            )}
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -212,7 +222,9 @@ export default function PatientRegistrationModal({
                 errors.email ? "border-red-500" : "border-gray-300"
               }`}
             />
-            {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
+            {errors.email && (
+              <p className="text-red-500 text-xs mt-1">{errors.email}</p>
+            )}
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -228,7 +240,9 @@ export default function PatientRegistrationModal({
                 errors.address ? "border-red-500" : "border-gray-300"
               }`}
             />
-            {errors.address && <p className="text-red-500 text-xs mt-1">{errors.address}</p>}
+            {errors.address && (
+              <p className="text-red-500 text-xs mt-1">{errors.address}</p>
+            )}
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">

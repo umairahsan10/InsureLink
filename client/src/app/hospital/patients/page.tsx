@@ -386,7 +386,17 @@ export default function HospitalPatientsPage() {
             setSelectedPatientId(null);
           }}
           patientId={selectedPatientId}
-          patientData={patients.find((p) => p.id === selectedPatientId)}
+          patientData={
+            patients.find((p) => p.id === selectedPatientId)
+              ? ({
+                  ...patients.find((p) => p.id === selectedPatientId)!,
+                  lastVisitDate: patients
+                    .find((p) => p.id === selectedPatientId)!
+                    .lastVisitDate.toISOString()
+                    .split("T")[0],
+                } as any)
+              : undefined
+          }
         />
       )}
     </div>

@@ -36,6 +36,40 @@ export default function ClaimEditModal({
     description: "",
   });
   const [isSaving, setIsSaving] = useState(false);
+  const [errors, setErrors] = useState<{ [key: string]: string }>({});
+
+  const validateForm = () => {
+    const newErrors: { [key: string]: string } = {};
+
+    // Treatment validation
+    if (!formData.treatment.trim()) {
+      newErrors.treatment = "Treatment is required";
+    } else if (formData.treatment.trim().length < 2) {
+      newErrors.treatment = "Treatment must be at least 2 characters";
+    } else if (formData.treatment.length > 200) {
+      newErrors.treatment = "Treatment cannot exceed 200 characters";
+    }
+
+    // Amount validation
+    if (!formData.amount) {
+      newErrors.amount = "Amount is required";
+    } else {
+      const amountNum = parseFloat(formData.amount);
+      if (isNaN(amountNum) || amountNum < 0) {
+        newErrors.amount = "Amount must be a positive number";
+      } else if (amountNum > 99999999) {
+        newErrors.amount = "Amount cannot exceed 99,999,999";
+      }
+    }
+
+    // Description validation (optional but if provided, check length)
+    if (formData.description.length > 1000) {
+      newErrors.description = "Description cannot exceed 1000 characters";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   useEffect(() => {
     if (claimData) {
@@ -52,6 +86,10 @@ export default function ClaimEditModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!validateForm()) {
+      return;
+    }
+
     setIsSaving(true);
 
     try {
@@ -86,8 +124,13 @@ export default function ClaimEditModal({
             onChange={(e) =>
               setFormData({ ...formData, treatment: e.target.value })
             }
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+            className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent ${
+              errors.treatment ? "border-red-500" : "border-gray-300"
+            }`}
           />
+          {errors.treatment && (
+            <p className="text-red-500 text-xs mt-1">{errors.treatment}</p>
+          )}
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -102,9 +145,14 @@ export default function ClaimEditModal({
             onChange={(e) =>
               setFormData({ ...formData, amount: e.target.value })
             }
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+            className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent ${
+              errors.amount ? "border-red-500" : "border-gray-300"
+            }`}
             placeholder="0.00"
           />
+          {errors.amount && (
+            <p className="text-red-500 text-xs mt-1">{errors.amount}</p>
+          )}
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -116,9 +164,14 @@ export default function ClaimEditModal({
             onChange={(e) =>
               setFormData({ ...formData, description: e.target.value })
             }
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+            className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent ${
+              errors.description ? "border-red-500" : "border-gray-300"
+            }`}
             placeholder="Additional details..."
           />
+          {errors.description && (
+            <p className="text-red-500 text-xs mt-1">{errors.description}</p>
+          )}
         </div>
         <div className="mt-6 flex justify-end space-x-3">
           <button

@@ -46,9 +46,101 @@ export default function AddCorporateModal({
     contractEnd: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errors, setErrors] = useState<{ [key: string]: string }>({});
+
+  const validateForm = () => {
+    const newErrors: { [key: string]: string } = {};
+
+    // Corporate Name validation
+    if (!formData.name.trim()) {
+      newErrors.name = "Corporate name is required";
+    } else if (formData.name.trim().length < 2) {
+      newErrors.name = "Corporate name must be at least 2 characters";
+    } else if (formData.name.trim().length > 100) {
+      newErrors.name = "Corporate name cannot exceed 100 characters";
+    }
+
+    // Industry validation
+    if (!formData.industry.trim()) {
+      newErrors.industry = "Industry is required";
+    } else if (formData.industry.trim().length < 2) {
+      newErrors.industry = "Industry must be at least 2 characters";
+    }
+
+    // Plan Type validation
+    if (!formData.planType) {
+      newErrors.planType = "Plan type is required";
+    }
+
+    // Premium validation
+    if (!formData.premium) {
+      newErrors.premium = "Premium is required";
+    } else {
+      const premiumNum = parseInt(formData.premium);
+      if (premiumNum < 1 || premiumNum > 99999999) {
+        newErrors.premium = "Premium must be between 1 and 99,999,999";
+      }
+    }
+
+    // Total Employees validation
+    if (formData.totalEmployees < 1) {
+      newErrors.totalEmployees = "Total employees must be at least 1";
+    } else if (formData.totalEmployees > 99999999) {
+      newErrors.totalEmployees = "Total employees cannot exceed 99,999,999";
+    }
+
+    // HR Contact Name validation
+    if (!formData.hrContactName.trim()) {
+      newErrors.hrContactName = "Contact name is required";
+    } else if (formData.hrContactName.trim().length < 2) {
+      newErrors.hrContactName = "Contact name must be at least 2 characters";
+    }
+
+    // HR Contact Email validation
+    if (!formData.hrContactEmail.trim()) {
+      newErrors.hrContactEmail = "Contact email is required";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.hrContactEmail)) {
+      newErrors.hrContactEmail = "Email format is invalid";
+    }
+
+    // HR Contact Phone validation
+    if (!formData.hrContactPhone.trim()) {
+      newErrors.hrContactPhone = "Contact phone is required";
+    } else if (
+      !/^\+?92[-\s]?\d{3}[-\s]?\d{7}$/.test(
+        formData.hrContactPhone.replace(/\s/g, "")
+      )
+    ) {
+      newErrors.hrContactPhone =
+        "Phone must be a valid number (e.g., +92-300-1234567)";
+    }
+
+    // Contract Start Date validation
+    if (!formData.contractStart) {
+      newErrors.contractStart = "Start date is required";
+    }
+
+    // Contract End Date validation
+    if (!formData.contractEnd) {
+      newErrors.contractEnd = "End date is required";
+    } else if (
+      formData.contractStart &&
+      new Date(formData.contractEnd) <= new Date(formData.contractStart)
+    ) {
+      newErrors.contractEnd = "End date must be after start date";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!validateForm()) {
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -94,6 +186,7 @@ export default function AddCorporateModal({
         contractStart: "",
         contractEnd: "",
       });
+      setErrors({});
     } catch (error) {
       console.error("Failed to add corporate", error);
       alert("Failed to add corporate. Please try again.");
@@ -130,9 +223,14 @@ export default function AddCorporateModal({
               onChange={(e) =>
                 setFormData({ ...formData, name: e.target.value })
               }
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+              className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
+                errors.name ? "border-red-500" : "border-gray-300"
+              }`}
               placeholder="e.g., Acme Ltd"
             />
+            {errors.name && (
+              <p className="text-red-500 text-xs mt-1">{errors.name}</p>
+            )}
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -146,9 +244,14 @@ export default function AddCorporateModal({
                 onChange={(e) =>
                   setFormData({ ...formData, industry: e.target.value })
                 }
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
+                  errors.industry ? "border-red-500" : "border-gray-300"
+                }`}
                 placeholder="e.g., Technology"
               />
+              {errors.industry && (
+                <p className="text-red-500 text-xs mt-1">{errors.industry}</p>
+              )}
             </div>
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -160,13 +263,18 @@ export default function AddCorporateModal({
                 onChange={(e) =>
                   setFormData({ ...formData, planType: e.target.value })
                 }
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
+                  errors.planType ? "border-red-500" : "border-gray-300"
+                }`}
               >
                 <option value="">Select a plan</option>
                 <option value="Comprehensive">Comprehensive</option>
                 <option value="Premium">Premium</option>
                 <option value="Basic">Basic</option>
               </select>
+              {errors.planType && (
+                <p className="text-red-500 text-xs mt-1">{errors.planType}</p>
+              )}
             </div>
           </div>
         </div>
@@ -194,9 +302,14 @@ export default function AddCorporateModal({
                     setFormData({ ...formData, premium: value });
                   }
                 }}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
+                  errors.premium ? "border-red-500" : "border-gray-300"
+                }`}
                 placeholder="e.g., 45"
               />
+              {errors.premium && (
+                <p className="text-red-500 text-xs mt-1">{errors.premium}</p>
+              )}
             </div>
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -217,9 +330,16 @@ export default function AddCorporateModal({
                     });
                   }
                 }}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
+                  errors.totalEmployees ? "border-red-500" : "border-gray-300"
+                }`}
                 placeholder="e.g., 8"
               />
+              {errors.totalEmployees && (
+                <p className="text-red-500 text-xs mt-1">
+                  {errors.totalEmployees}
+                </p>
+              )}
             </div>
           </div>
         </div>
@@ -241,9 +361,16 @@ export default function AddCorporateModal({
               onChange={(e) =>
                 setFormData({ ...formData, hrContactName: e.target.value })
               }
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+              className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
+                errors.hrContactName ? "border-red-500" : "border-gray-300"
+              }`}
               placeholder="e.g., Sara Ahmed"
             />
+            {errors.hrContactName && (
+              <p className="text-red-500 text-xs mt-1">
+                {errors.hrContactName}
+              </p>
+            )}
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -257,9 +384,16 @@ export default function AddCorporateModal({
                 onChange={(e) =>
                   setFormData({ ...formData, hrContactEmail: e.target.value })
                 }
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
+                  errors.hrContactEmail ? "border-red-500" : "border-gray-300"
+                }`}
                 placeholder="sara@acme.com"
               />
+              {errors.hrContactEmail && (
+                <p className="text-red-500 text-xs mt-1">
+                  {errors.hrContactEmail}
+                </p>
+              )}
             </div>
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -272,9 +406,16 @@ export default function AddCorporateModal({
                 onChange={(e) =>
                   setFormData({ ...formData, hrContactPhone: e.target.value })
                 }
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
+                  errors.hrContactPhone ? "border-red-500" : "border-gray-300"
+                }`}
                 placeholder="+92-300-1111111"
               />
+              {errors.hrContactPhone && (
+                <p className="text-red-500 text-xs mt-1">
+                  {errors.hrContactPhone}
+                </p>
+              )}
             </div>
           </div>
         </div>
@@ -297,8 +438,15 @@ export default function AddCorporateModal({
                 onChange={(e) =>
                   setFormData({ ...formData, contractStart: e.target.value })
                 }
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
+                  errors.contractStart ? "border-red-500" : "border-gray-300"
+                }`}
               />
+              {errors.contractStart && (
+                <p className="text-red-500 text-xs mt-1">
+                  {errors.contractStart}
+                </p>
+              )}
             </div>
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -311,8 +459,15 @@ export default function AddCorporateModal({
                 onChange={(e) =>
                   setFormData({ ...formData, contractEnd: e.target.value })
                 }
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
+                  errors.contractEnd ? "border-red-500" : "border-gray-300"
+                }`}
               />
+              {errors.contractEnd && (
+                <p className="text-red-500 text-xs mt-1">
+                  {errors.contractEnd}
+                </p>
+              )}
             </div>
           </div>
         </div>

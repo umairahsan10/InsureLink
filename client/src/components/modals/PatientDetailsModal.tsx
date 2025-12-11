@@ -17,11 +17,12 @@ interface PatientDetails {
   insurance?: string;
   status?: string;
   insured?: boolean;
-  corporateName?: string;
+  corporateName?: string | null;
   designation?: string;
   department?: string;
   coverageStart?: string;
   coverageEnd?: string;
+  [key: string]: any;
 }
 
 interface PatientDetailsModalProps {
