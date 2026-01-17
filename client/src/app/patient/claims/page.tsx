@@ -2,6 +2,13 @@
 
 import { useState } from "react";
 import hospitalsData from "@/data/hospitals.json";
+import {
+  CLAIMS_STORAGE_KEY,
+  CLAIMS_UPDATED_EVENT,
+  loadStoredClaims,
+  persistClaims,
+  type ClaimData,
+} from "@/data/claimsData";
 
 interface ClaimFormData {
   hospitalName: string;
@@ -123,6 +130,39 @@ export default function PatientClaimsPage() {
     try {
       // Simulate API call
       await new Promise((resolve) => setTimeout(resolve, 2000));
+
+      // Generate claim ID and number
+      const randomNum = Math.floor(Math.random() * 900) + 100; // 100-999
+      const newClaimId = `clm-${randomNum}`;
+      const claimNumber = `CLM-${new Date().getFullYear()}-${String(
+        Math.floor(Math.random() * 9999) + 1
+      ).padStart(4, "0")}`;
+
+      // Save claim to insurer's claims storage so they can see it immediately
+      if (typeof window !== "undefined") {
+        try {
+          const storedClaims = loadStoredClaims();
+          
+          const newClaim: ClaimData = {
+            id: newClaimId,
+            patient: "Ali Raza", // Patient name (should ideally come from auth context)
+            hospital: formData.hospitalName,
+            date: formData.admissionDate,
+            amount: formData.amountClaimed,
+            priority: "Normal",
+            status: "Pending",
+            isPaid: false,
+            treatmentCategory: "General Claim",
+            notes: formData.description,
+          };
+          
+          // Add to insurer's claims
+          const updatedClaims = [...storedClaims, newClaim];
+          persistClaims(updatedClaims);
+        } catch (error) {
+          console.error("Error saving claim to insurer storage:", error);
+        }
+      }
 
       // Show success message
       alert(

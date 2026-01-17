@@ -213,6 +213,22 @@ const EmergencyContactsIcon = () => (
   </svg>
 );
 
+const DocumentIcon = () => (
+  <svg
+    className="w-5 h-5"
+    fill="none"
+    stroke="currentColor"
+    viewBox="0 0 24 24"
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={2}
+      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+    />
+  </svg>
+);
+
 const menuItems: Record<string, MenuItem[]> = {
   patient: [
     { name: "Dashboard", href: "/patient/dashboard", icon: <DashboardIcon /> },
@@ -260,6 +276,11 @@ const menuItems: Record<string, MenuItem[]> = {
       name: "Corporates",
       href: "/insurer/corporates",
       icon: <CorporatesIcon />,
+    },
+    {
+      name: "Document Extract",
+      href: "/insurer/document-extract",
+      icon: <DocumentIcon />,
     },
     { name: "Profile", href: "/insurer/profile", icon: <ShieldIcon /> },
   ],
