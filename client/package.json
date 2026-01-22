@@ -13,6 +13,7 @@
     "@tensorflow/tfjs": "^4.22.0",
     "leaflet": "^1.9.4",
     "next": "^16.0.7",
+    "pdfjs-dist": "^4.0.379",
     "react": "^19.2.1",
     "react-dom": "^19.2.1",
     "react-leaflet": "^5.0.0",

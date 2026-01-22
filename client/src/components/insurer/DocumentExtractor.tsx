@@ -2,6 +2,12 @@
 
 import { useState, useRef } from "react";
 import Image from "next/image";
+import * as pdfjsLib from "pdfjs-dist";
+
+// Set up the worker for PDF.js to use local file
+if (typeof window !== "undefined") {
+  pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.js";
+}
 
 interface ClaimFormData {
   // Claimant Information
@@ -40,7 +46,8 @@ interface ClaimFormData {
   totalClaimAmount: string;
   totalNumberOfDays: string;
   titleOfCheque: string;
-  payableTo: string;
+  payableToEmployee: boolean;
+  payableToEmployer: boolean;
 }
 
 const INITIAL_FORM_DATA: ClaimFormData = {
@@ -69,7 +76,8 @@ const INITIAL_FORM_DATA: ClaimFormData = {
   totalClaimAmount: "",
   totalNumberOfDays: "",
   titleOfCheque: "",
-  payableTo: "",
+  payableToEmployee: false,
+  payableToEmployer: false,
 };
 
 const FIELD_MAPPING: Record<string, keyof ClaimFormData> = {
@@ -157,7 +165,7 @@ export default function DocumentExtractor() {
       console.log("Parsed JSON:", extractedJson);
 
       // Map snake_case keys to camelCase for form fields
-      const mappedData: Record<string, string> = {};
+      const mappedData: Record<string, any> = {};
 
       const snakeToCamelMapping: Record<string, keyof ClaimFormData> = {
         claimant_name: "claimantName",
@@ -185,14 +193,20 @@ export default function DocumentExtractor() {
         total_number_of_days: "totalNumberOfDays",
         total_claim_amount_pkr: "totalClaimAmount",
         title_of_cheque: "titleOfCheque",
-        payable_to: "payableTo",
+        payable_to_employee: "payableToEmployee",
+        payable_to_employer: "payableToEmployer",
       };
 
       Object.entries(extractedJson).forEach(([key, value]) => {
         const camelCaseKey =
           snakeToCamelMapping[key as keyof typeof snakeToCamelMapping];
         if (camelCaseKey) {
-          mappedData[camelCaseKey] = String(value);
+          // Handle boolean fields for payableTo
+          if (camelCaseKey === "payableToEmployee" || camelCaseKey === "payableToEmployer") {
+            mappedData[camelCaseKey] = Boolean(value);
+          } else {
+            mappedData[camelCaseKey] = String(value);
+          }
         }
       });
 
@@ -205,35 +219,40 @@ export default function DocumentExtractor() {
     }
   };
 
-  const mapExtractedDataToForm = (extractedData: Record<string, string>) => {
+  const mapExtractedDataToForm = (extractedData: Record<string, any>) => {
     const newFormData = { ...INITIAL_FORM_DATA };
 
     // Direct mapping since extractTextFromImage already returns camelCase keys
     Object.entries(extractedData).forEach(([key, value]) => {
       if (key in INITIAL_FORM_DATA) {
-        let formattedValue = String(value);
+        // Handle boolean fields
+        if (key === "payableToEmployee" || key === "payableToEmployer") {
+          newFormData[key as keyof ClaimFormData] = Boolean(value);
+        } else {
+          let formattedValue = String(value);
 
-        // Convert date format from DD-MM-YYYY to YYYY-MM-DD for date input
-        if (key === "patientDateOfBirth" && value) {
-          const dateParts = value.split("-");
-          if (dateParts.length === 3) {
-            // Assuming format is DD-MM-YYYY
-            const [day, month, year] = dateParts;
-            formattedValue = `${year}-${month}-${day}`;
+          // Convert date format from DD-MM-YYYY to YYYY-MM-DD for date input
+          if (key === "patientDateOfBirth" && value) {
+            const dateParts = value.split("-");
+            if (dateParts.length === 3) {
+              // Assuming format is DD-MM-YYYY
+              const [day, month, year] = dateParts;
+              formattedValue = `${year}-${month}-${day}`;
+            }
           }
-        }
 
-        // Validate patient takaful certificate number - should be exactly 3 digits
-        if (key === "patientTakafulCertificateNumber" && value) {
-          const digitsOnly = value.replace(/\D/g, "");
-          if (digitsOnly.length > 3) {
-            formattedValue = "";
-          } else {
-            formattedValue = digitsOnly;
+          // Validate patient takaful certificate number - should be exactly 3 digits
+          if (key === "patientTakafulCertificateNumber" && value) {
+            const digitsOnly = value.replace(/\D/g, "");
+            if (digitsOnly.length > 3) {
+              formattedValue = "";
+            } else {
+              formattedValue = digitsOnly;
+            }
           }
-        }
 
-        newFormData[key as keyof ClaimFormData] = formattedValue;
+          newFormData[key as keyof ClaimFormData] = formattedValue;
+        }
       }
     });
 
@@ -242,19 +261,66 @@ export default function DocumentExtractor() {
     setHasExtracted(true);
   };
 
+  const extractFirstImageFromPDF = async (
+    pdfFile: File
+  ): Promise<Blob> => {
+    const arrayBuffer = await pdfFile.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    const page = await pdf.getPage(1);
+
+    // Render at 5x scale for maximum detail without post-processing
+    const viewport = page.getViewport({ scale: 5.0 });
+
+    const canvas = document.createElement("canvas");
+    const context = canvas.getContext("2d", { alpha: false });
+
+    if (!context) {
+      throw new Error("Could not get canvas context");
+    }
+
+    canvas.width = Math.ceil(viewport.width);
+    canvas.height = Math.ceil(viewport.height);
+
+    // White background
+    context.fillStyle = "white";
+    context.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Disable smoothing for crisp rendering
+    context.imageSmoothingEnabled = false;
+
+    await page.render({
+      canvasContext: context,
+      viewport,
+    }).promise;
+
+    // Convert to PNG without any post-processing
+    return new Promise((resolve, reject) => {
+      canvas.toBlob(
+        (blob) => {
+          if (blob) {
+            resolve(blob);
+          } else {
+            reject(new Error("Failed to convert canvas to PNG"));
+          }
+        },
+        "image/png"
+      );
+    });
+  };
+
   const handleImageSelect = (e: React.FormEvent<HTMLInputElement>) => {
     const input = e.currentTarget;
     const file = input.files?.[0];
     if (!file) return;
 
-    if (!file.type.startsWith("image/")) {
-      setError("Please select an image file");
+    if (file.type !== "application/pdf") {
+      setError("Please select a PDF file");
       input.value = "";
       return;
     }
 
-    if (file.size > 5 * 1024 * 1024) {
-      setError("File size must be less than 5MB");
+    if (file.size > 50 * 1024 * 1024) {
+      setError("File size must be less than 50MB");
       input.value = "";
       return;
     }
@@ -265,11 +331,42 @@ export default function DocumentExtractor() {
     setHasExtracted(false);
     setExtractionTime(null);
 
+    // Extract and show preview of first page
     const reader = new FileReader();
-    reader.onload = (e) => {
-      setSelectedImage(e.target?.result as string);
+    reader.onload = async (e) => {
+      try {
+        const pdfData = e.target?.result as ArrayBuffer;
+        const pdf = await pdfjsLib.getDocument({ data: pdfData }).promise;
+        const page = await pdf.getPage(1);
+
+        const scale = 1;
+        const viewport = page.getViewport({ scale });
+        const canvas = document.createElement("canvas");
+        const context = canvas.getContext("2d");
+
+        if (!context) {
+          throw new Error("Could not get canvas context");
+        }
+
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+
+        await page.render({
+          canvasContext: context,
+          viewport: viewport,
+        }).promise;
+
+        setSelectedImage(canvas.toDataURL("image/png"));
+      } catch (err) {
+        setError(
+          err instanceof Error
+            ? err.message
+            : "Failed to load PDF preview"
+        );
+        input.value = "";
+      }
     };
-    reader.readAsDataURL(file);
+    reader.readAsArrayBuffer(file);
   };
 
   const handleProcessImage = async () => {
@@ -280,7 +377,14 @@ export default function DocumentExtractor() {
     setExtractionTime(null);
 
     try {
-      const extractedData = await extractTextFromImage(selectedFile);
+      // Extract first image from PDF and convert to PNG
+      const pngBlob = await extractFirstImageFromPDF(selectedFile);
+      const pngFile = new File([pngBlob], "first-page.png", {
+        type: "image/png",
+      });
+
+      // Send PNG image to OCR endpoint
+      const extractedData = await extractTextFromImage(pngFile);
 
       // Calculate elapsed time
       if (startTimeRef.current) {
@@ -294,7 +398,9 @@ export default function DocumentExtractor() {
       }
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Failed to extract text from image"
+        err instanceof Error
+          ? err.message
+          : "Failed to extract text from PDF"
       );
       setFormData(INITIAL_FORM_DATA);
       setHasExtracted(false);
@@ -305,10 +411,19 @@ export default function DocumentExtractor() {
   };
 
   const handleFormChange = (field: keyof ClaimFormData, value: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
+    setFormData((prev) => {
+      // Handle boolean fields
+      if (field === "payableToEmployee" || field === "payableToEmployer") {
+        return {
+          ...prev,
+          [field]: value === "true" || value === true,
+        };
+      }
+      return {
+        ...prev,
+        [field]: value,
+      };
+    });
   };
 
   const handleReset = () => {
@@ -358,7 +473,7 @@ export default function DocumentExtractor() {
             </div>
             <div className="flex-1 min-w-0">
               <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold bg-gradient-to-r from-gray-900 via-red-700 to-orange-600 bg-clip-text text-transparent break-words">
-                Insurance Claim Form
+                Reimbursement Claim Form
               </h1>
               <p className="text-gray-600 text-xs sm:text-sm mt-1 hidden sm:block">
                 AI-powered document extraction for claim processing
@@ -409,9 +524,9 @@ export default function DocumentExtractor() {
                     fill="currentColor"
                     viewBox="0 0 20 20"
                   >
-                    <path d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" />
+                    <path d="M8 16.5a1 1 0 11-2 0 1 1 0 012 0zM15 7a2 2 0 11-4 0 2 2 0 014 0zM19 3H1a1 1 0 00-1 1v12a1 1 0 001 1h18a1 1 0 001-1V4a1 1 0 00-1-1zm-1 11H2V5h16v9z" />
                   </svg>
-                  Upload Document
+                  Upload PDF
                 </h2>
               </div>
 
@@ -453,16 +568,11 @@ export default function DocumentExtractor() {
                         <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto group-hover:bg-red-100 transition-colors">
                           <svg
                             className="w-6 h-6 text-gray-400 group-hover:text-red-500 transition-colors"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
+                            fill="currentColor"
+                            viewBox="0 0 20 20"
                           >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                            />
+                            <path d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm0 2h12v10H4V5z" />
+                            <path d="M6 8h8v2H6V8zm0 3h6v2H6v-2z" />
                           </svg>
                         </div>
                         <div>
@@ -470,7 +580,7 @@ export default function DocumentExtractor() {
                             Click to upload
                           </p>
                           <p className="text-xs text-gray-500 mt-1">
-                            PNG, JPG, JPEG • Max 5MB
+                            PDF • Max 50MB
                           </p>
                         </div>
                       </div>
@@ -479,7 +589,7 @@ export default function DocumentExtractor() {
                   <input
                     ref={fileInputRef}
                     type="file"
-                    accept="image/*"
+                    accept=".pdf,application/pdf"
                     onChange={handleImageSelect}
                     className="hidden"
                     disabled={isLoading}
@@ -508,7 +618,7 @@ export default function DocumentExtractor() {
                       <div className="inline-block h-5 w-5 animate-spin rounded-full border-3 border-blue-300 border-r-blue-600"></div>
                     </div>
                     <p className="text-sm text-blue-700 mt-2 font-medium">
-                      Extracting text...
+                      Extracting first page and converting to PNG...
                     </p>
                   </div>
                 )}
@@ -961,34 +1071,22 @@ export default function DocumentExtractor() {
                           <div className="grid grid-cols-2 gap-2">
                             <FormCheckbox
                               label="Employee"
-                              value={
-                                formData.payableTo === "Employee"
-                                  ? "Employee"
-                                  : ""
-                              }
+                              value={formData.payableToEmployee ? "Yes" : ""}
                               onChange={() =>
                                 handleFormChange(
-                                  "payableTo",
-                                  formData.payableTo === "Employee"
-                                    ? ""
-                                    : "Employee"
+                                  "payableToEmployee",
+                                  (!formData.payableToEmployee).toString()
                                 )
                               }
                               disabled={!isEditMode}
                             />
                             <FormCheckbox
                               label="Employer"
-                              value={
-                                formData.payableTo === "Employer"
-                                  ? "Employer"
-                                  : ""
-                              }
+                              value={formData.payableToEmployer ? "Yes" : ""}
                               onChange={() =>
                                 handleFormChange(
-                                  "payableTo",
-                                  formData.payableTo === "Employer"
-                                    ? ""
-                                    : "Employer"
+                                  "payableToEmployer",
+                                  (!formData.payableToEmployer).toString()
                                 )
                               }
                               disabled={!isEditMode}
@@ -1005,23 +1103,18 @@ export default function DocumentExtractor() {
                 <div className="w-16 h-16 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
                   <svg
                     className="w-8 h-8 text-gray-400"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
                   >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                    />
+                    <path d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm0 2h12v10H4V5z" />
+                    <path d="M6 8h8v2H6V8zm0 3h6v2H6v-2z" />
                   </svg>
                 </div>
                 <p className="text-gray-600 font-medium">
-                  Upload a document to get started
+                  Upload a PDF to get started
                 </p>
                 <p className="text-gray-500 text-sm mt-2">
-                  Select an image to extract claim information
+                  The first page will be extracted and converted to PNG for processing
                 </p>
               </div>
             )}
