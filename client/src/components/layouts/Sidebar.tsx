@@ -421,7 +421,7 @@ export default function Sidebar({ userRole }: SidebarProps) {
               <h1
                 className={`text-xl md:text-2xl font-bold ${theme.logoColor}`}
               >
-                InsureLink
+                TakafulBridge
               </h1>
               <p className={`text-xs md:text-sm ${theme.textColor} capitalize`}>
                 {userRole} Portal

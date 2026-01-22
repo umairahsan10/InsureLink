@@ -358,7 +358,7 @@ export default function DocumentExtractor() {
             </div>
             <div className="flex-1 min-w-0">
               <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold bg-gradient-to-r from-gray-900 via-red-700 to-orange-600 bg-clip-text text-transparent break-words">
-                Insurance Claim Form
+                Reimbursement Claim Form
               </h1>
               <p className="text-gray-600 text-xs sm:text-sm mt-1 hidden sm:block">
                 AI-powered document extraction for claim processing
@@ -411,7 +411,7 @@ export default function DocumentExtractor() {
                   >
                     <path d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" />
                   </svg>
-                  Upload Document
+                  Upload Image
                 </h2>
               </div>
 
