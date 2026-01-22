@@ -40,7 +40,8 @@ interface ClaimFormData {
   totalClaimAmount: string;
   totalNumberOfDays: string;
   titleOfCheque: string;
-  payableTo: string;
+  payable_to_employee: string;
+  payable_to_employer: string;
 }
 
 const INITIAL_FORM_DATA: ClaimFormData = {
@@ -69,7 +70,8 @@ const INITIAL_FORM_DATA: ClaimFormData = {
   totalClaimAmount: "",
   totalNumberOfDays: "",
   titleOfCheque: "",
-  payableTo: "",
+  payable_to_employee: "",
+  payable_to_employer: "",
 };
 
 const FIELD_MAPPING: Record<string, keyof ClaimFormData> = {
@@ -99,7 +101,8 @@ const FIELD_MAPPING: Record<string, keyof ClaimFormData> = {
   "total claim amount (pkr)": "totalClaimAmount",
   "total number of days": "totalNumberOfDays",
   "title of cheque": "titleOfCheque",
-  "payable to (employee / employer)": "payableTo",
+  "payable to – employee": "payable_to_employee",
+  "payable to – employer": "payable_to_employer",
 };
 
 export default function DocumentExtractor() {
@@ -185,7 +188,8 @@ export default function DocumentExtractor() {
         total_number_of_days: "totalNumberOfDays",
         total_claim_amount_pkr: "totalClaimAmount",
         title_of_cheque: "titleOfCheque",
-        payable_to: "payableTo",
+        payable_to_employee: "payable_to_employee",
+        payable_to_employer: "payable_to_employer",
       };
 
       Object.entries(extractedJson).forEach(([key, value]) => {
@@ -961,35 +965,17 @@ export default function DocumentExtractor() {
                           <div className="grid grid-cols-2 gap-2">
                             <FormCheckbox
                               label="Employee"
-                              value={
-                                formData.payableTo === "Employee"
-                                  ? "Employee"
-                                  : ""
-                              }
-                              onChange={() =>
-                                handleFormChange(
-                                  "payableTo",
-                                  formData.payableTo === "Employee"
-                                    ? ""
-                                    : "Employee"
-                                )
+                              value={formData.payable_to_employee}
+                              onChange={(val) =>
+                                handleFormChange("payable_to_employee", val)
                               }
                               disabled={!isEditMode}
                             />
                             <FormCheckbox
                               label="Employer"
-                              value={
-                                formData.payableTo === "Employer"
-                                  ? "Employer"
-                                  : ""
-                              }
-                              onChange={() =>
-                                handleFormChange(
-                                  "payableTo",
-                                  formData.payableTo === "Employer"
-                                    ? ""
-                                    : "Employer"
-                                )
+                              value={formData.payable_to_employer}
+                              onChange={(val) =>
+                                handleFormChange("payable_to_employer", val)
                               }
                               disabled={!isEditMode}
                             />
