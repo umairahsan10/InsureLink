@@ -123,7 +123,7 @@ export default function DocumentExtractor() {
   const startTimeRef = useRef<number | null>(null);
 
   const extractTextFromImage = async (
-    file: File
+    file: File,
   ): Promise<Record<string, string>> => {
     setIsLoading(true);
     setError(null);
@@ -138,7 +138,7 @@ export default function DocumentExtractor() {
         {
           method: "POST",
           body: formData,
-        }
+        },
       );
 
       if (!response.ok) {
@@ -202,7 +202,10 @@ export default function DocumentExtractor() {
           snakeToCamelMapping[key as keyof typeof snakeToCamelMapping];
         if (camelCaseKey) {
           // Handle boolean fields for payableTo
-          if (camelCaseKey === "payableToEmployee" || camelCaseKey === "payableToEmployer") {
+          if (
+            camelCaseKey === "payableToEmployee" ||
+            camelCaseKey === "payableToEmployer"
+          ) {
             mappedData[camelCaseKey] = Boolean(value);
           } else {
             mappedData[camelCaseKey] = String(value);
@@ -261,9 +264,7 @@ export default function DocumentExtractor() {
     setHasExtracted(true);
   };
 
-  const extractFirstImageFromPDF = async (
-    pdfFile: File
-  ): Promise<Blob> => {
+  const extractFirstImageFromPDF = async (pdfFile: File): Promise<Blob> => {
     const arrayBuffer = await pdfFile.arrayBuffer();
     const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
     const page = await pdf.getPage(1);
@@ -295,16 +296,13 @@ export default function DocumentExtractor() {
 
     // Convert to PNG without any post-processing
     return new Promise((resolve, reject) => {
-      canvas.toBlob(
-        (blob) => {
-          if (blob) {
-            resolve(blob);
-          } else {
-            reject(new Error("Failed to convert canvas to PNG"));
-          }
-        },
-        "image/png"
-      );
+      canvas.toBlob((blob) => {
+        if (blob) {
+          resolve(blob);
+        } else {
+          reject(new Error("Failed to convert canvas to PNG"));
+        }
+      }, "image/png");
     });
   };
 
@@ -359,9 +357,7 @@ export default function DocumentExtractor() {
         setSelectedImage(canvas.toDataURL("image/png"));
       } catch (err) {
         setError(
-          err instanceof Error
-            ? err.message
-            : "Failed to load PDF preview"
+          err instanceof Error ? err.message : "Failed to load PDF preview",
         );
         input.value = "";
       }
@@ -398,9 +394,7 @@ export default function DocumentExtractor() {
       }
     } catch (err) {
       setError(
-        err instanceof Error
-          ? err.message
-          : "Failed to extract text from PDF"
+        err instanceof Error ? err.message : "Failed to extract text from PDF",
       );
       setFormData(INITIAL_FORM_DATA);
       setHasExtracted(false);
@@ -716,8 +710,8 @@ export default function DocumentExtractor() {
                         {isEditMode
                           ? "Editing..."
                           : hasExtracted
-                          ? "Extracted"
-                          : "Ready to edit"}
+                            ? "Extracted"
+                            : "Ready to edit"}
                       </p>
                     </div>
                   </div>
@@ -848,7 +842,7 @@ export default function DocumentExtractor() {
                                   "patientGender",
                                   formData.patientGender === "Male"
                                     ? ""
-                                    : "Male"
+                                    : "Male",
                                 )
                               }
                               disabled={!isEditMode}
@@ -865,7 +859,7 @@ export default function DocumentExtractor() {
                                   "patientGender",
                                   formData.patientGender === "Female"
                                     ? ""
-                                    : "Female"
+                                    : "Female",
                                 )
                               }
                               disabled={!isEditMode}
@@ -878,7 +872,7 @@ export default function DocumentExtractor() {
                           onChange={(val) =>
                             handleFormChange(
                               "patientTakafulCertificateNumber",
-                              val
+                              val,
                             )
                           }
                           disabled={!isEditMode}
@@ -946,7 +940,7 @@ export default function DocumentExtractor() {
                           onChange={(val) =>
                             handleFormChange(
                               "claimTypePrePostHospitalization",
-                              val
+                              val,
                             )
                           }
                           disabled={!isEditMode}
@@ -1075,7 +1069,7 @@ export default function DocumentExtractor() {
                               onChange={() =>
                                 handleFormChange(
                                   "payableToEmployee",
-                                  (!formData.payableToEmployee).toString()
+                                  (!formData.payableToEmployee).toString(),
                                 )
                               }
                               disabled={!isEditMode}
@@ -1086,7 +1080,7 @@ export default function DocumentExtractor() {
                               onChange={() =>
                                 handleFormChange(
                                   "payableToEmployer",
-                                  (!formData.payableToEmployer).toString()
+                                  (!formData.payableToEmployer).toString(),
                                 )
                               }
                               disabled={!isEditMode}
@@ -1114,7 +1108,8 @@ export default function DocumentExtractor() {
                   Upload a PDF to get started
                 </p>
                 <p className="text-gray-500 text-sm mt-2">
-                  The first page will be extracted and converted to PNG for processing
+                  The first page will be extracted and converted to PNG for
+                  processing
                 </p>
               </div>
             )}
@@ -1244,8 +1239,8 @@ function FormCheckbox({
             isChecked
               ? "bg-blue-500 border-blue-500"
               : disabled
-              ? "border-gray-300"
-              : "border-gray-300 hover:border-blue-400"
+                ? "border-gray-300"
+                : "border-gray-300 hover:border-blue-400"
           }`}
         >
           {isChecked && (
