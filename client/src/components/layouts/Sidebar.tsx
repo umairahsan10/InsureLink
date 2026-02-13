@@ -421,7 +421,7 @@ export default function Sidebar({ userRole }: SidebarProps) {
               <h1
                 className={`text-xl md:text-2xl font-bold ${theme.logoColor}`}
               >
-                TakafulBridge
+                Insurelink
               </h1>
               <p className={`text-xs md:text-sm ${theme.textColor} capitalize`}>
                 {userRole} Portal
@@ -489,10 +489,10 @@ export default function Sidebar({ userRole }: SidebarProps) {
           userRole === "insurer"
             ? "bg-red-600 hover:bg-red-700"
             : userRole === "corporate"
-            ? "bg-purple-600 hover:bg-purple-700"
-            : userRole === "hospital"
-            ? "bg-green-600 hover:bg-green-700"
-            : "bg-blue-600 hover:bg-blue-700"
+              ? "bg-purple-600 hover:bg-purple-700"
+              : userRole === "hospital"
+                ? "bg-green-600 hover:bg-green-700"
+                : "bg-blue-600 hover:bg-blue-700"
         }`}
         id="sidebar-toggle"
       >
