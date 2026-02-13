@@ -1,4 +1,10 @@
-import { Controller, Get, Post, UseInterceptors, UploadedFile } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  UseInterceptors,
+  UploadedFile,
+} from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { AppService } from './app.service';
 
@@ -12,7 +18,10 @@ export class AppController {
   }
 
   @Get('db/health')
-  async getDatabaseHealth(): Promise<{ ok: boolean; userCount: number | null }> {
+  async getDatabaseHealth(): Promise<{
+    ok: boolean;
+    userCount: number | null;
+  }> {
     return this.appService.getDatabaseHealth();
   }
 
@@ -25,4 +34,3 @@ export class AppController {
     return this.appService.extractFirstImageFromPDF(file.buffer);
   }
 }
-

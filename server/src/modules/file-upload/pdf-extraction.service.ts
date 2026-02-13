@@ -6,6 +6,8 @@ import { Injectable } from '@nestjs/common';
 export class PdfExtractionService {
   async extractFirstImageFromPDF(pdfBuffer: Buffer): Promise<Buffer> {
     // TODO: Implement PDF extraction once pdfjs-dist is installed
-    throw new Error('PDF extraction not yet implemented. Install pdfjs-dist to enable.');
+    throw new Error(
+      'PDF extraction not yet implemented. Install pdfjs-dist to enable.',
+    );
   }
 }
