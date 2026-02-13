@@ -1,10 +1,22 @@
 import { Injectable } from '@nestjs/common';
+import { PrismaService } from './common/prisma/prisma.service';
 import * as pdfjs from 'pdfjs-dist/legacy/build/pdf';
 
 @Injectable()
 export class AppService {
+  constructor(private readonly prisma: PrismaService) {}
+
   getHello(): string {
     return 'Hello World!';
+  }
+
+  async getDatabaseHealth(): Promise<{ ok: boolean; userCount: number | null }> {
+    try {
+      const userCount = await this.prisma.user.count();
+      return { ok: true, userCount };
+    } catch {
+      return { ok: false, userCount: null };
+    }
   }
 
   async extractFirstImageFromPDF(pdfBuffer: Buffer): Promise<Buffer> {

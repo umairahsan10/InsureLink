@@ -107,8 +107,8 @@ const FIELD_MAPPING: Record<string, keyof ClaimFormData> = {
   "total claim amount (pkr)": "totalClaimAmount",
   "total number of days": "totalNumberOfDays",
   "title of cheque": "titleOfCheque",
-  "payable to – employee": "payable_to_employee",
-  "payable to – employer": "payable_to_employer",
+  "payable to – employee": "payableToEmployee",
+  "payable to – employer": "payableToEmployer",
 };
 
 export default function DocumentExtractor() {
@@ -225,13 +225,15 @@ export default function DocumentExtractor() {
 
   const mapExtractedDataToForm = (extractedData: Record<string, any>) => {
     const newFormData = { ...INITIAL_FORM_DATA };
+    const isClaimFormKey = (candidate: string): candidate is keyof ClaimFormData =>
+      Object.prototype.hasOwnProperty.call(INITIAL_FORM_DATA, candidate);
 
     // Direct mapping since extractTextFromImage already returns camelCase keys
     Object.entries(extractedData).forEach(([key, value]) => {
-      if (key in INITIAL_FORM_DATA) {
+      if (isClaimFormKey(key)) {
         // Handle boolean fields
         if (key === "payableToEmployee" || key === "payableToEmployer") {
-          newFormData[key as keyof ClaimFormData] = Boolean(value);
+          newFormData[key] = Boolean(value);
         } else {
           let formattedValue = String(value);
 
@@ -255,7 +257,7 @@ export default function DocumentExtractor() {
             }
           }
 
-          newFormData[key as keyof ClaimFormData] = formattedValue;
+          newFormData[key] = formattedValue;
         }
       }
     });
@@ -405,18 +407,21 @@ export default function DocumentExtractor() {
     }
   };
 
-  const handleFormChange = (field: keyof ClaimFormData, value: string) => {
+  const handleFormChange = (
+    field: keyof ClaimFormData,
+    value: string | boolean,
+  ) => {
     setFormData((prev) => {
       // Handle boolean fields
       if (field === "payableToEmployee" || field === "payableToEmployer") {
         return {
           ...prev,
-          [field]: value === "true" || value === true,
+          [field]: typeof value === "boolean" ? value : value === "true",
         };
       }
       return {
         ...prev,
-        [field]: value,
+        [field]: String(value),
       };
     });
   };

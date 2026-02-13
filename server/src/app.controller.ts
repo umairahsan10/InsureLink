@@ -11,6 +11,11 @@ export class AppController {
     return this.appService.getHello();
   }
 
+  @Get('db/health')
+  async getDatabaseHealth(): Promise<{ ok: boolean; userCount: number | null }> {
+    return this.appService.getDatabaseHealth();
+  }
+
   @Post('extract-pdf-image')
   @UseInterceptors(FileInterceptor('pdf'))
   async extractPdfImage(@UploadedFile() file: Express.Multer.File): Promise<Buffer> {
