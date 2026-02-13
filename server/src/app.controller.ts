@@ -18,7 +18,7 @@ export class AppController {
 
   @Post('extract-pdf-image')
   @UseInterceptors(FileInterceptor('pdf'))
-  async extractPdfImage(@UploadedFile() file: Express.Multer.File): Promise<Buffer> {
+  async extractPdfImage(@UploadedFile() file: any): Promise<Buffer> {
     if (!file) {
       throw new Error('No PDF file provided');
     }

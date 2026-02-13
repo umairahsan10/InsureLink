@@ -1,5 +1,19 @@
-// Filter DTO
-// Common filtering parameters for queries
+import { IsOptional, IsString, IsDateString } from 'class-validator';
+
 export class FilterDto {
-  // Add common filter fields as needed
+  @IsOptional()
+  @IsString()
+  search?: string;
+
+  @IsOptional()
+  @IsDateString()
+  startDate?: string;
+
+  @IsOptional()
+  @IsDateString()
+  endDate?: string;
+
+  @IsOptional()
+  @IsString()
+  status?: string;
 }

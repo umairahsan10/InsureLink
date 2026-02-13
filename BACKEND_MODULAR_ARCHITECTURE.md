@@ -49,6 +49,28 @@ Each module has clear responsibilities, independent data models, and defined API
 
 ---
 
+## Parallel Development Plan (2 Developers)
+
+### Phase 0: Auth Contract (1-2 days)
+- Agree on JWT payload fields (e.g., `sub`, `role`, `orgId`)
+- Freeze roles/permissions enum
+- Define `/auth/me` response shape
+
+### Phase 1: Parallel Build (week 1)
+- **Dev A:** implement `auth` + `users`
+- **Dev B:** scaffold and build non-auth modules using a temporary `@Public()` or mock guard
+
+### Phase 2: Integration (week 2)
+- **Dev A:** finalize guards, roles, and policy decorators
+- **Dev B:** wire guards into endpoints, remove mocks, add role checks
+
+### Conflict Avoidance Rules
+- One owner per module folder under `src/modules/`
+- Changes to `common/`, `shared/`, `config/`, `websockets/` require both-dev review
+- Only one dev edits `app.module.ts` per sprint; other dev queues module registrations
+
+---
+
 ## Backend Module Structure
 
 ```

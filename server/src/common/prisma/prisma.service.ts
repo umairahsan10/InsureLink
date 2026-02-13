@@ -31,7 +31,9 @@ export class PrismaService
   }
 
   async enableShutdownHooks(app: INestApplication): Promise<void> {
-    this.$on('beforeExit', async () => {
+    // Note: Prisma v7 with PrismaPg adapter handles shutdown differently
+    // $on('beforeExit') is not supported with the adapter
+    process.on('SIGTERM', async () => {
       await app.close();
     });
   }
