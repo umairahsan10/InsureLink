@@ -87,7 +87,7 @@ claims.json (Hospital Static Data)
    └─ ... (similar structure)
 
         ↓ syncHardcodedClaimsToInsurer()
-
+e
 convertClaimToClaimData()
 ├─ id: "clm-0001"
 ├─ patient: "Ali Raza"
