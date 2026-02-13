@@ -28,43 +28,51 @@ Each module has clear responsibilities, independent data models, and defined API
 ## Organizational Principles
 
 ### 1. **Domain-Driven Design (DDD)**
-   - Each module represents a business domain
-   - Module boundaries align with schema entities
-   - Clear separation of concerns
+
+- Each module represents a business domain
+- Module boundaries align with schema entities
+- Clear separation of concerns
 
 ### 2. **Independent Deployment**
-   - Modules can be tested independently
-   - Minimal cross-module dependencies
-   - Teams can develop in parallel
+
+- Modules can be tested independently
+- Minimal cross-module dependencies
+- Teams can develop in parallel
 
 ### 3. **Shared Infrastructure**
-   - Common utilities, guards, interceptors in `common/`
-   - Shared DTOs and types in `shared/`
-   - Database access layer abstraction
+
+- Common utilities, guards, interceptors in `common/`
+- Shared DTOs and types in `shared/`
+- Database access layer abstraction
 
 ### 4. **Frontend-Backend Alignment**
-   - Module structure mirrors frontend routes/features
-   - Clear API endpoints per module
-   - Easier API integration and testing
+
+- Module structure mirrors frontend routes/features
+- Clear API endpoints per module
+- Easier API integration and testing
 
 ---
 
 ## Parallel Development Plan (2 Developers)
 
 ### Phase 0: Auth Contract (1-2 days)
+
 - Agree on JWT payload fields (e.g., `sub`, `role`, `orgId`)
 - Freeze roles/permissions enum
 - Define `/auth/me` response shape
 
 ### Phase 1: Parallel Build (week 1)
+
 - **Dev A:** implement `auth` + `users`
 - **Dev B:** scaffold and build non-auth modules using a temporary `@Public()` or mock guard
 
 ### Phase 2: Integration (week 2)
+
 - **Dev A:** finalize guards, roles, and policy decorators
 - **Dev B:** wire guards into endpoints, remove mocks, add role checks
 
 ### Conflict Avoidance Rules
+
 - One owner per module folder under `src/modules/`
 - Changes to `common/`, `shared/`, `config/`, `websockets/` require both-dev review
 - Only one dev edits `app.module.ts` per sprint; other dev queues module registrations
@@ -345,7 +353,9 @@ server/
 ## Module Responsibilities & Dependencies
 
 ### 1. **Auth Module** (Foundation)
+
 **Responsible For:**
+
 - User login/logout
 - JWT token generation and validation
 - Password hashing and verification
@@ -353,6 +363,7 @@ server/
 - OAuth integration (future)
 
 **API Endpoints:**
+
 ```
 POST   /auth/login
 POST   /auth/register
@@ -370,13 +381,16 @@ GET    /auth/me
 ---
 
 ### 2. **Users Module**
+
 **Responsible For:**
+
 - User profile management
 - User role and permission updates
 - User data CRUD operations
 - User search and filtering
 
 **API Endpoints:**
+
 ```
 GET    /users/:id
 PUT    /users/:id
@@ -394,7 +408,9 @@ PUT    /users/:id/role
 ---
 
 ### 3. **Corporates Module**
+
 **Responsible For:**
+
 - Corporate account creation and management
 - Corporate profile updates
 - Contract management
@@ -402,6 +418,7 @@ PUT    /users/:id/role
 - Corporate dashboard data
 
 **API Endpoints:**
+
 ```
 POST   /corporates
 GET    /corporates/:id
@@ -418,13 +435,16 @@ GET    /corporates/:id/contracts
 **Estimated Completion:** 1.5 weeks
 
 **Special Notes:**
+
 - Emits `corporate-created` event → Triggers welcome notification
 - Updates corporate's `total_amount_used` via Claims module feedback
 
 ---
 
 ### 4. **Employees Module**
+
 **Responsible For:**
+
 - Employee records management
 - Employee coverage tracking
 - Coverage amount calculations
@@ -432,6 +452,7 @@ GET    /corporates/:id/contracts
 - Employee list filtering and search
 
 **API Endpoints:**
+
 ```
 POST   /employees
 GET    /employees/:id
@@ -449,6 +470,7 @@ POST   /employees/bulk-import
 **Estimated Completion:** 2 weeks
 
 **Special Notes:**
+
 - Validates coverage dates against corporate contract dates
 - Calculates coverage summary (used/available)
 - Triggers notifications on coverage changes
@@ -456,13 +478,16 @@ POST   /employees/bulk-import
 ---
 
 ### 5. **Dependents Module**
+
 **Responsible For:**
+
 - Dependent record management
 - Dependent approval workflow
 - Dependent coverage tracking
 - Family relationship validation
 
 **API Endpoints:**
+
 ```
 POST   /dependents
 GET    /dependents/:id
@@ -479,6 +504,7 @@ PATCH  /dependents/:id/reject
 **Estimated Completion:** 1.5 weeks
 
 **Special Notes:**
+
 - Implements approval workflow (Pending → Approved/Rejected)
 - Inherits coverage dates from employee
 - Triggers notifications on approval/rejection
@@ -486,13 +512,16 @@ PATCH  /dependents/:id/reject
 ---
 
 ### 6. **Patients Module**
+
 **Responsible For:**
+
 - Patient profile aggregation (Employee + Dependent views)
 - Patient medical history (unified view)
 - Patient coverage lookup
 - Patient eligibility checks
 
 **API Endpoints:**
+
 ```
 GET    /patients/:id
 GET    /patients/me (current user if patient)
@@ -508,6 +537,7 @@ GET    /patients/:id/hospital-visits
 **Estimated Completion:** 1 week
 
 **Special Notes:**
+
 - Views read-only aggregation (no create/update)
 - Performance-critical for dashboard queries
 - Should implement caching for coverage lookups
@@ -515,7 +545,9 @@ GET    /patients/:id/hospital-visits
 ---
 
 ### 7. **Hospitals Module**
+
 **Responsible For:**
+
 - Hospital network management
 - Hospital visit recording
 - Hospital emergency contact management
@@ -523,6 +555,7 @@ GET    /patients/:id/hospital-visits
 - Hospital availability status
 
 **API Endpoints:**
+
 ```
 POST   /hospitals (insurer registration)
 GET    /hospitals/:id
@@ -540,6 +573,7 @@ POST   /hospitals/:id/visits (record visit)
 **Estimated Completion:** 1.5 weeks
 
 **Special Notes:**
+
 - Implements geo-location based search
 - Links to Hospital Finder feature (smart search)
 - Records hospital visits (critical for claims)
@@ -548,7 +582,9 @@ POST   /hospitals/:id/visits (record visit)
 ---
 
 ### 8. **Insurers Module**
+
 **Responsible For:**
+
 - Insurer account management
 - Plan management (CRUD)
 - Lab management
@@ -556,6 +592,7 @@ POST   /hospitals/:id/visits (record visit)
 - Insurer dashboard data
 
 **API Endpoints:**
+
 ```
 POST   /insurers
 GET    /insurers/:id
@@ -576,6 +613,7 @@ GET    /labs/:id
 **Estimated Completion:** 1.5 weeks
 
 **Special Notes:**
+
 - Plan management critical for claim validation
 - Labs tied to insurer for test ordering
 - Plans include service limits and coverage details
@@ -583,7 +621,9 @@ GET    /labs/:id
 ---
 
 ### 9. **Claims Module** (CRITICAL/COMPLEX)
+
 **Responsible For:**
+
 - Claim creation and validation
 - Claim status management (state machine)
 - Claim approval/rejection workflow
@@ -592,6 +632,7 @@ GET    /labs/:id
 - Document attachment management
 
 **API Endpoints:**
+
 ```
 POST   /claims (create claim from hospital visit)
 GET    /claims/:id
@@ -612,6 +653,7 @@ POST   /claims/:id/documents (attach file)
 **Estimated Completion:** 3-4 weeks
 
 **Special Notes:**
+
 - **State Machine Enforcement:** Strict status transitions
   - Pending → {Approved, Rejected, OnHold}
   - Approved → {Paid, OnHold, Rejected}
@@ -628,7 +670,9 @@ POST   /claims/:id/documents (attach file)
 ---
 
 ### 10. **Messaging Module**
+
 **Responsible For:**
+
 - Claim discussion messages (real-time chat)
 - Message persistence
 - Message attachment handling
@@ -636,6 +680,7 @@ POST   /claims/:id/documents (attach file)
 - Message history retrieval
 
 **API Endpoints:**
+
 ```
 POST   /claims/:id/messages (send message)
 GET    /claims/:id/messages (paginated history)
@@ -645,6 +690,7 @@ POST   /claims/:id/messages/:msgId/attachments
 ```
 
 **WebSocket Events:**
+
 ```
 'claim-message-new'
 'claim-message-deleted'
@@ -660,6 +706,7 @@ POST   /claims/:id/messages/:msgId/attachments
 **Estimated Completion:** 2 weeks
 
 **Special Notes:**
+
 - Real-time communication critical for claims workflow
 - Only parties involved in claim can access messages
 - WebSocket gateway handles bidirectional updates
@@ -668,7 +715,9 @@ POST   /claims/:id/messages/:msgId/attachments
 ---
 
 ### 11. **Notifications Module**
+
 **Responsible For:**
+
 - Notification creation and delivery
 - Notification type management
 - Notification preferences (future)
@@ -676,6 +725,7 @@ POST   /claims/:id/messages/:msgId/attachments
 - Email notifications (future)
 
 **API Endpoints:**
+
 ```
 GET    /notifications (user's notifications)
 GET    /notifications/:id
@@ -685,6 +735,7 @@ GET    /notifications/unread-count
 ```
 
 **Event Listeners:**
+
 - Claim status changed → notify involved parties
 - Dependent approved/rejected → notify employee
 - New message in claim chat → notify recipients
@@ -697,6 +748,7 @@ GET    /notifications/unread-count
 **Estimated Completion:** 2 weeks
 
 **Special Notes:**
+
 - Event-driven architecture
 - Triggered by other modules (Claims, Messaging, etc.)
 - Stores notifications in DB for history
@@ -705,7 +757,9 @@ GET    /notifications/unread-count
 ---
 
 ### 12. **File-Upload Module**
+
 **Responsible For:**
+
 - File upload to Supabase storage
 - File metadata management
 - File size validation
@@ -713,6 +767,7 @@ GET    /notifications/unread-count
 - File URL generation (signed URLs)
 
 **API Endpoints:**
+
 ```
 POST   /upload (multipart form data)
 DELETE /upload/:fileId
@@ -726,6 +781,7 @@ GET    /upload/:fileId/metadata
 **Estimated Completion:** 1 week
 
 **Special Notes:**
+
 - Supabase integration critical
 - Handles both claim documents and chat attachments
 - Generates signed URLs for secure access
@@ -734,7 +790,9 @@ GET    /upload/:fileId/metadata
 ---
 
 ### 13. **Analytics Module**
+
 **Responsible For:**
+
 - Dashboard statistics calculation
 - Claim analytics (approval rates, amounts)
 - Coverage analytics (utilization)
@@ -744,6 +802,7 @@ GET    /upload/:fileId/metadata
 - Time-series data for charts
 
 **API Endpoints:**
+
 ```
 GET    /analytics/dashboard (role-specific)
 GET    /analytics/claims (filters: date range, status, etc.)
@@ -760,6 +819,7 @@ GET    /analytics/hospital/:id
 **Estimated Completion:** 2 weeks
 
 **Special Notes:**
+
 - Read-only module (no mutations)
 - Performance-critical for dashboard loading
 - Consider caching frequently accessed stats
@@ -768,13 +828,16 @@ GET    /analytics/hospital/:id
 ---
 
 ### 14. **Audit Module**
+
 **Responsible For:**
+
 - Audit log creation and storage
 - Compliance tracking
 - Change history retrieval
 - Audit report generation
 
 **API Endpoints:**
+
 ```
 GET    /audit/logs (filtered by entity, date, user)
 GET    /audit/logs/:id
@@ -789,6 +852,7 @@ GET    /audit/entity/:type/:id (history of entity)
 **Estimated Completion:** 1.5 weeks
 
 **Special Notes:**
+
 - Immutable audit logs (no updates/deletes)
 - Triggered automatically on sensitive changes
 - Critical for compliance and regulatory requirements
@@ -843,6 +907,7 @@ GET    /audit/entity/:type/:id (history of entity)
 ```
 
 **Legend:**
+
 - `→` → Direct dependency (imports)
 - `◄` → Reverse dependency (listened by)
 - Modules on same level can be developed in parallel
@@ -852,7 +917,9 @@ GET    /audit/entity/:type/:id (history of entity)
 ## Parallel Development Strategy
 
 ### **Phase 1: Foundation (Weeks 1-2)**
+
 **Start these in parallel:**
+
 - **Auth Module** (2 devs) - Essential for everything
 - **Users Module** (1 dev) - User management base
 - **File-Upload Module** (1 dev) - Foundation for claims/messaging
@@ -860,7 +927,9 @@ GET    /audit/entity/:type/:id (history of entity)
 **Why:** These have no dependencies, others can start once these are ready.
 
 ### **Phase 2: Core Entities (Weeks 2-4)**
+
 **Start once Phase 1 is 80% done:**
+
 - **Corporates Module** (1 dev)
 - **Employees Module** (1 dev)
 - **Hospitals Module** (1 dev)
@@ -869,7 +938,9 @@ GET    /audit/entity/:type/:id (history of entity)
 **Why:** These depend on Auth/Users, can proceed in parallel.
 
 ### **Phase 3: Complex Workflows (Weeks 3-6)**
+
 **Start once Phase 2 is 80% done:**
+
 - **Claims Module** (2 devs) - Most complex, assign best engineers
 - **Dependents Module** (1 dev) - Moderate complexity
 - **Patients Module** (1 dev) - Read-only aggregation
@@ -877,14 +948,18 @@ GET    /audit/entity/:type/:id (history of entity)
 **Why:** Claims depends on entities from Phase 2.
 
 ### **Phase 4: Communication & Notifications (Weeks 5-7)**
+
 **Start once Phase 3 is 50% done:**
+
 - **Messaging Module** (1 dev) - Depends on Claims, File-Upload
 - **Notifications Module** (1 dev) - Depends on Auth
 
 **Why:** Can start earlier, but Claims provides most events.
 
 ### **Phase 5: Analytics & Audit (Weeks 6-8)**
+
 **Can start anytime (read-only, non-blocking):**
+
 - **Analytics Module** (1 dev) - Read-only queries
 - **Audit Module** (1 dev) - Non-critical for MVP
 
@@ -896,38 +971,38 @@ GET    /audit/entity/:type/:id (history of entity)
 
 **For a team of 8-10 developers:**
 
-| **Phase 1 (Weeks 1-2)** |
-|---|
-| Dev 1-2: Auth Module |
-| Dev 3: Users Module |
+| **Phase 1 (Weeks 1-2)**   |
+| ------------------------- |
+| Dev 1-2: Auth Module      |
+| Dev 3: Users Module       |
 | Dev 4: File-Upload Module |
 
-| **Phase 2 (Weeks 2-4)** |
-|---|
-| Dev 1: Corporates Module |
-| Dev 2: Employees Module |
-| Dev 3: Hospitals Module |
-| Dev 4: Insurers Module |
+| **Phase 2 (Weeks 2-4)**           |
+| --------------------------------- |
+| Dev 1: Corporates Module          |
+| Dev 2: Employees Module           |
+| Dev 3: Hospitals Module           |
+| Dev 4: Insurers Module            |
 | Dev 5: Continue Auth enhancements |
 
-| **Phase 3 (Weeks 3-6)** |
-|---|
+| **Phase 3 (Weeks 3-6)**           |
+| --------------------------------- |
 | Dev 1-2: Claims Module (critical) |
-| Dev 3: Dependents Module |
-| Dev 4: Patients Module |
-| Dev 5: File-Upload enhancements |
+| Dev 3: Dependents Module          |
+| Dev 4: Patients Module            |
+| Dev 5: File-Upload enhancements   |
 
-| **Phase 4 (Weeks 5-7)** |
-|---|
+| **Phase 4 (Weeks 5-7)**             |
+| ----------------------------------- |
 | Dev 1: Messaging Module (WebSocket) |
-| Dev 2: Notifications Module |
+| Dev 2: Notifications Module         |
 | Dev 3-4: Claims Module continuation |
-| Dev 5: Testing & integration |
+| Dev 5: Testing & integration        |
 
-| **Phase 5 (Weeks 6-8)** |
-|---|
-| Dev 1: Analytics Module |
-| Dev 2: Audit Module |
+| **Phase 5 (Weeks 6-8)**                 |
+| --------------------------------------- |
+| Dev 1: Analytics Module                 |
+| Dev 2: Audit Module                     |
 | Dev 3-5: Integration testing, bug fixes |
 
 ---
@@ -935,18 +1010,21 @@ GET    /audit/entity/:type/:id (history of entity)
 ## Module Interaction Patterns
 
 ### 1. **Synchronous (REST API Calls)**
+
 - **Corporates** → **Users** (get user details)
 - **Employees** → **Corporates** (validate corporate exists)
 - **Claims** → **Patients** (validate coverage)
 - **Claims** → **Hospitals** (validate hospital network)
 
 ### 2. **Asynchronous (Event-Driven)**
+
 - **Claims** → **Notifications** (claim status changed)
 - **Dependents** → **Notifications** (approval status changed)
 - **Messaging** → **Notifications** (new message)
 - **Corporates** → **Notifications** (contract changes)
 
 ### 3. **Shared Resources (Repositories)**
+
 - All modules use shared base repository interfaces
 - Database connection pooling managed centrally
 - Entity relationships defined in TypeORM
@@ -999,6 +1077,7 @@ All modules should follow this response format:
 ## Error Handling Strategy
 
 ### Global Exception Filter (common/filters/)
+
 - **HttpException** → HTTP responses
 - **DatabaseException** → 500 with sanitized message
 - **ValidationException** → 400 with field errors
@@ -1011,13 +1090,13 @@ All modules inherit these filters.
 
 ## Database Transaction Boundaries
 
-| Operation | Isolation Level | Modules Involved |
-|-----------|-----------------|------------------|
-| Claim Approval | SERIALIZABLE | Claims, Employees |
-| Payment Processing | SERIALIZABLE | Claims, Corporates |
+| Operation          | Isolation Level | Modules Involved          |
+| ------------------ | --------------- | ------------------------- |
+| Claim Approval     | SERIALIZABLE    | Claims, Employees         |
+| Payment Processing | SERIALIZABLE    | Claims, Corporates        |
 | Dependent Approval | REPEATABLE READ | Dependents, Notifications |
-| Employee Update | READ COMMITTED | Employees, Patients |
-| Message Sending | READ COMMITTED | Messaging, Notifications |
+| Employee Update    | READ COMMITTED  | Employees, Patients       |
+| Message Sending    | READ COMMITTED  | Messaging, Notifications  |
 
 **Implementation:** Module services handle transaction management via TypeORM QueryRunner.
 
@@ -1026,17 +1105,20 @@ All modules inherit these filters.
 ## Testing Strategy
 
 ### Unit Tests (Per Module)
+
 - Service logic (80%+ coverage)
 - Repository methods
 - DTO validation
 - Business rule enforcement
 
 ### Integration Tests (Between Modules)
+
 - Claims → Patients → Coverage validation
 - Claims → Notifications → Event triggers
 - Corporates → Employees → Coverage sync
 
 ### E2E Tests (Critical Workflows)
+
 - Complete claim workflow: Create → Approve → Update coverage
 - Dependent approval: Request → Approve → Grant coverage
 - Hospital visit → Claim creation → Messaging
@@ -1047,26 +1129,27 @@ All modules inherit these filters.
 
 ### By Module:
 
-| **Frontend Route** | **Backend Module** | **Key Endpoints** |
-|---|---|---|
-| /login | Auth | POST /auth/login |
-| /patient/dashboard | Patients, Claims, Analytics | GET /patients/me, GET /analytics/dashboard |
-| /patient/claims | Claims | GET /claims |
-| /corporate/dashboard | Analytics, Corporates | GET /analytics/dashboard |
-| /corporate/employees | Employees | GET /employees |
-| /corporate/dependents | Dependents | GET /dependents |
-| /hospital/visits | Hospitals | GET /hospitals/:id/visits |
-| /hospital/claims | Claims | GET /claims |
-| /insurer/dashboard | Analytics, Insurers | GET /analytics/dashboard |
-| /insurer/plans | Insurers | GET /insurers/:id/plans |
-| /explore/hospitals | Hospitals | GET /hospitals (search) |
-| /claims/:id/chat | Messaging | GET /claims/:id/messages, POST /claims/:id/messages |
+| **Frontend Route**    | **Backend Module**          | **Key Endpoints**                                   |
+| --------------------- | --------------------------- | --------------------------------------------------- |
+| /login                | Auth                        | POST /auth/login                                    |
+| /patient/dashboard    | Patients, Claims, Analytics | GET /patients/me, GET /analytics/dashboard          |
+| /patient/claims       | Claims                      | GET /claims                                         |
+| /corporate/dashboard  | Analytics, Corporates       | GET /analytics/dashboard                            |
+| /corporate/employees  | Employees                   | GET /employees                                      |
+| /corporate/dependents | Dependents                  | GET /dependents                                     |
+| /hospital/visits      | Hospitals                   | GET /hospitals/:id/visits                           |
+| /hospital/claims      | Claims                      | GET /claims                                         |
+| /insurer/dashboard    | Analytics, Insurers         | GET /analytics/dashboard                            |
+| /insurer/plans        | Insurers                    | GET /insurers/:id/plans                             |
+| /explore/hospitals    | Hospitals                   | GET /hospitals (search)                             |
+| /claims/:id/chat      | Messaging                   | GET /claims/:id/messages, POST /claims/:id/messages |
 
 ---
 
 ## Deployment & CI/CD Considerations
 
 ### Per-Module Testing in CI/CD
+
 ```yaml
 - Test auth module
 - Test users module (depends on auth)
@@ -1076,6 +1159,7 @@ All modules inherit these filters.
 ```
 
 ### Independent Module Scaling (Future)
+
 - Modules can be split into separate microservices later
 - Current monolith allows fast parallel development
 - Clear boundaries enable easy migration to microservices
@@ -1139,12 +1223,14 @@ module/
 ```
 
 ### Import Guidelines:
+
 - ✅ Import from other modules' `index.ts`
 - ✅ Import from `common/` for shared utilities
 - ❌ DO NOT directly import from `src/modules/other/internals`
 - ✅ Use dependency injection for module coupling
 
 ### Naming Conventions:
+
 - DTOs: `{Entity}{Action}.dto.ts` (e.g., `CreateClaimDto`)
 - Entities: `{Entity}.entity.ts` (e.g., `claim.entity.ts`)
 - Services: `{Entity}.service.ts` (e.g., `claims.service.ts`)

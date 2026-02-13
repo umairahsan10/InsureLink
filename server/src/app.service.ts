@@ -11,7 +11,10 @@ export class AppService {
     return 'Hello World!';
   }
 
-  async getDatabaseHealth(): Promise<{ ok: boolean; userCount: number | null }> {
+  async getDatabaseHealth(): Promise<{
+    ok: boolean;
+    userCount: number | null;
+  }> {
     try {
       const userCount = await this.prisma.user.count();
       return { ok: true, userCount };
@@ -22,7 +25,8 @@ export class AppService {
 
   async extractFirstImageFromPDF(pdfBuffer: Buffer): Promise<Buffer> {
     // TODO: Implement PDF extraction once pdfjs-dist is installed
-    throw new Error('PDF extraction not yet implemented. Install pdfjs-dist to enable.');
+    throw new Error(
+      'PDF extraction not yet implemented. Install pdfjs-dist to enable.',
+    );
   }
 }
-
