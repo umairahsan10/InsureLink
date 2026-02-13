@@ -441,7 +441,7 @@ enum ClaimEventStatus {
 model ClaimEvent {
     id          String            @id @default(uuid()) @db.Uuid
     claimId     String            @map("claim_id") @db.Uuid
-    actorUserId String            @map("actor_user_id") @db.Uuid
+    actorUserId String?           @map("actor_user_id") @db.Uuid
     actorName   String            @map("actor_name") @db.VarChar(200)
     actorRole   String            @map("actor_role") @db.VarChar(100)
     action      String            @db.VarChar(255)
@@ -453,7 +453,7 @@ model ClaimEvent {
 
     // Relations
     claim Claim @relation(fields: [claimId], references: [id], onDelete: Cascade)
-    actor User  @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+    actor User? @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
 
     @@index([claimId])
     @@index([actorUserId])
@@ -499,8 +499,8 @@ enum MessageType {
 model ChatMessage {
     id          String      @id @default(uuid()) @db.Uuid
     claimId     String      @map("claim_id") @db.Uuid
-    senderId    String      @map("sender_id") @db.Uuid
-    receiverId  String      @map("receiver_id") @db.Uuid
+    senderId    String?     @map("sender_id") @db.Uuid
+    receiverId  String?     @map("receiver_id") @db.Uuid
     messageText String      @map("message_text") @db.Text
     isRead      Boolean     @default(false) @map("is_read")
     timestamp   DateTime    @db.Timestamptz(6)
@@ -509,8 +509,8 @@ model ChatMessage {
 
     // Relations
     claim       Claim                   @relation(fields: [claimId], references: [id], onDelete: Cascade)
-    sender      User                    @relation("SentMessages", fields: [senderId], references: [id], onDelete: SetNull)
-    receiver    User                    @relation("ReceivedMessages", fields: [receiverId], references: [id], onDelete: SetNull)
+    sender      User?                   @relation("SentMessages", fields: [senderId], references: [id], onDelete: SetNull)
+    receiver    User?                   @relation("ReceivedMessages", fields: [receiverId], references: [id], onDelete: SetNull)
     attachments ChatMessageAttachment[]
 
     @@index([claimId])

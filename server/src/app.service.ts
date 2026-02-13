@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from './common/prisma/prisma.service';
-import * as pdfjs from 'pdfjs-dist/legacy/build/pdf';
+// TODO: pdfjs-dist not yet installed — install with: npm install pdfjs-dist
+// import * as pdfjs from 'pdfjs-dist';
 
 @Injectable()
 export class AppService {
@@ -20,46 +21,8 @@ export class AppService {
   }
 
   async extractFirstImageFromPDF(pdfBuffer: Buffer): Promise<Buffer> {
-    try {
-      // Load PDF
-      const pdf = await pdfjs.getDocument({ data: pdfBuffer }).promise;
-      const page = await pdf.getPage(1);
-
-      // Get resources
-      const resources = await page.getResources();
-
-      if (resources && resources.has('XObject')) {
-        const xobjects = resources.get('XObject');
-
-        for (const [name, ref] of xobjects) {
-          try {
-            const obj = await ref.fetchIfRef?.() ?? ref;
-
-            if (obj.get('Subtype')?.name === 'Image') {
-              const width = obj.get('Width');
-              const height = obj.get('Height');
-              const colorSpace = obj.get('ColorSpace');
-
-              console.log(`Found image: ${width}x${height}`);
-
-              // Get raw image bytes
-              const imageStream = obj;
-              const imageData = await imageStream.getBytes();
-
-              // Return as buffer - this will be the raw image data
-              return Buffer.from(imageData);
-            }
-          } catch (err) {
-            console.error(`Error processing ${name}:`, err);
-          }
-        }
-      }
-
-      throw new Error('No images found in PDF');
-    } catch (error) {
-      console.error('PDF extraction error:', error);
-      throw error;
-    }
+    // TODO: Implement PDF extraction once pdfjs-dist is installed
+    throw new Error('PDF extraction not yet implemented. Install pdfjs-dist to enable.');
   }
 }
 
