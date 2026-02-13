@@ -1,0 +1,676 @@
+// InsureLink Database Schema - Prisma Implementation
+// Version: 3.0 (Schema Simplification & Restructuring)
+// Last Updated: February 5, 2026
+// Based on SCHEMA.md specification
+
+generator client {
+    provider   = "prisma-client-js"
+    engineType = "client"
+}
+
+datasource db {
+    provider = "postgresql"
+}
+
+// ============================================================================
+// 1. USER ENTITY
+// ============================================================================
+
+enum UserRole {
+    patient
+    corporate
+    hospital
+    insurer
+}
+
+enum Gender {
+    Male
+    Female
+    Other
+}
+
+model User {
+    id           String    @id @default(uuid()) @db.Uuid
+    email        String    @unique @db.VarChar(255)
+    passwordHash String    @map("password_hash") @db.VarChar(255)
+    firstName    String    @map("first_name") @db.VarChar(100)
+    lastName     String?   @map("last_name") @db.VarChar(100)
+    phone        String    @db.VarChar(20)
+    userRole     UserRole  @map("user_role")
+    dob          DateTime? @db.Date
+    gender       Gender?
+    cnic         String?   @unique @db.VarChar(15)
+    address      String?   @db.VarChar(500)
+    createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+    updatedAt    DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+    lastLoginAt  DateTime? @map("last_login_at") @db.Timestamptz(6)
+
+    // Relations
+    corporate            Corporate?
+    employee             Employee?
+    hospital             Hospital?
+    insurer              Insurer?
+    chatMessagesSent     ChatMessage[]  @relation("SentMessages")
+    chatMessagesReceived ChatMessage[]  @relation("ReceivedMessages")
+    notifications        Notification[]
+    auditLogs            AuditLog[]
+    claimEvents          ClaimEvent[]
+
+    @@index([email])
+    @@index([cnic])
+    @@index([userRole])
+    @@index([createdAt])
+    @@map("users")
+}
+
+// ============================================================================
+// 3. CORPORATE ENTITY
+// ============================================================================
+
+enum CorporateStatus {
+    Active
+    Inactive
+    Suspended
+}
+
+model Corporate {
+    id                String          @id @default(uuid()) @db.Uuid
+    userId            String          @unique @map("user_id") @db.Uuid
+    name              String          @db.VarChar(255)
+    address           String          @db.VarChar(500)
+    city              String          @db.VarChar(100)
+    province          String          @db.VarChar(100)
+    employeeCount     Int             @map("employee_count")
+    dependentCount    Int             @default(0) @map("dependent_count")
+    insurerId         String          @map("insurer_id") @db.Uuid
+    contactName       String          @map("contact_name") @db.VarChar(100)
+    contactEmail      String          @map("contact_email") @db.VarChar(255)
+    contactPhone      String          @map("contact_phone") @db.VarChar(20)
+    contractStartDate DateTime        @map("contract_start_date") @db.Date
+    contractEndDate   DateTime        @map("contract_end_date") @db.Date
+    totalAmountUsed   Decimal         @default(0) @map("total_amount_used") @db.Decimal(12, 2)
+    status            CorporateStatus @default(Active)
+    createdAt         DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+    updatedAt         DateTime        @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+    // Relations
+    user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+    insurer   Insurer    @relation(fields: [insurerId], references: [id], onDelete: Restrict)
+    employees Employee[]
+    claims    Claim[]
+
+    @@index([insurerId])
+    @@index([status])
+    @@index([contractStartDate])
+    @@index([contractEndDate])
+    @@index([createdAt])
+    @@index([insurerId, status])
+    @@map("corporates")
+}
+
+// ============================================================================
+// 4. EMPLOYEE ENTITY
+// ============================================================================
+
+enum EmployeeStatus {
+    Active
+    Inactive
+    Suspended
+    Terminated
+}
+
+model Employee {
+    id                String         @id @default(uuid()) @db.Uuid
+    userId            String         @unique @map("user_id") @db.Uuid
+    corporateId       String         @map("corporate_id") @db.Uuid
+    employeeNumber    String         @unique @map("employee_number") @db.VarChar(50)
+    planId            String         @map("plan_id") @db.Uuid
+    designation       String         @db.VarChar(100)
+    department        String         @db.VarChar(100)
+    coverageStartDate DateTime       @map("coverage_start_date") @db.Date
+    coverageEndDate   DateTime       @map("coverage_end_date") @db.Date
+    coverageAmount    Decimal        @map("coverage_amount") @db.Decimal(12, 2)
+    usedAmount        Decimal        @default(0) @map("used_amount") @db.Decimal(12, 2)
+    status            EmployeeStatus @default(Active)
+    createdAt         DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+    updatedAt         DateTime       @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+    // Relations
+    user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+    corporate      Corporate       @relation(fields: [corporateId], references: [id], onDelete: Cascade)
+    plan           Plan            @relation(fields: [planId], references: [id], onDelete: Restrict)
+    dependents     Dependent[]
+    hospitalVisits HospitalVisit[]
+
+    @@index([userId])
+    @@index([corporateId])
+    @@index([employeeNumber])
+    @@index([planId])
+    @@index([status])
+    @@index([createdAt])
+    @@index([corporateId, employeeNumber])
+    @@index([corporateId, status])
+    @@map("employees")
+}
+
+// ============================================================================
+// 5. DEPENDENT ENTITY
+// ============================================================================
+
+enum Relationship {
+    Spouse
+    Son
+    Daughter
+    Father
+    Mother
+}
+
+enum DependentStatus {
+    Pending
+    Approved
+    Rejected
+    Active
+    Inactive
+}
+
+model Dependent {
+    id              String          @id @default(uuid()) @db.Uuid
+    employeeId      String          @map("employee_id") @db.Uuid
+    firstName       String          @map("first_name") @db.VarChar(100)
+    lastName        String          @map("last_name") @db.VarChar(100)
+    relationship    Relationship
+    dateOfBirth     DateTime        @map("date_of_birth") @db.Date
+    gender          Gender
+    cnic            String?         @db.VarChar(15)
+    phoneNumber     String?         @map("phone_number") @db.VarChar(20)
+    status          DependentStatus @default(Pending)
+    requestDate     DateTime        @map("request_date") @db.Timestamptz(6)
+    reviewedDate    DateTime?       @map("reviewed_date") @db.Timestamptz(6)
+    rejectionReason String?         @map("rejection_reason") @db.VarChar(500)
+    createdAt       DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+    updatedAt       DateTime        @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+    // Relations
+    employee       Employee        @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+    hospitalVisits HospitalVisit[]
+
+    @@index([employeeId])
+    @@index([status])
+    @@index([createdAt])
+    @@index([employeeId, status])
+    @@map("dependents")
+}
+
+// ============================================================================
+// 6. HOSPITAL ENTITY
+// ============================================================================
+
+enum HospitalType {
+    reimbursable
+    non_reimbursable
+}
+
+model Hospital {
+    id               String       @id @default(uuid()) @db.Uuid
+    userId           String       @unique @map("user_id") @db.Uuid
+    hospitalName     String       @map("hospital_name") @db.VarChar(255)
+    licenseNumber    String       @unique @map("license_number") @db.VarChar(100)
+    city             String       @db.VarChar(100)
+    address          String       @db.VarChar(500)
+    latitude         Decimal?     @db.Decimal(9, 6)
+    longitude        Decimal?     @db.Decimal(9, 6)
+    emergencyPhone   String       @map("emergency_phone") @db.VarChar(20)
+    hospitalType     HospitalType @default(reimbursable) @map("hospital_type")
+    hasEmergencyUnit Boolean      @default(true) @map("has_emergency_unit")
+    isActive         Boolean      @default(true) @map("is_active")
+    createdAt        DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+    updatedAt        DateTime     @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+    // Relations
+    user              User                       @relation(fields: [userId], references: [id], onDelete: Cascade)
+    emergencyContacts HospitalEmergencyContact[]
+    hospitalVisits    HospitalVisit[]
+
+    @@index([userId])
+    @@index([licenseNumber])
+    @@index([city])
+    @@index([hospitalType])
+    @@index([isActive])
+    @@index([createdAt])
+    @@index([city, isActive])
+    @@map("hospitals")
+}
+
+// ============================================================================
+// 7. HOSPITAL_EMERGENCY_CONTACT ENTITY
+// ============================================================================
+
+model HospitalEmergencyContact {
+    id            String   @id @default(uuid()) @db.Uuid
+    hospitalId    String   @map("hospital_id") @db.Uuid
+    contactLevel  Int      @map("contact_level")
+    designation   String   @db.VarChar(100)
+    name          String   @db.VarChar(100)
+    contactNumber String   @map("contact_number") @db.VarChar(20)
+    isActive      Boolean  @default(true) @map("is_active")
+    createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+    updatedAt     DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+    // Relations
+    hospital Hospital @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+
+    @@unique([hospitalId, contactLevel])
+    @@index([hospitalId])
+    @@index([contactLevel])
+    @@index([hospitalId, contactLevel])
+    @@map("hospital_emergency_contacts")
+}
+
+// ============================================================================
+// 7.1 HOSPITAL_VISITS ENTITY
+// ============================================================================
+
+model HospitalVisit {
+    id            String    @id @default(uuid()) @db.Uuid
+    employeeId    String?   @map("employee_id") @db.Uuid
+    dependentId   String?   @map("dependent_id") @db.Uuid
+    hospitalId    String    @map("hospital_id") @db.Uuid
+    visitDate     DateTime  @map("visit_date") @db.Timestamptz(6)
+    dischargeDate DateTime? @map("discharge_date") @db.Timestamptz(6)
+    createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+    updatedAt     DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+    // Relations
+    employee  Employee?  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+    dependent Dependent? @relation(fields: [dependentId], references: [id], onDelete: Cascade)
+    hospital  Hospital   @relation(fields: [hospitalId], references: [id], onDelete: Restrict)
+    claims    Claim[]
+
+    @@index([employeeId])
+    @@index([dependentId])
+    @@index([hospitalId])
+    @@index([visitDate])
+    @@index([createdAt])
+    @@index([employeeId, visitDate(sort: Desc)])
+    @@index([dependentId, visitDate(sort: Desc)])
+    @@index([hospitalId, visitDate(sort: Desc)])
+    @@map("hospital_visits")
+}
+
+// ============================================================================
+// 8. INSURER ENTITY
+// ============================================================================
+
+enum InsurerStatus {
+    Active
+    Inactive
+    Suspended
+}
+
+model Insurer {
+    id                   String        @id @default(uuid()) @db.Uuid
+    userId               String        @unique @map("user_id") @db.Uuid
+    companyName          String        @map("company_name") @db.VarChar(255)
+    licenseNumber        String        @unique @map("license_number") @db.VarChar(100)
+    address              String        @db.VarChar(500)
+    city                 String        @db.VarChar(100)
+    province             String        @db.VarChar(100)
+    maxCoverageLimit     Decimal       @map("max_coverage_limit") @db.Decimal(12, 2)
+    networkHospitalCount Int           @default(0) @map("network_hospital_count")
+    corporateClientCount Int           @default(0) @map("corporate_client_count")
+    status               InsurerStatus @default(Active)
+    operatingSince       DateTime      @map("operating_since") @db.Date
+    isActive             Boolean       @default(true) @map("is_active")
+    createdAt            DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+    updatedAt            DateTime      @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+    // Relations
+    user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+    corporates Corporate[]
+    plans      Plan[]
+    claims     Claim[]
+    labs       Lab[]
+
+    @@index([userId])
+    @@index([licenseNumber])
+    @@index([status])
+    @@index([city])
+    @@index([isActive])
+    @@index([createdAt])
+    @@map("insurers")
+}
+
+// ============================================================================
+// 9. PLAN ENTITY
+// ============================================================================
+
+model Plan {
+    id              String   @id @default(uuid()) @db.Uuid
+    planName        String   @map("plan_name") @db.VarChar(255)
+    planCode        String   @unique @map("plan_code") @db.VarChar(50)
+    insurerId       String   @map("insurer_id") @db.Uuid
+    sumInsured      Decimal  @map("sum_insured") @db.Decimal(12, 2)
+    coveredServices Json     @map("covered_services")
+    serviceLimits   Json     @map("service_limits")
+    isActive        Boolean  @default(true) @map("is_active")
+    createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+    updatedAt       DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+    // Relations
+    insurer   Insurer    @relation(fields: [insurerId], references: [id], onDelete: Cascade)
+    employees Employee[]
+    claims    Claim[]
+
+    @@index([planCode])
+    @@index([insurerId])
+    @@index([isActive])
+    @@index([createdAt])
+    @@index([insurerId, isActive])
+    @@map("plans")
+}
+
+// ============================================================================
+// 10. CLAIM ENTITY
+// ============================================================================
+
+enum ClaimStatus {
+    Pending
+    Approved
+    Rejected
+    Paid
+    OnHold
+}
+
+enum Priority {
+    Low
+    Normal
+    High
+}
+
+model Claim {
+    id                String      @id @default(uuid()) @db.Uuid
+    claimNumber       String      @unique @map("claim_number") @db.VarChar(50)
+    hospitalVisitId   String      @map("hospital_visit_id") @db.Uuid
+    corporateId       String      @map("corporate_id") @db.Uuid
+    planId            String      @map("plan_id") @db.Uuid
+    insurerId         String      @map("insurer_id") @db.Uuid
+    claimStatus       ClaimStatus @default(Pending) @map("claim_status")
+    amountClaimed     Decimal     @map("amount_claimed") @db.Decimal(12, 2)
+    approvedAmount    Decimal     @default(0) @map("approved_amount") @db.Decimal(12, 2)
+    treatmentCategory String?     @map("treatment_category") @db.VarChar(100)
+    priority          Priority    @default(Normal)
+    notes             String?     @db.VarChar(1000)
+    createdAt         DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+    updatedAt         DateTime    @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+    // Relations
+    hospitalVisit  HospitalVisit   @relation(fields: [hospitalVisitId], references: [id], onDelete: Restrict)
+    corporate      Corporate       @relation(fields: [corporateId], references: [id], onDelete: Restrict)
+    plan           Plan            @relation(fields: [planId], references: [id], onDelete: Restrict)
+    insurer        Insurer         @relation(fields: [insurerId], references: [id], onDelete: Restrict)
+    claimEvents    ClaimEvent[]
+    claimDocuments ClaimDocument[]
+    chatMessages   ChatMessage[]
+
+    @@index([claimNumber])
+    @@index([hospitalVisitId])
+    @@index([corporateId])
+    @@index([planId])
+    @@index([insurerId])
+    @@index([claimStatus])
+    @@index([priority])
+    @@index([createdAt])
+    @@index([hospitalVisitId, createdAt])
+    @@index([corporateId, claimStatus])
+    @@index([claimStatus, createdAt])
+    @@map("claims")
+}
+
+// ============================================================================
+// 11. CLAIM_EVENT ENTITY
+// ============================================================================
+
+enum ClaimEventStatus {
+    Pending
+    Approved
+    Rejected
+    Paid
+    OnHold
+}
+
+model ClaimEvent {
+    id          String            @id @default(uuid()) @db.Uuid
+    claimId     String            @map("claim_id") @db.Uuid
+    actorUserId String            @map("actor_user_id") @db.Uuid
+    actorName   String            @map("actor_name") @db.VarChar(200)
+    actorRole   String            @map("actor_role") @db.VarChar(100)
+    action      String            @db.VarChar(255)
+    statusFrom  ClaimEventStatus? @map("status_from")
+    statusTo    ClaimEventStatus  @map("status_to")
+    eventNote   String?           @map("event_note") @db.VarChar(1000)
+    timestamp   DateTime          @db.Timestamptz(6)
+    createdAt   DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+
+    // Relations
+    claim Claim @relation(fields: [claimId], references: [id], onDelete: Cascade)
+    actor User  @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+
+    @@index([claimId])
+    @@index([actorUserId])
+    @@index([timestamp])
+    @@index([action])
+    @@index([claimId, timestamp(sort: Desc)])
+    @@index([actorRole, timestamp(sort: Desc)])
+    @@map("claim_events")
+}
+
+// ============================================================================
+// 12. CLAIM_DOCUMENT ENTITY
+// ============================================================================
+
+model ClaimDocument {
+    id               String   @id @default(uuid()) @db.Uuid
+    claimId          String   @map("claim_id") @db.Uuid
+    originalFilename String   @map("original_filename") @db.VarChar(255)
+    filePath         String   @map("file_path") @db.VarChar(500)
+    fileUrl          String   @map("file_url") @db.VarChar(500)
+    fileSizeBytes    Int      @map("file_size_bytes")
+    createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+    updatedAt        DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+    // Relations
+    claim Claim @relation(fields: [claimId], references: [id], onDelete: Cascade)
+
+    @@index([claimId])
+    @@index([createdAt])
+    @@map("claim_documents")
+}
+
+// ============================================================================
+// 13. CHAT_MESSAGE ENTITY
+// ============================================================================
+
+enum MessageType {
+    text
+    system
+    document_upload
+}
+
+model ChatMessage {
+    id          String      @id @default(uuid()) @db.Uuid
+    claimId     String      @map("claim_id") @db.Uuid
+    senderId    String      @map("sender_id") @db.Uuid
+    receiverId  String      @map("receiver_id") @db.Uuid
+    messageText String      @map("message_text") @db.Text
+    isRead      Boolean     @default(false) @map("is_read")
+    timestamp   DateTime    @db.Timestamptz(6)
+    messageType MessageType @default(text) @map("message_type")
+    createdAt   DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+
+    // Relations
+    claim       Claim                   @relation(fields: [claimId], references: [id], onDelete: Cascade)
+    sender      User                    @relation("SentMessages", fields: [senderId], references: [id], onDelete: SetNull)
+    receiver    User                    @relation("ReceivedMessages", fields: [receiverId], references: [id], onDelete: SetNull)
+    attachments ChatMessageAttachment[]
+
+    @@index([claimId])
+    @@index([senderId])
+    @@index([receiverId])
+    @@index([timestamp])
+    @@index([isRead])
+    @@index([claimId, timestamp(sort: Desc)])
+    @@index([senderId, timestamp(sort: Desc)])
+    @@map("chat_messages")
+}
+
+// ============================================================================
+// 14. CHAT_MESSAGE_ATTACHMENT ENTITY
+// ============================================================================
+
+model ChatMessageAttachment {
+    id            String   @id @default(uuid()) @db.Uuid
+    messageId     String   @map("message_id") @db.Uuid
+    filename      String   @db.VarChar(255)
+    filePath      String   @map("file_path") @db.VarChar(500)
+    fileUrl       String   @map("file_url") @db.VarChar(500)
+    fileSizeBytes Int      @map("file_size_bytes")
+    createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+    // Relations
+    message ChatMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+    @@index([messageId])
+    @@index([createdAt])
+    @@map("chat_message_attachments")
+}
+
+// ============================================================================
+// 15. NOTIFICATION ENTITY
+// ============================================================================
+
+enum NotificationType {
+    claim_status
+    policy_update
+    dependent_request
+    messaging_alert
+}
+
+enum Severity {
+    info
+    warning
+    critical
+}
+
+model Notification {
+    id                String           @id @default(uuid()) @db.Uuid
+    userId            String           @map("user_id") @db.Uuid
+    notificationType  NotificationType @map("notification_type")
+    title             String           @db.VarChar(255)
+    message           String           @db.Text
+    severity          Severity         @default(info)
+    relatedEntityId   String?          @map("related_entity_id") @db.Uuid
+    relatedEntityType String?          @map("related_entity_type") @db.VarChar(50)
+    isRead            Boolean          @default(false) @map("is_read")
+    actionUrl         String?          @map("action_url") @db.VarChar(500)
+    category          String?          @db.VarChar(100)
+    timestamp         DateTime         @db.Timestamptz(6)
+    createdAt         DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+
+    // Relations
+    user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+    @@index([userId])
+    @@index([notificationType])
+    @@index([isRead])
+    @@index([timestamp])
+    @@index([createdAt])
+    @@index([userId, isRead, timestamp(sort: Desc)])
+    @@index([userId, notificationType, createdAt(sort: Desc)])
+    @@map("notifications")
+}
+
+// ============================================================================
+// 16. LAB ENTITY
+// ============================================================================
+
+model Lab {
+    id             String   @id @default(uuid()) @db.Uuid
+    insurerId      String   @map("insurer_id") @db.Uuid
+    labName        String   @map("lab_name") @db.VarChar(255)
+    city           String   @db.VarChar(100)
+    address        String   @db.VarChar(500)
+    licenseNumber  String   @unique @map("license_number") @db.VarChar(100)
+    contactPhone   String   @map("contact_phone") @db.VarChar(20)
+    contactEmail   String   @map("contact_email") @db.VarChar(255)
+    testCategories Json     @map("test_categories")
+    isActive       Boolean  @default(true) @map("is_active")
+    createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+    updatedAt      DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+    // Relations
+    insurer Insurer @relation(fields: [insurerId], references: [id], onDelete: Cascade)
+
+    @@index([insurerId])
+    @@index([licenseNumber])
+    @@index([city])
+    @@index([isActive])
+    @@index([city, isActive])
+    @@index([insurerId, isActive])
+    @@map("labs")
+}
+
+// ============================================================================
+// 17. MEDICINE ENTITY
+// ============================================================================
+
+model Medicine {
+    id                   String   @id @default(uuid()) @db.Uuid
+    name                 String   @db.VarChar(255)
+    category             String   @db.VarChar(100)
+    unitPrice            Decimal  @map("unit_price") @db.Decimal(10, 2)
+    packPrice            Decimal  @map("pack_price") @db.Decimal(10, 2)
+    manufacturer         String   @db.VarChar(255)
+    requiresPrescription Boolean  @default(true) @map("requires_prescription")
+    createdAt            DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+    updatedAt            DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+    @@index([category])
+    @@index([name])
+    @@map("medicines")
+}
+
+// ============================================================================
+// 18. AUDIT_LOG ENTITY
+// ============================================================================
+
+enum AuditAction {
+    CREATE
+    UPDATE
+    DELETE
+    RESTORE
+}
+
+model AuditLog {
+    id           String      @id @default(uuid()) @db.Uuid
+    entityType   String      @map("entity_type") @db.VarChar(100)
+    entityId     String      @map("entity_id") @db.Uuid
+    userId       String?     @map("user_id") @db.Uuid
+    action       AuditAction
+    fieldName    String?     @map("field_name") @db.VarChar(100)
+    oldValue     String?     @map("old_value") @db.Text
+    newValue     String?     @map("new_value") @db.Text
+    changeReason String?     @map("change_reason") @db.VarChar(500)
+    timestamp    DateTime    @db.Timestamptz(6)
+    createdAt    DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+
+    // Relations
+    user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+    @@index([entityType])
+    @@index([entityId])
+    @@index([userId])
+    @@index([timestamp])
+    @@index([entityType, entityId, timestamp(sort: Desc)])
+    @@index([action, timestamp(sort: Desc)])
+    @@map("audit_logs")
+}
