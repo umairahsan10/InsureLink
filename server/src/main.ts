@@ -1,5 +1,5 @@
 import { NestFactory, Reflector } from '@nestjs/core';
-import { ValidationPipe, Logger, VersioningType } from '@nestjs/common';
+import { ValidationPipe, Logger } from '@nestjs/common';
 import { AppModule } from './app.module';
 import { PrismaService } from './common/prisma/prisma.service';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
@@ -12,14 +12,8 @@ async function bootstrap() {
 
   // CORS — allow frontend dev server
   app.enableCors({
-    origin: process.env.CORS_ORIGIN ?? 'http://localhost:3000',
+    origin: process.env.CORS_ORIGIN ?? 'http://localhost:3001',
     credentials: true,
-  });
-
-  // Enable versioning for API routes (e.g., /api/v1, /api/v2)
-  app.enableVersioning({
-    type: VersioningType.URI,
-    prefix: 'v',
   });
 
   // Global prefix: all routes start with /api
