@@ -1,30 +1,23 @@
-import {
-  IsString,
-  IsNotEmpty,
-  IsOptional,
-  IsEnum,
-  IsBoolean,
-  IsNumber,
-} from 'class-validator';
+import { IsOptional, IsString, IsEnum, IsBoolean, IsNumber } from 'class-validator';
 import { Type } from 'class-transformer';
 import { HospitalType } from '@prisma/client';
 
-export class CreateHospitalDto {
+export class UpdateHospitalDto {
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  hospitalName: string;
+  hospitalName?: string;
 
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  licenseNumber: string;
+  licenseNumber?: string;
 
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  city: string;
+  city?: string;
 
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  address: string;
+  address?: string;
 
   @IsOptional()
   @Type(() => Number)
@@ -36,9 +29,9 @@ export class CreateHospitalDto {
   @IsNumber()
   longitude?: number;
 
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  emergencyPhone: string;
+  emergencyPhone?: string;
 
   @IsOptional()
   @IsEnum(HospitalType)
