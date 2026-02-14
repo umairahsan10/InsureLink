@@ -7,5 +7,3 @@ export class LocalAuthGuard extends AuthGuard('local') {
     return super.canActivate(context);
   }
 }
-
-
