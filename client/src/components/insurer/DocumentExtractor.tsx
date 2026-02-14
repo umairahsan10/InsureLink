@@ -247,16 +247,6 @@ export default function DocumentExtractor() {
             }
           }
 
-          // Validate patient takaful certificate number - should be exactly 3 digits
-          if (key === "patientTakafulCertificateNumber" && value) {
-            const digitsOnly = value.replace(/\D/g, "");
-            if (digitsOnly.length > 3) {
-              formattedValue = "";
-            } else {
-              formattedValue = digitsOnly;
-            }
-          }
-
           newFormData[key] = formattedValue;
         }
       }
