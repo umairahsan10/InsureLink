@@ -47,6 +47,12 @@ export class InsurersRepository {
     });
   }
 
+  async findByIdSimple(id: string): Promise<Insurer | null> {
+    return this.prisma.insurer.findUnique({
+      where: { id },
+    });
+  }
+
   async findAll(
     page: number = 1,
     limit: number = 10,
@@ -103,7 +109,9 @@ export class InsurersRepository {
         ...(data.address && { address: data.address }),
         ...(data.city && { city: data.city }),
         ...(data.province && { province: data.province }),
-        ...(data.maxCoverageLimit && { maxCoverageLimit: data.maxCoverageLimit }),
+        ...(data.maxCoverageLimit && {
+          maxCoverageLimit: data.maxCoverageLimit,
+        }),
         ...(typeof data.networkHospitalCount !== 'undefined' && {
           networkHospitalCount: data.networkHospitalCount,
         }),
@@ -117,10 +125,6 @@ export class InsurersRepository {
         ...(typeof data.isActive !== 'undefined' && {
           isActive: data.isActive,
         }),
-      },
-      include: {
-        plans: true,
-        labs: true,
       },
     });
   }

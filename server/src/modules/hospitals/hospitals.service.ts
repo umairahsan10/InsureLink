@@ -1,11 +1,19 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from '@nestjs/common';
 import { HospitalsRepository } from './repositories/hospitals.repository';
 import { HospitalEmergencyContactsRepository } from './repositories/hospital-emergency-contacts.repository';
 import { HospitalVisitsRepository } from './repositories/hospital-visits.repository';
 import { CreateHospitalDto } from './dto/create-hospital.dto';
 import { UpdateHospitalDto } from './dto/update-hospital.dto';
-import { CreateHospitalEmergencyContactDto, UpdateHospitalEmergencyContactDto } from './dto/hospital-emergency-contact.dto';
+import {
+  CreateHospitalEmergencyContactDto,
+  UpdateHospitalEmergencyContactDto,
+} from './dto/hospital-emergency-contact.dto';
 import { CreateHospitalVisitDto } from './dto/hospital-visit.dto';
+import { PrismaService } from '../../common/prisma/prisma.service';
 
 @Injectable()
 export class HospitalsService {
@@ -13,6 +21,7 @@ export class HospitalsService {
     private readonly hospitalsRepository: HospitalsRepository,
     private readonly emergencyContactsRepository: HospitalEmergencyContactsRepository,
     private readonly hospitalVisitsRepository: HospitalVisitsRepository,
+    private readonly prisma: PrismaService,
   ) {}
 
   async create(userId: string, data: CreateHospitalDto) {
@@ -21,7 +30,9 @@ export class HospitalsService {
       data.licenseNumber,
     );
     if (existingHospital) {
-      throw new BadRequestException('Hospital with this license number already exists');
+      throw new BadRequestException(
+        'Hospital with this license number already exists',
+      );
     }
 
     return this.hospitalsRepository.create({ ...data, userId });
@@ -43,7 +54,14 @@ export class HospitalsService {
     sortBy: string = 'createdAt',
     order: 'asc' | 'desc' = 'desc',
   ) {
-    return this.hospitalsRepository.findAll(page, limit, city, isActive, sortBy, order);
+    return this.hospitalsRepository.findAll(
+      page,
+      limit,
+      city,
+      isActive,
+      sortBy,
+      order,
+    );
   }
 
   async update(id: string, data: UpdateHospitalDto) {
@@ -54,9 +72,8 @@ export class HospitalsService {
 
     // If updating license number, check uniqueness
     if (data.licenseNumber && data.licenseNumber !== hospital.licenseNumber) {
-      const existingHospital = await this.hospitalsRepository.findByLicenseNumber(
-        data.licenseNumber,
-      );
+      const existingHospital =
+        await this.hospitalsRepository.findByLicenseNumber(data.licenseNumber);
       if (existingHospital) {
         throw new BadRequestException(
           'Hospital with this license number already exists',
@@ -87,7 +104,10 @@ export class HospitalsService {
   }
 
   // Emergency Contacts
-  async addEmergencyContact(hospitalId: string, data: CreateHospitalEmergencyContactDto) {
+  async addEmergencyContact(
+    hospitalId: string,
+    data: CreateHospitalEmergencyContactDto,
+  ) {
     const hospital = await this.hospitalsRepository.findById(hospitalId);
     if (!hospital) {
       throw new NotFoundException(`Hospital with id ${hospitalId} not found`);
@@ -106,15 +126,22 @@ export class HospitalsService {
   async getEmergencyContactById(contactId: string) {
     const contact = await this.emergencyContactsRepository.findById(contactId);
     if (!contact) {
-      throw new NotFoundException(`Emergency contact with id ${contactId} not found`);
+      throw new NotFoundException(
+        `Emergency contact with id ${contactId} not found`,
+      );
     }
     return contact;
   }
 
-  async updateEmergencyContact(contactId: string, data: UpdateHospitalEmergencyContactDto) {
+  async updateEmergencyContact(
+    contactId: string,
+    data: UpdateHospitalEmergencyContactDto,
+  ) {
     const contact = await this.emergencyContactsRepository.findById(contactId);
     if (!contact) {
-      throw new NotFoundException(`Emergency contact with id ${contactId} not found`);
+      throw new NotFoundException(
+        `Emergency contact with id ${contactId} not found`,
+      );
     }
     return this.emergencyContactsRepository.update(contactId, data);
   }
@@ -122,7 +149,9 @@ export class HospitalsService {
   async deleteEmergencyContact(contactId: string) {
     const contact = await this.emergencyContactsRepository.findById(contactId);
     if (!contact) {
-      throw new NotFoundException(`Emergency contact with id ${contactId} not found`);
+      throw new NotFoundException(
+        `Emergency contact with id ${contactId} not found`,
+      );
     }
     return this.emergencyContactsRepository.delete(contactId);
   }
@@ -131,19 +160,47 @@ export class HospitalsService {
   async createHospitalVisit(data: CreateHospitalVisitDto) {
     const hospital = await this.hospitalsRepository.findById(data.hospitalId);
     if (!hospital) {
-      throw new NotFoundException(`Hospital with id ${data.hospitalId} not found`);
-    }
-
-    if (data.employeeId && data.dependentId) {
-      throw new BadRequestException(
-        'Cannot create visit for both employee and dependent simultaneously',
+      throw new NotFoundException(
+        `Hospital with id ${data.hospitalId} not found`,
       );
     }
 
-    if (!data.employeeId && !data.dependentId) {
-      throw new BadRequestException(
-        'Either employeeId or dependentId must be provided',
+    // Validate employee exists
+    const employee = await this.prisma.employee.findUnique({
+      where: { id: data.employeeId },
+    });
+    if (!employee) {
+      throw new NotFoundException(
+        `Employee with id ${data.employeeId} not found`,
       );
+    }
+
+    // If dependentId is provided, validate dependent
+    if (data.dependentId) {
+      const dependent = await this.prisma.dependent.findUnique({
+        where: { id: data.dependentId },
+        include: { employee: true },
+      });
+
+      if (!dependent) {
+        throw new NotFoundException(
+          `Dependent with id ${data.dependentId} not found`,
+        );
+      }
+
+      // Validate dependent belongs to the employee
+      if (dependent.employeeId !== data.employeeId) {
+        throw new BadRequestException(
+          `Dependent does not belong to employee ${data.employeeId}`,
+        );
+      }
+
+      // Validate dependent status is Active
+      if (dependent.status !== 'Active') {
+        throw new BadRequestException(
+          `Dependent must have 'Active' status to create a visit. Current status: ${dependent.status}`,
+        );
+      }
     }
 
     return this.hospitalVisitsRepository.create(data);
@@ -160,7 +217,9 @@ export class HospitalsService {
   async getVisitById(visitId: string) {
     const visit = await this.hospitalVisitsRepository.findById(visitId);
     if (!visit) {
-      throw new NotFoundException(`Hospital visit with id ${visitId} not found`);
+      throw new NotFoundException(
+        `Hospital visit with id ${visitId} not found`,
+      );
     }
     return visit;
   }

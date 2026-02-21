@@ -1,4 +1,8 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from '@nestjs/common';
 import { InsurersRepository } from './repositories/insurers.repository';
 import { PlansRepository } from './repositories/plans.repository';
 import { LabsRepository } from './repositories/labs.repository';
@@ -45,24 +49,20 @@ export class InsurersService {
     sortBy: string = 'createdAt',
     order: 'asc' | 'desc' = 'desc',
   ) {
-    return this.insurersRepository.findAll(page, limit, city, status, sortBy, order);
+    return this.insurersRepository.findAll(
+      page,
+      limit,
+      city,
+      status,
+      sortBy,
+      order,
+    );
   }
 
   async update(id: string, data: UpdateInsurerDto) {
-    const insurer = await this.insurersRepository.findById(id);
+    const insurer = await this.insurersRepository.findByIdSimple(id);
     if (!insurer) {
       throw new NotFoundException(`Insurer with id ${id} not found`);
-    }
-
-    if (data.licenseNumber && data.licenseNumber !== insurer.licenseNumber) {
-      const existingInsurer = await this.insurersRepository.findByLicenseNumber(
-        data.licenseNumber,
-      );
-      if (existingInsurer) {
-        throw new BadRequestException(
-          'Insurer with this license number already exists',
-        );
-      }
     }
 
     return this.insurersRepository.update(id, data);
@@ -71,13 +71,15 @@ export class InsurersService {
   // ============== Plan CRUD ==============
 
   async createPlan(insurerId: string, data: CreatePlanDto) {
-    const insurer = await this.insurersRepository.findById(insurerId);
+    const insurer = await this.insurersRepository.findByIdSimple(insurerId);
     if (!insurer) {
       throw new NotFoundException(`Insurer with id ${insurerId} not found`);
     }
 
     // Check plan code uniqueness
-    const existingPlan = await this.plansRepository.findByPlanCode(data.planCode);
+    const existingPlan = await this.plansRepository.findByPlanCode(
+      data.planCode,
+    );
     if (existingPlan) {
       throw new BadRequestException(
         `Plan with code '${data.planCode}' already exists`,
@@ -88,7 +90,7 @@ export class InsurersService {
   }
 
   async getPlans(insurerId: string, isActive?: boolean) {
-    const insurer = await this.insurersRepository.findById(insurerId);
+    const insurer = await this.insurersRepository.findByIdSimple(insurerId);
     if (!insurer) {
       throw new NotFoundException(`Insurer with id ${insurerId} not found`);
     }
@@ -104,7 +106,7 @@ export class InsurersService {
   }
 
   async updatePlan(planId: string, data: UpdatePlanDto) {
-    const plan = await this.plansRepository.findById(planId);
+    const plan = await this.plansRepository.findByIdSimple(planId);
     if (!plan) {
       throw new NotFoundException(`Plan with id ${planId} not found`);
     }
@@ -112,7 +114,7 @@ export class InsurersService {
   }
 
   async deletePlan(planId: string) {
-    const plan = await this.plansRepository.findById(planId);
+    const plan = await this.plansRepository.findByIdSimple(planId);
     if (!plan) {
       throw new NotFoundException(`Plan with id ${planId} not found`);
     }
@@ -122,12 +124,14 @@ export class InsurersService {
   // ============== Lab CRUD ==============
 
   async createLab(insurerId: string, data: CreateLabDto) {
-    const insurer = await this.insurersRepository.findById(insurerId);
+    const insurer = await this.insurersRepository.findByIdSimple(insurerId);
     if (!insurer) {
       throw new NotFoundException(`Insurer with id ${insurerId} not found`);
     }
 
-    const existingLab = await this.labsRepository.findByLicenseNumber(data.licenseNumber);
+    const existingLab = await this.labsRepository.findByLicenseNumber(
+      data.licenseNumber,
+    );
     if (existingLab) {
       throw new BadRequestException(
         'Lab with this license number already exists',
@@ -138,7 +142,7 @@ export class InsurersService {
   }
 
   async getLabs(insurerId: string, isActive?: boolean) {
-    const insurer = await this.insurersRepository.findById(insurerId);
+    const insurer = await this.insurersRepository.findByIdSimple(insurerId);
     if (!insurer) {
       throw new NotFoundException(`Insurer with id ${insurerId} not found`);
     }
@@ -154,7 +158,7 @@ export class InsurersService {
   }
 
   async updateLab(labId: string, data: UpdateLabDto) {
-    const lab = await this.labsRepository.findById(labId);
+    const lab = await this.labsRepository.findByIdSimple(labId);
     if (!lab) {
       throw new NotFoundException(`Lab with id ${labId} not found`);
     }
@@ -162,7 +166,7 @@ export class InsurersService {
   }
 
   async deleteLab(labId: string) {
-    const lab = await this.labsRepository.findById(labId);
+    const lab = await this.labsRepository.findByIdSimple(labId);
     if (!lab) {
       throw new NotFoundException(`Lab with id ${labId} not found`);
     }

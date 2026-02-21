@@ -3,13 +3,19 @@ import { PrismaService } from '../../../common/prisma/prisma.service';
 import { Hospital } from '@prisma/client';
 import { CreateHospitalDto } from '../dto/create-hospital.dto';
 import { UpdateHospitalDto } from '../dto/update-hospital.dto';
+import {
+  serializeHospital,
+  serializeHospitals,
+} from '../utils/hospital-serializer.util';
 
 @Injectable()
 export class HospitalsRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(data: CreateHospitalDto & { userId: string }): Promise<Hospital> {
-    return this.prisma.hospital.create({
+  async create(
+    data: CreateHospitalDto & { userId: string },
+  ): Promise<Hospital> {
+    const hospital = await this.prisma.hospital.create({
       data: {
         userId: data.userId,
         hospitalName: data.hospitalName,
@@ -24,10 +30,11 @@ export class HospitalsRepository {
         isActive: data.isActive ?? true,
       },
     });
+    return serializeHospital(hospital);
   }
 
   async findById(id: string): Promise<Hospital | null> {
-    return this.prisma.hospital.findUnique({
+    const hospital = await this.prisma.hospital.findUnique({
       where: { id },
       include: {
         emergencyContacts: true,
@@ -37,6 +44,7 @@ export class HospitalsRepository {
         },
       },
     });
+    return hospital ? serializeHospital(hospital) : null;
   }
 
   async findAll(
@@ -74,11 +82,11 @@ export class HospitalsRepository {
       this.prisma.hospital.count({ where }),
     ]);
 
-    return { hospitals, total };
+    return { hospitals: serializeHospitals(hospitals), total };
   }
 
   async update(id: string, data: UpdateHospitalDto): Promise<Hospital> {
-    return this.prisma.hospital.update({
+    const hospital = await this.prisma.hospital.update({
       where: { id },
       data: {
         ...(data.hospitalName && { hospitalName: data.hospitalName }),
@@ -99,22 +107,25 @@ export class HospitalsRepository {
         emergencyContacts: true,
       },
     });
+    return serializeHospital(hospital);
   }
 
   async delete(id: string): Promise<Hospital> {
-    return this.prisma.hospital.delete({
+    const hospital = await this.prisma.hospital.delete({
       where: { id },
     });
+    return serializeHospital(hospital);
   }
 
   async findByLicenseNumber(licenseNumber: string): Promise<Hospital | null> {
-    return this.prisma.hospital.findUnique({
+    const hospital = await this.prisma.hospital.findUnique({
       where: { licenseNumber },
     });
+    return hospital ? serializeHospital(hospital) : null;
   }
 
   async findByCity(city: string, isActive?: boolean): Promise<Hospital[]> {
-    return this.prisma.hospital.findMany({
+    const hospitals = await this.prisma.hospital.findMany({
       where: {
         city: {
           contains: city,
@@ -124,6 +135,7 @@ export class HospitalsRepository {
       },
       orderBy: { createdAt: 'desc' },
     });
+    return serializeHospitals(hospitals);
   }
 
   async findNear(
@@ -154,6 +166,7 @@ export class HospitalsRepository {
           ) + sin(radians(${latitude})) * sin(radians(latitude))
         )
     `;
-    return hospitals;
+    // Serialize to convert Decimal types to numbers
+    return serializeHospitals(hospitals);
   }
 }

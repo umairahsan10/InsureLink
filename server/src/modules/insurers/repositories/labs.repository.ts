@@ -32,10 +32,13 @@ export class LabsRepository {
     });
   }
 
-  async findByInsurerId(
-    insurerId: string,
-    isActive?: boolean,
-  ): Promise<Lab[]> {
+  async findByIdSimple(id: string): Promise<Lab | null> {
+    return this.prisma.lab.findUnique({
+      where: { id },
+    });
+  }
+
+  async findByInsurerId(insurerId: string, isActive?: boolean): Promise<Lab[]> {
     return this.prisma.lab.findMany({
       where: {
         insurerId,

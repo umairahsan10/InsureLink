@@ -1,9 +1,14 @@
-import { IsOptional, IsString, IsDateString } from 'class-validator';
+import {
+  IsOptional,
+  IsString,
+  IsDateString,
+  IsNotEmpty,
+} from 'class-validator';
 
 export class CreateHospitalVisitDto {
-  @IsOptional()
+  @IsNotEmpty()
   @IsString()
-  employeeId?: string;
+  employeeId: string;
 
   @IsOptional()
   @IsString()

@@ -31,23 +31,17 @@ export class InsurersController {
   @Public()
   @HttpCode(HttpStatus.CREATED)
   async create(@Body() data: CreateInsurerDto) {
-    // TODO: Get userId from JWT once auth is ready
-    const userId = 'placeholder-user-id';
-    return this.insurersService.create(userId, data);
+    return this.insurersService.create(data.userId, data);
   }
 
   @Get()
   @Public()
-  async findAll(
-    @Query() pagination: PaginationDto,
-    @Query('city') city?: string,
-    @Query('status') status?: string,
-  ) {
+  async findAll(@Query() pagination: PaginationDto) {
     return this.insurersService.findAll(
       pagination.page,
       pagination.limit,
-      city,
-      status,
+      pagination.city,
+      pagination.status,
       pagination.sortBy,
       pagination.order,
     );

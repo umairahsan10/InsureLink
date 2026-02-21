@@ -6,10 +6,15 @@ import {
   IsBoolean,
   IsNumber,
   IsDateString,
+  IsUUID,
 } from 'class-validator';
 import { InsurerStatus } from '@prisma/client';
 
 export class CreateInsurerDto {
+  @IsUUID()
+  @IsNotEmpty()
+  userId: string;
+
   @IsString()
   @IsNotEmpty()
   companyName: string;

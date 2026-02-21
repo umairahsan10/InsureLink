@@ -36,6 +36,12 @@ export class PlansRepository {
     });
   }
 
+  async findByIdSimple(id: string): Promise<Plan | null> {
+    return this.prisma.plan.findUnique({
+      where: { id },
+    });
+  }
+
   async findByInsurerId(
     insurerId: string,
     isActive?: boolean,

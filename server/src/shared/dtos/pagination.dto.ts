@@ -36,6 +36,10 @@ export class PaginationDto {
   city?: string;
 
   @IsOptional()
+  @IsString()
+  status?: string;
+
+  @IsOptional()
   @Type(() => Boolean)
   @IsBoolean()
   isActive?: boolean;

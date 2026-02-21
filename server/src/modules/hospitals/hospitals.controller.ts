@@ -17,7 +17,10 @@ import { HospitalFinderService } from './services/hospital-finder.service';
 import { Public } from '../../common/decorators/public.decorator';
 import { CreateHospitalDto } from './dto/create-hospital.dto';
 import { UpdateHospitalDto } from './dto/update-hospital.dto';
-import { CreateHospitalEmergencyContactDto, UpdateHospitalEmergencyContactDto } from './dto/hospital-emergency-contact.dto';
+import {
+  CreateHospitalEmergencyContactDto,
+  UpdateHospitalEmergencyContactDto,
+} from './dto/hospital-emergency-contact.dto';
 import { CreateHospitalVisitDto } from './dto/hospital-visit.dto';
 import { PaginationDto } from '../../shared/dtos/pagination.dto';
 
