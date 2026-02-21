@@ -1,26 +1,46 @@
-import { IsEmail, IsNotEmpty, IsString, MinLength, IsOptional } from 'class-validator';
+import {
+  IsEmail,
+  IsNotEmpty,
+  MinLength,
+  Matches,
+  IsEnum,
+  IsOptional,
+  IsDateString,
+} from 'class-validator';
+import { UserRole, Gender } from '@prisma/client';
 
 export class RegisterDto {
   @IsEmail()
-  @IsNotEmpty()
   email: string;
 
-  @IsString()
   @IsNotEmpty()
-  @MinLength(6)
+  @MinLength(8)
+  @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, {
+    message: 'Password must contain uppercase, lowercase, and number',
+  })
   password: string;
 
-  @IsString()
   @IsNotEmpty()
+  @MinLength(2)
   firstName: string;
 
-  @IsString()
-  @IsNotEmpty()
-  lastName: string;
-
-  @IsString()
   @IsOptional()
-  phone?: string;
+  @MinLength(2)
+  lastName?: string;
+
+  @IsNotEmpty()
+  phone: string;
+
+  @IsEnum(UserRole)
+  userRole: UserRole;
+
+  @IsOptional()
+  @IsDateString()
+  dob?: string;
+
+  @IsOptional()
+  @IsEnum(Gender)
+  gender?: Gender;
 }
 
 
