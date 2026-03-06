@@ -84,8 +84,18 @@ export class AuthService {
    * User Registration
    */
   async register(registerDto: RegisterDto): Promise<TokenResponseDto> {
-    const { email, password, firstName, lastName, phone, userRole, dob, gender } =
-      registerDto;
+    const {
+      email,
+      password,
+      firstName,
+      lastName,
+      phone,
+      userRole,
+      dob,
+      gender,
+      cnic,
+      address,
+    } = registerDto;
 
     const existingUser = await this.prisma.user.findUnique({
       where: { email },
@@ -113,6 +123,8 @@ export class AuthService {
         userRole,
         dob: dob ? new Date(dob) : null,
         gender: gender || null,
+        cnic: cnic || null,
+        address: address || null,
       },
     });
 
@@ -243,5 +255,3 @@ export class AuthService {
     return null;
   }
 }
-
-

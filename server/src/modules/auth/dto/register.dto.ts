@@ -6,6 +6,8 @@ import {
   IsEnum,
   IsOptional,
   IsDateString,
+  IsString,
+  MaxLength,
 } from 'class-validator';
 import { UserRole, Gender } from '@prisma/client';
 
@@ -41,6 +43,14 @@ export class RegisterDto {
   @IsOptional()
   @IsEnum(Gender)
   gender?: Gender;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(15)
+  cnic?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  address?: string;
 }
-
-

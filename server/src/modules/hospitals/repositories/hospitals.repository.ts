@@ -47,6 +47,20 @@ export class HospitalsRepository {
     return hospital ? serializeHospital(hospital) : null;
   }
 
+  async findByUserId(userId: string): Promise<Hospital | null> {
+    const hospital = await this.prisma.hospital.findUnique({
+      where: { userId },
+      include: {
+        emergencyContacts: true,
+        hospitalVisits: {
+          orderBy: { visitDate: 'desc' },
+          take: 10,
+        },
+      },
+    });
+    return hospital ? serializeHospital(hospital) : null;
+  }
+
   async findAll(
     page: number = 1,
     limit: number = 10,
