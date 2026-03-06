@@ -115,12 +115,31 @@ export class HospitalsService {
     return this.emergencyContactsRepository.create(hospitalId, data);
   }
 
+  async addEmergencyContactForUser(
+    userId: string,
+    data: CreateHospitalEmergencyContactDto,
+  ) {
+    const hospital = await this.hospitalsRepository.findByUserId(userId);
+    if (!hospital) {
+      throw new NotFoundException('Hospital not found for this user');
+    }
+    return this.emergencyContactsRepository.create(hospital.id, data);
+  }
+
   async getEmergencyContacts(hospitalId: string) {
     const hospital = await this.hospitalsRepository.findById(hospitalId);
     if (!hospital) {
       throw new NotFoundException(`Hospital with id ${hospitalId} not found`);
     }
     return this.emergencyContactsRepository.findByHospitalId(hospitalId);
+  }
+
+  async getEmergencyContactsForUser(userId: string) {
+    const hospital = await this.hospitalsRepository.findByUserId(userId);
+    if (!hospital) {
+      throw new NotFoundException('Hospital not found for this user');
+    }
+    return this.emergencyContactsRepository.findByHospitalId(hospital.id);
   }
 
   async getEmergencyContactById(contactId: string) {

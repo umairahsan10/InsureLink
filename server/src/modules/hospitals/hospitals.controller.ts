@@ -15,6 +15,9 @@ import {
 import { HospitalsService } from './hospitals.service';
 import { HospitalFinderService } from './services/hospital-finder.service';
 import { Public } from '../../common/decorators/public.decorator';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { CurrentUserDto } from '../auth/dto/current-user.dto';
 import { CreateHospitalDto } from './dto/create-hospital.dto';
 import { UpdateHospitalDto } from './dto/update-hospital.dto';
 import {
@@ -33,16 +36,17 @@ export class HospitalsController {
   ) {}
 
   @Post()
-  @Public()
+  @Roles('hospital', 'insurer')
   @HttpCode(HttpStatus.CREATED)
-  async create(@Body() data: CreateHospitalDto) {
-    // TODO: Get userId from JWT once auth is ready
-    const userId = 'placeholder-user-id';
-    return this.hospitalsService.create(userId, data);
+  async create(
+    @Body() data: CreateHospitalDto,
+    @CurrentUser() user: CurrentUserDto,
+  ) {
+    return this.hospitalsService.create(user.id, data);
   }
 
   @Get('search/nearby')
-  @Public()
+  @Public() // Public so patients/employees can find hospitals without logging in
   async findNearby(
     @Query('latitude') latitude: string,
     @Query('longitude') longitude: string,
@@ -56,7 +60,6 @@ export class HospitalsController {
   }
 
   @Get()
-  @Public()
   async findAll(@Query() pagination: PaginationDto) {
     return this.hospitalsService.findAll(
       pagination.page,
@@ -69,19 +72,18 @@ export class HospitalsController {
   }
 
   @Get(':id')
-  @Public()
   async findById(@Param('id') id: string) {
     return this.hospitalsService.findById(id);
   }
 
   @Patch(':id')
-  @Public()
+  @Roles('hospital', 'insurer')
   async update(@Param('id') id: string, @Body() data: UpdateHospitalDto) {
     return this.hospitalsService.update(id, data);
   }
 
   @Post(':id/emergency-contacts')
-  @Public()
+  @Roles('hospital', 'insurer')
   @HttpCode(HttpStatus.CREATED)
   async addEmergencyContact(
     @Param('id') id: string,
@@ -90,20 +92,36 @@ export class HospitalsController {
     return this.hospitalsService.addEmergencyContact(id, data);
   }
 
+  @Post('emergency-contacts')
+  @Roles('hospital')
+  @HttpCode(HttpStatus.CREATED)
+  async addEmergencyContactForCurrentUser(
+    @Body() data: CreateHospitalEmergencyContactDto,
+    @CurrentUser() user: CurrentUserDto,
+  ) {
+    return this.hospitalsService.addEmergencyContactForUser(user.id, data);
+  }
+
   @Get(':id/emergency-contacts')
-  @Public()
   async getEmergencyContacts(@Param('id') id: string) {
     return this.hospitalsService.getEmergencyContacts(id);
   }
 
+  @Get('emergency-contacts')
+  @Roles('hospital')
+  async getEmergencyContactsForCurrentUser(
+    @CurrentUser() user: CurrentUserDto,
+  ) {
+    return this.hospitalsService.getEmergencyContactsForUser(user.id);
+  }
+
   @Get('emergency-contacts/:contactId')
-  @Public()
   async getEmergencyContactById(@Param('contactId') contactId: string) {
     return this.hospitalsService.getEmergencyContactById(contactId);
   }
 
   @Patch('emergency-contacts/:contactId')
-  @Public()
+  @Roles('hospital', 'insurer')
   async updateEmergencyContact(
     @Param('contactId') contactId: string,
     @Body() data: UpdateHospitalEmergencyContactDto,
@@ -112,19 +130,19 @@ export class HospitalsController {
   }
 
   @Delete('emergency-contacts/:contactId')
-  @Public()
+  @Roles('hospital', 'insurer')
   async deleteEmergencyContact(@Param('contactId') contactId: string) {
     return this.hospitalsService.deleteEmergencyContact(contactId);
   }
 
   @Get(':id/visits')
-  @Public()
+  @Roles('hospital', 'insurer')
   async getHospitalVisits(@Param('id') id: string) {
     return this.hospitalsService.getHospitalVisits(id);
   }
 
   @Post(':id/visits')
-  @Public()
+  @Roles('hospital')
   @HttpCode(HttpStatus.CREATED)
   async createHospitalVisit(
     @Param('id') id: string,

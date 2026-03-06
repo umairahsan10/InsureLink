@@ -13,7 +13,9 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { InsurersService } from './insurers.service';
-import { Public } from '../../common/decorators/public.decorator';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { CurrentUserDto } from '../auth/dto/current-user.dto';
 import { CreateInsurerDto } from './dto/create-insurer.dto';
 import { UpdateInsurerDto } from './dto/update-insurer.dto';
 import { CreatePlanDto, UpdatePlanDto } from './dto/create-plan.dto';
@@ -28,14 +30,16 @@ export class InsurersController {
   // ============== Insurer Endpoints ==============
 
   @Post()
-  @Public()
+  @Roles('insurer')
   @HttpCode(HttpStatus.CREATED)
-  async create(@Body() data: CreateInsurerDto) {
-    return this.insurersService.create(data.userId, data);
+  async create(
+    @Body() data: CreateInsurerDto,
+    @CurrentUser() user: CurrentUserDto,
+  ) {
+    return this.insurersService.create(user.id, data);
   }
 
   @Get()
-  @Public()
   async findAll(@Query() pagination: PaginationDto) {
     return this.insurersService.findAll(
       pagination.page,
@@ -50,7 +54,7 @@ export class InsurersController {
   // ============== Plan Endpoints (static routes before :id) ==============
 
   @Patch('plans/:planId')
-  @Public()
+  @Roles('insurer')
   async updatePlan(
     @Param('planId') planId: string,
     @Body() data: UpdatePlanDto,
@@ -59,7 +63,7 @@ export class InsurersController {
   }
 
   @Delete('plans/:planId')
-  @Public()
+  @Roles('insurer')
   async deletePlan(@Param('planId') planId: string) {
     return this.insurersService.deletePlan(planId);
   }
@@ -67,27 +71,37 @@ export class InsurersController {
   // ============== Lab Endpoints (static routes before :id) ==============
 
   @Get('labs/:labId')
-  @Public()
   async getLabById(@Param('labId') labId: string) {
     return this.insurersService.getLabById(labId);
+  }
+
+  @Patch('labs/:labId')
+  @Roles('insurer')
+  async updateLab(@Param('labId') labId: string, @Body() data: UpdateLabDto) {
+    return this.insurersService.updateLab(labId, data);
+  }
+
+  @Delete('labs/:labId')
+  @Roles('insurer')
+  async deleteLab(@Param('labId') labId: string) {
+    return this.insurersService.deleteLab(labId);
   }
 
   // ============== Parameterized :id Endpoints ==============
 
   @Get(':id')
-  @Public()
   async findById(@Param('id') id: string) {
     return this.insurersService.findById(id);
   }
 
   @Patch(':id')
-  @Public()
+  @Roles('insurer')
   async update(@Param('id') id: string, @Body() data: UpdateInsurerDto) {
     return this.insurersService.update(id, data);
   }
 
   @Post(':id/plans')
-  @Public()
+  @Roles('insurer')
   @HttpCode(HttpStatus.CREATED)
   async createPlan(
     @Param('id') insurerId: string,
@@ -97,7 +111,6 @@ export class InsurersController {
   }
 
   @Get(':id/plans')
-  @Public()
   async getPlans(
     @Param('id') insurerId: string,
     @Query('isActive') isActive?: string,
@@ -108,14 +121,13 @@ export class InsurersController {
   }
 
   @Post(':id/labs')
-  @Public()
+  @Roles('insurer')
   @HttpCode(HttpStatus.CREATED)
   async createLab(@Param('id') insurerId: string, @Body() data: CreateLabDto) {
     return this.insurersService.createLab(insurerId, data);
   }
 
   @Get(':id/labs')
-  @Public()
   async getLabs(
     @Param('id') insurerId: string,
     @Query('isActive') isActive?: string,

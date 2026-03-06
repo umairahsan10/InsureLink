@@ -1,0 +1,1229 @@
+{
+  "info": {
+    "name": "InsureLink Phase 1 APIs - JWT Protected",
+    "description": "Complete test collection for Hospitals & Insurers modules with JWT authentication",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3001/api",
+      "type": "string"
+    },
+    {
+      "key": "access_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "refresh_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "hospital_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "insurer_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "plan_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "lab_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "contact_id",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Register Hospital User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    var jsonData = pm.response.json();",
+                  "    console.log('Hospital User ID:', jsonData.data.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"hospital@test.com\",\n  \"password\": \"Hospital123\",\n  \"firstName\": \"Test\",\n  \"lastName\": \"Hospital\",\n  \"phone\": \"03001234567\",\n  \"userRole\": \"hospital\",\n  \"dob\": \"1990-01-15\",\n  \"gender\": \"Male\",\n  \"cnic\": \"42101-1234567-1\",\n  \"address\": \"123 Hospital Street, Lahore\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/register",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "register"]
+            }
+          }
+        },
+        {
+          "name": "Register Insurer User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"insurer@test.com\",\n  \"password\": \"Insurer123\",\n  \"firstName\": \"Test\",\n  \"lastName\": \"Insurer\",\n  \"phone\": \"03009876543\",\n  \"userRole\": \"insurer\",\n  \"dob\": \"1985-05-20\",\n  \"gender\": \"Female\",\n  \"cnic\": \"42101-9876543-2\",\n  \"address\": \"456 Insurance Tower, Karachi\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/register",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "register"]
+            }
+          }
+        },
+        {
+          "name": "Register Patient User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"patient@test.com\",\n  \"password\": \"Patient123\",\n  \"firstName\": \"Ali\",\n  \"lastName\": \"Khan\",\n  \"phone\": \"03007777777\",\n  \"userRole\": \"patient\",\n  \"dob\": \"1995-03-25\",\n  \"gender\": \"Male\",\n  \"cnic\": \"42101-1234567-1\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/register",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "register"]
+            }
+          }
+        },
+        {
+          "name": "Login Hospital User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set('access_token', jsonData.data.access_token);",
+                  "    pm.collectionVariables.set('refresh_token', jsonData.data.refresh_token);",
+                  "    console.log('✅ Hospital token saved!');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"hospital@test.com\",\n  \"password\": \"Hospital123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "Login Insurer User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set('access_token', jsonData.data.access_token);",
+                  "    pm.collectionVariables.set('refresh_token', jsonData.data.refresh_token);",
+                  "    console.log('✅ Insurer token saved!');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"insurer@test.com\",\n  \"password\": \"Insurer123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "Login Patient User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set('access_token', jsonData.data.access_token);",
+                  "    console.log('✅ Patient token saved (for testing forbidden access)');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"patient@test.com\",\n  \"password\": \"Patient123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "Refresh Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set('access_token', jsonData.data.access_token);",
+                  "    pm.collectionVariables.set('refresh_token', jsonData.data.refresh_token);",
+                  "    console.log('✅ Token refreshed!');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refresh_token\": \"{{refresh_token}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/refresh-token",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "refresh-token"]
+            }
+          }
+        },
+        {
+          "name": "Get Current User",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/auth/me",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "me"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Hospitals",
+      "item": [
+        {
+          "name": "Create Hospital",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set('hospital_id', jsonData.data.id);",
+                  "    console.log('✅ Hospital ID saved:', jsonData.data.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"hospitalName\": \"Shifa International Hospital\",\n  \"licenseNumber\": \"SIH-2024-001\",\n  \"city\": \"Islamabad\",\n  \"address\": \"H-8/4, Pitras Bukhari Road, Islamabad\",\n  \"latitude\": 33.6844,\n  \"longitude\": 73.0479,\n  \"emergencyPhone\": \"+92-51-8463000\",\n  \"hospitalType\": \"reimbursable\",\n  \"hasEmergencyUnit\": true,\n  \"isActive\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/v1/hospitals",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "hospitals"]
+            }
+          }
+        },
+        {
+          "name": "Get All Hospitals",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/hospitals?page=1&limit=10",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "hospitals"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "city",
+                  "value": "Islamabad",
+                  "disabled": true
+                },
+                {
+                  "key": "isActive",
+                  "value": "true",
+                  "disabled": true
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Hospital by ID",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/hospitals/{{hospital_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "hospitals", "{{hospital_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Update Hospital",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"emergencyPhone\": \"+92-51-8463001\",\n  \"isActive\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/v1/hospitals/{{hospital_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "hospitals", "{{hospital_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Find Nearby Hospitals (Public)",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/hospitals/search/nearby?latitude=33.6844&longitude=73.0479&radiusKm=50",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "hospitals", "search", "nearby"],
+              "query": [
+                {
+                  "key": "latitude",
+                  "value": "33.6844"
+                },
+                {
+                  "key": "longitude",
+                  "value": "73.0479"
+                },
+                {
+                  "key": "radiusKm",
+                  "value": "50"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Add Emergency Contact (JWT - Recommended)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set('contact_id', jsonData.data.id);",
+                  "    console.log('✅ Contact ID saved:', jsonData.data.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"contactLevel\": 1,\n  \"designation\": \"Chief Medical Officer\",\n  \"name\": \"Dr. Ahmed Khan\",\n  \"contactNumber\": \"+92-300-1234567\",\n  \"isActive\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/v1/hospitals/emergency-contacts",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "hospitals", "emergency-contacts"]
+            }
+          }
+        },
+        {
+          "name": "Get Emergency Contacts (JWT - Recommended)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/hospitals/emergency-contacts",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "hospitals", "emergency-contacts"]
+            }
+          }
+        },
+        {
+          "name": "Add Emergency Contact (With Hospital ID)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set('contact_id', jsonData.data.id);",
+                  "    console.log('✅ Contact ID saved:', jsonData.data.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"contactLevel\": 1,\n  \"designation\": \"Chief Medical Officer\",\n  \"name\": \"Dr. Ahmed Khan\",\n  \"contactNumber\": \"+92-300-1234567\",\n  \"isActive\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/v1/hospitals/{{hospital_id}}/emergency-contacts",
+              "host": ["{{base_url}}"],
+              "path": [
+                "v1",
+                "hospitals",
+                "{{hospital_id}}",
+                "emergency-contacts"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Emergency Contacts (With Hospital ID)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/hospitals/{{hospital_id}}/emergency-contacts",
+              "host": ["{{base_url}}"],
+              "path": [
+                "v1",
+                "hospitals",
+                "{{hospital_id}}",
+                "emergency-contacts"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Emergency Contact by ID",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/hospitals/emergency-contacts/{{contact_id}}",
+              "host": ["{{base_url}}"],
+              "path": [
+                "v1",
+                "hospitals",
+                "emergency-contacts",
+                "{{contact_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Emergency Contact",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"contactNumber\": \"+92-300-9999999\",\n  \"isActive\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/v1/hospitals/emergency-contacts/{{contact_id}}",
+              "host": ["{{base_url}}"],
+              "path": [
+                "v1",
+                "hospitals",
+                "emergency-contacts",
+                "{{contact_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Emergency Contact",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/hospitals/emergency-contacts/{{contact_id}}",
+              "host": ["{{base_url}}"],
+              "path": [
+                "v1",
+                "hospitals",
+                "emergency-contacts",
+                "{{contact_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Hospital Visits",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/hospitals/{{hospital_id}}/visits",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "hospitals", "{{hospital_id}}", "visits"]
+            }
+          }
+        },
+        {
+          "name": "Create Hospital Visit",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employeeId\": \"<employee_uuid>\",\n  \"hospitalId\": \"{{hospital_id}}\",\n  \"visitDate\": \"2026-03-06T10:00:00Z\",\n  \"dependentId\": \"<optional_dependent_uuid>\",\n  \"dischargeDate\": \"2026-03-08T14:00:00Z\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/v1/hospitals/{{hospital_id}}/visits",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "hospitals", "{{hospital_id}}", "visits"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Insurers",
+      "item": [
+        {
+          "name": "Create Insurer",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set('insurer_id', jsonData.data.id);",
+                  "    console.log('✅ Insurer ID saved:', jsonData.data.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"companyName\": \"EFU Health Insurance\",\n  \"licenseNumber\": \"EFU-2024-001\",\n  \"address\": \"85-F, Block 6, P.E.C.H.S., Karachi\",\n  \"city\": \"Karachi\",\n  \"province\": \"Sindh\",\n  \"maxCoverageLimit\": 5000000,\n  \"networkHospitalCount\": 120,\n  \"corporateClientCount\": 45,\n  \"status\": \"Active\",\n  \"operatingSince\": \"2010-05-15\",\n  \"isActive\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/v1/insurers",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "insurers"]
+            }
+          }
+        },
+        {
+          "name": "Get All Insurers",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/insurers?page=1&limit=10",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "insurers"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "city",
+                  "value": "Karachi",
+                  "disabled": true
+                },
+                {
+                  "key": "status",
+                  "value": "Active",
+                  "disabled": true
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Insurer by ID",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/insurers/{{insurer_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "insurers", "{{insurer_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Update Insurer",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"networkHospitalCount\": 125,\n  \"corporateClientCount\": 50\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/v1/insurers/{{insurer_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "insurers", "{{insurer_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Create Plan",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set('plan_id', jsonData.data.id);",
+                  "    console.log('✅ Plan ID saved:', jsonData.data.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"planName\": \"Gold Plan 2026\",\n  \"planCode\": \"GOLD-2026-001\",\n  \"sumInsured\": 1000000,\n  \"coveredServices\": {\n    \"outpatient\": true,\n    \"inpatient\": true,\n    \"emergency\": true,\n    \"surgery\": true,\n    \"maternity\": true,\n    \"dental\": false,\n    \"optical\": false\n  },\n  \"serviceLimits\": {\n    \"outpatient_visits\": 12,\n    \"inpatient_days\": 30,\n    \"emergency_deductible\": 500,\n    \"surgery_limit\": 500000\n  },\n  \"isActive\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/v1/insurers/{{insurer_id}}/plans",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "insurers", "{{insurer_id}}", "plans"]
+            }
+          }
+        },
+        {
+          "name": "Get Plans",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/insurers/{{insurer_id}}/plans?isActive=true",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "insurers", "{{insurer_id}}", "plans"],
+              "query": [
+                {
+                  "key": "isActive",
+                  "value": "true"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Plan",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sumInsured\": 1200000,\n  \"isActive\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/v1/insurers/plans/{{plan_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "insurers", "plans", "{{plan_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Delete Plan",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/insurers/plans/{{plan_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "insurers", "plans", "{{plan_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Create Lab",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set('lab_id', jsonData.data.id);",
+                  "    console.log('✅ Lab ID saved:', jsonData.data.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"labName\": \"Chughtai Lab\",\n  \"city\": \"Lahore\",\n  \"address\": \"Main Boulevard, Gulberg III, Lahore\",\n  \"licenseNumber\": \"CHUG-LAB-2024-001\",\n  \"contactPhone\": \"+92-42-35714120\",\n  \"contactEmail\": \"info@chughtailab.com\",\n  \"testCategories\": {\n    \"pathology\": true,\n    \"radiology\": true,\n    \"cardiology\": false,\n    \"microbiology\": true\n  },\n  \"isActive\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/v1/insurers/{{insurer_id}}/labs",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "insurers", "{{insurer_id}}", "labs"]
+            }
+          }
+        },
+        {
+          "name": "Get Labs",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/insurers/{{insurer_id}}/labs?isActive=true",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "insurers", "{{insurer_id}}", "labs"],
+              "query": [
+                {
+                  "key": "isActive",
+                  "value": "true"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Lab by ID",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/insurers/labs/{{lab_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "insurers", "labs", "{{lab_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Update Lab",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"contactPhone\": \"+92-42-35714999\",\n  \"isActive\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/v1/insurers/labs/{{lab_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "insurers", "labs", "{{lab_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Delete Lab",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/insurers/labs/{{lab_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "insurers", "labs", "{{lab_id}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Test Scenarios",
+      "item": [
+        {
+          "name": "❌ Unauthorized - No Token",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/hospitals",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "hospitals"]
+            }
+          }
+        },
+        {
+          "name": "❌ Forbidden - Patient Creating Hospital",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string",
+                  "description": "Use patient token here"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"hospitalName\": \"Test Hospital\",\n  \"licenseNumber\": \"TEST-001\",\n  \"city\": \"Islamabad\",\n  \"address\": \"Test Address\",\n  \"emergencyPhone\": \"+92-51-1111111\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/v1/hospitals",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "hospitals"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,5 +1,5 @@
 import { NestFactory, Reflector } from '@nestjs/core';
-import { ValidationPipe, Logger } from '@nestjs/common';
+import { ValidationPipe, Logger, VersioningType } from '@nestjs/common';
 import { AppModule } from './app.module';
 import { PrismaService } from './common/prisma/prisma.service';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
@@ -18,6 +18,11 @@ async function bootstrap() {
 
   // Global prefix: all routes start with /api
   app.setGlobalPrefix('api');
+
+  // Enable URI versioning
+  app.enableVersioning({
+    type: VersioningType.URI,
+  });
 
   // Global validation pipe (class-validator)
   app.useGlobalPipes(
