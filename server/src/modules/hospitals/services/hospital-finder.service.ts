@@ -16,6 +16,10 @@ export class HospitalFinderService {
     return this.hospitalsRepository.findNear(latitude, longitude, radiusKm);
   }
 
+  async findAllSortedByDistance(latitude: number, longitude: number) {
+    return this.hospitalsRepository.findAllOrderedByDistance(latitude, longitude);
+  }
+
   /**
    * Find hospitals by city
    * @param city - City name

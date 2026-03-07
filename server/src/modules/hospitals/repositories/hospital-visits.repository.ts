@@ -7,11 +7,13 @@ import { CreateHospitalVisitDto } from '../dto/hospital-visit.dto';
 export class HospitalVisitsRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(data: CreateHospitalVisitDto): Promise<HospitalVisit> {
+  async create(
+    data: CreateHospitalVisitDto & { employeeId: string; dependentId?: string },
+  ): Promise<HospitalVisit> {
     return this.prisma.hospitalVisit.create({
       data: {
         employeeId: data.employeeId,
-        dependentId: data.dependentId,
+        dependentId: data.dependentId || null,
         hospitalId: data.hospitalId,
         visitDate: new Date(data.visitDate),
         dischargeDate: data.dischargeDate ? new Date(data.dischargeDate) : null,

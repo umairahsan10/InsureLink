@@ -127,6 +127,20 @@ export default function HospitalSidebar({ sidebarOpen: externalSidebarOpen, setS
           </button>
 
           <button
+            onClick={() => router.push('/hospital/visits')}
+            className={`flex items-center w-full px-4 py-2.5 rounded-lg transition-colors mb-2 ${
+              isActive('/hospital/visits')
+                ? 'bg-green-700 text-white'
+                : 'text-green-100 hover:bg-green-700 hover:text-white'
+            }`}
+          >
+            <svg className="w-4 h-4 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            Visits
+          </button>
+
+          <button
             onClick={() => router.push('/hospital/profile')}
             className={`flex items-center w-full px-4 py-2.5 rounded-lg transition-colors mb-2 ${
               isActive('/hospital/profile')

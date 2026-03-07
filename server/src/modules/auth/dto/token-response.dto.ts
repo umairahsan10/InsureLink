@@ -7,6 +7,8 @@ export class TokenResponseDto {
     firstName: string;
     lastName?: string;
     role: string;
-    organizationId?: string;
+    hospitalId?: string;
+    insurerId?: string;
+    corporateId?: string;
   };
 }

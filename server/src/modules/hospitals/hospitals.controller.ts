@@ -45,8 +45,14 @@ export class HospitalsController {
     return this.hospitalsService.create(user.id, data);
   }
 
+  @Get('all')
+  @Public()
+  async findAllPublic() {
+    return this.hospitalsService.findAllPublic();
+  }
+
   @Get('search/nearby')
-  @Public() // Public so patients/employees can find hospitals without logging in
+  @Public()
   async findNearby(
     @Query('latitude') latitude: string,
     @Query('longitude') longitude: string,
@@ -56,6 +62,18 @@ export class HospitalsController {
       parseFloat(latitude),
       parseFloat(longitude),
       radiusKm ? parseFloat(radiusKm) : 50,
+    );
+  }
+
+  @Get('search/sorted')
+  @Public()
+  async findSortedByDistance(
+    @Query('latitude') latitude: string,
+    @Query('longitude') longitude: string,
+  ) {
+    return this.hospitalFinderService.findAllSortedByDistance(
+      parseFloat(latitude),
+      parseFloat(longitude),
     );
   }
 

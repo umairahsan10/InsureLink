@@ -1,10 +1,9 @@
-import { NestFactory, Reflector } from '@nestjs/core';
+import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, Logger, VersioningType } from '@nestjs/common';
 import { AppModule } from './app.module';
 import { PrismaService } from './common/prisma/prisma.service';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
-import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -12,7 +11,7 @@ async function bootstrap() {
 
   // CORS — allow frontend dev server
   app.enableCors({
-    origin: process.env.CORS_ORIGIN ?? 'http://localhost:3001',
+    origin: process.env.CORS_ORIGIN ?? 'http://localhost:3000',
     credentials: true,
   });
 
@@ -41,10 +40,6 @@ async function bootstrap() {
 
   // Global response transform interceptor
   app.useGlobalInterceptors(new TransformInterceptor());
-
-  // Global JWT auth guard — respects @Public() decorator
-  const reflector = app.get(Reflector);
-  app.useGlobalGuards(new JwtAuthGuard(reflector));
 
   // Prisma shutdown hooks
   app.enableShutdownHooks();

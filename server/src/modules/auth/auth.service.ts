@@ -46,12 +46,18 @@ export class AuthService {
     }
 
     let organizationId: string | undefined;
+    let hospitalId: string | undefined;
+    let insurerId: string | undefined;
+    let corporateId: string | undefined;
     if (user.userRole === 'corporate' && user.corporate) {
       organizationId = user.corporate.id;
+      corporateId = user.corporate.id;
     } else if (user.userRole === 'hospital' && user.hospital) {
       organizationId = user.hospital.id;
+      hospitalId = user.hospital.id;
     } else if (user.userRole === 'insurer' && user.insurer) {
       organizationId = user.insurer.id;
+      insurerId = user.insurer.id;
     }
 
     const tokens = this.generateTokens({
@@ -75,7 +81,9 @@ export class AuthService {
         firstName: user.firstName,
         lastName: user.lastName || undefined,
         role: user.userRole,
-        organizationId,
+        hospitalId,
+        insurerId,
+        corporateId,
       },
     };
   }
@@ -191,12 +199,18 @@ export class AuthService {
     }
 
     let organizationId: string | undefined;
+    let hospitalId: string | undefined;
+    let insurerId: string | undefined;
+    let corporateId: string | undefined;
     if (user.userRole === 'corporate' && user.corporate) {
       organizationId = user.corporate.id;
+      corporateId = user.corporate.id;
     } else if (user.userRole === 'hospital' && user.hospital) {
       organizationId = user.hospital.id;
+      hospitalId = user.hospital.id;
     } else if (user.userRole === 'insurer' && user.insurer) {
       organizationId = user.insurer.id;
+      insurerId = user.insurer.id;
     }
 
     return {
@@ -205,8 +219,12 @@ export class AuthService {
       firstName: user.firstName,
       lastName: user.lastName || undefined,
       phone: user.phone,
+      role: user.userRole,
       userRole: user.userRole,
       organizationId,
+      hospitalId,
+      insurerId,
+      corporateId,
       dob: user.dob || undefined,
       gender: user.gender || undefined,
       cnic: user.cnic || undefined,

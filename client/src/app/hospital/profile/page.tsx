@@ -1,16 +1,165 @@
 "use client";
 
+import { useEffect, useState, useCallback } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import {
+  hospitalsApi,
+  Hospital,
+  UpdateHospitalRequest,
+} from "@/lib/api/hospitals";
+
 export default function HospitalProfilePage() {
+  const { user } = useAuth();
+  const hospitalId = user?.hospitalId;
+
+  const [hospital, setHospital] = useState<Hospital | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [successMsg, setSuccessMsg] = useState("");
+
+  const [form, setForm] = useState({
+    hospitalName: "",
+    licenseNumber: "",
+    address: "",
+    city: "",
+    emergencyPhone: "",
+    hospitalType: "",
+    hasEmergencyUnit: false,
+  });
+
+  const fetchHospital = useCallback(async () => {
+    if (!hospitalId) return;
+    setIsLoading(true);
+    try {
+      const data = await hospitalsApi.getHospitalById(hospitalId);
+      setHospital(data);
+      setForm({
+        hospitalName: data.hospitalName,
+        licenseNumber: data.licenseNumber,
+        address: data.address,
+        city: data.city,
+        emergencyPhone: data.emergencyPhone,
+        hospitalType: data.hospitalType,
+        hasEmergencyUnit: data.hasEmergencyUnit,
+      });
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Failed to load hospital profile",
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  }, [hospitalId]);
+
+  useEffect(() => {
+    fetchHospital();
+  }, [fetchHospital]);
+
+  async function handleSave() {
+    if (!hospitalId) return;
+    setIsSaving(true);
+    setError("");
+    setSuccessMsg("");
+
+    try {
+      const payload: UpdateHospitalRequest = {
+        hospitalName: form.hospitalName,
+        address: form.address,
+        city: form.city,
+        emergencyPhone: form.emergencyPhone,
+        hospitalType: form.hospitalType,
+        hasEmergencyUnit: form.hasEmergencyUnit,
+      };
+      const updated = await hospitalsApi.updateHospital(hospitalId, payload);
+      setHospital(updated);
+      setIsEditing(false);
+      setSuccessMsg("Profile updated successfully");
+      setTimeout(() => setSuccessMsg(""), 3000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to update profile");
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="p-4 lg:p-6 flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-500" />
+      </div>
+    );
+  }
+
+  if (!hospital) {
+    return (
+      <div className="p-4 lg:p-6">
+        <div className="bg-red-100 text-red-700 p-4 rounded-lg">
+          {error || "Hospital profile not found"}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-4 lg:p-6">
-      <div className="mb-6">
-        <h1 className="text-xl lg:text-2xl font-bold text-gray-900">
-          Hospital Profile
-        </h1>
-        <p className="text-sm text-gray-600">
-          Manage your hospital information and settings
-        </p>
+      <div className="mb-6 flex justify-between items-start">
+        <div>
+          <h1 className="text-xl lg:text-2xl font-bold text-gray-900">
+            Hospital Profile
+          </h1>
+          <p className="text-sm text-gray-600">
+            Manage your hospital information and settings
+          </p>
+        </div>
+        {!isEditing ? (
+          <button
+            onClick={() => setIsEditing(true)}
+            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium"
+          >
+            Edit Profile
+          </button>
+        ) : (
+          <div className="flex gap-2">
+            <button
+              onClick={() => {
+                setIsEditing(false);
+                setForm({
+                  hospitalName: hospital.hospitalName,
+                  licenseNumber: hospital.licenseNumber,
+                  address: hospital.address,
+                  city: hospital.city,
+                  emergencyPhone: hospital.emergencyPhone,
+                  hospitalType: hospital.hospitalType,
+                  hasEmergencyUnit: hospital.hasEmergencyUnit,
+                });
+              }}
+              className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 text-sm"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={isSaving}
+              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 text-sm font-medium"
+            >
+              {isSaving ? "Saving..." : "Save Changes"}
+            </button>
+          </div>
+        )}
       </div>
+
+      {error && (
+        <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-lg text-sm">
+          {error}
+        </div>
+      )}
+      {successMsg && (
+        <div className="mb-4 p-3 bg-green-100 text-green-700 rounded-lg text-sm">
+          {successMsg}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
         <div className="lg:col-span-2 space-y-4 lg:space-y-6">
@@ -26,9 +175,16 @@ export default function HospitalProfilePage() {
                 </label>
                 <input
                   type="text"
-                  disabled
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-500 bg-gray-100 cursor-not-allowed"
-                  defaultValue="City General Hospital"
+                  value={form.hospitalName}
+                  onChange={(e) =>
+                    setForm({ ...form, hospitalName: e.target.value })
+                  }
+                  disabled={!isEditing}
+                  className={`w-full px-3 py-2 border border-gray-300 rounded-lg ${
+                    isEditing
+                      ? "text-gray-900 focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                      : "text-gray-500 bg-gray-100 cursor-not-allowed"
+                  }`}
                 />
               </div>
 
@@ -39,20 +195,27 @@ export default function HospitalProfilePage() {
                   </label>
                   <input
                     type="text"
+                    value={form.licenseNumber}
                     disabled
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-500 bg-gray-100 cursor-not-allowed"
-                    defaultValue="HSP-2023-4567"
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Accreditation
+                    Hospital Type
                   </label>
                   <input
                     type="text"
-                    disabled
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-500 bg-gray-100 cursor-not-allowed"
-                    defaultValue="JCI Accredited"
+                    value={form.hospitalType}
+                    onChange={(e) =>
+                      setForm({ ...form, hospitalType: e.target.value })
+                    }
+                    disabled={!isEditing}
+                    className={`w-full px-3 py-2 border border-gray-300 rounded-lg ${
+                      isEditing
+                        ? "text-gray-900 focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                        : "text-gray-500 bg-gray-100 cursor-not-allowed"
+                    }`}
                   />
                 </div>
               </div>
@@ -62,166 +225,112 @@ export default function HospitalProfilePage() {
                   Address
                 </label>
                 <textarea
-                  rows={3}
-                  disabled
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-500 bg-gray-100 cursor-not-allowed"
-                  defaultValue="456 Health Street, Medical District, City, State 12345"
+                  rows={2}
+                  value={form.address}
+                  onChange={(e) =>
+                    setForm({ ...form, address: e.target.value })
+                  }
+                  disabled={!isEditing}
+                  className={`w-full px-3 py-2 border border-gray-300 rounded-lg ${
+                    isEditing
+                      ? "text-gray-900 focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                      : "text-gray-500 bg-gray-100 cursor-not-allowed"
+                  }`}
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Phone
+                    City
                   </label>
                   <input
-                    type="tel"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                    defaultValue="03001234567"
+                    type="text"
+                    value={form.city}
+                    onChange={(e) => setForm({ ...form, city: e.target.value })}
+                    disabled={!isEditing}
+                    className={`w-full px-3 py-2 border border-gray-300 rounded-lg ${
+                      isEditing
+                        ? "text-gray-900 focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                        : "text-gray-500 bg-gray-100 cursor-not-allowed"
+                    }`}
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Emergency
+                    Emergency Phone
                   </label>
                   <input
                     type="tel"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                    defaultValue="03009110000"
+                    value={form.emergencyPhone}
+                    onChange={(e) =>
+                      setForm({ ...form, emergencyPhone: e.target.value })
+                    }
+                    disabled={!isEditing}
+                    className={`w-full px-3 py-2 border border-gray-300 rounded-lg ${
+                      isEditing
+                        ? "text-gray-900 focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                        : "text-gray-500 bg-gray-100 cursor-not-allowed"
+                    }`}
                   />
                 </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Email
-                </label>
+              <div className="flex items-center gap-2">
                 <input
-                  type="email"
-                  disabled
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-500 bg-gray-100 cursor-not-allowed"
-                  defaultValue="info@citygeneralhospital.com"
+                  type="checkbox"
+                  id="emergencyUnit"
+                  checked={form.hasEmergencyUnit}
+                  onChange={(e) =>
+                    setForm({ ...form, hasEmergencyUnit: e.target.checked })
+                  }
+                  disabled={!isEditing}
+                  className="rounded border-gray-300 text-green-600"
                 />
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow p-4 lg:p-6">
-            <h2 className="text-lg lg:text-xl font-semibold text-gray-900 mb-4">
-              Facilities & Specializations
-            </h2>
-
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Departments
+                <label
+                  htmlFor="emergencyUnit"
+                  className="text-sm text-gray-700"
+                >
+                  Has Emergency Unit
                 </label>
-                <div className="grid grid-cols-2 gap-2">
-                  {[
-                    "Emergency",
-                    "Cardiology",
-                    "Orthopedics",
-                    "Neurology",
-                    "Pediatrics",
-                    "Surgery",
-                    "Radiology",
-                    "ICU",
-                  ].map((dept) => (
-                    <label
-                      key={dept}
-                      className="flex items-center cursor-not-allowed"
-                    >
-                      <input
-                        type="checkbox"
-                        disabled
-                        defaultChecked
-                        className="rounded border-gray-300 text-blue-600 bg-gray-100"
-                      />
-                      <span className="ml-2 text-sm text-gray-500">{dept}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Bed Capacity
-                  </label>
-                  <input
-                    type="number"
-                    disabled
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-500 bg-gray-100 cursor-not-allowed"
-                    defaultValue="250"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    ICU Beds
-                  </label>
-                  <input
-                    type="number"
-                    disabled
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-500 bg-gray-100 cursor-not-allowed"
-                    defaultValue="30"
-                  />
-                </div>
               </div>
             </div>
           </div>
-
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-            <p className="text-sm text-blue-800">
-              <strong>Note:</strong> Only phone numbers can be updated. Other
-              fields are locked and cannot be modified.
-            </p>
-          </div>
-
-          <button className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700">
-            Update Phone Numbers
-          </button>
         </div>
 
         <div className="space-y-6">
           <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">
-              Network Status
-            </h2>
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">Status</h2>
             <div className="space-y-3">
               <div>
-                <p className="text-sm text-gray-500">Status</p>
-                <span className="inline-block px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">
-                  Active
+                <p className="text-sm text-gray-500">Active</p>
+                <span
+                  className={`inline-block px-2 py-1 text-xs rounded-full ${
+                    hospital.isActive
+                      ? "bg-green-100 text-green-800"
+                      : "bg-gray-100 text-gray-600"
+                  }`}
+                >
+                  {hospital.isActive ? "Active" : "Inactive"}
                 </span>
               </div>
               <div>
                 <p className="text-sm text-gray-500">Member Since</p>
-                <p className="font-semibold text-gray-900">March 2022</p>
+                <p className="font-semibold text-gray-900">
+                  {new Date(hospital.createdAt).toLocaleDateString("en-PK", {
+                    year: "numeric",
+                    month: "long",
+                  })}
+                </p>
               </div>
-              <div>
-                <p className="text-sm text-gray-500">Partnered Insurers</p>
-                <p className="font-semibold text-gray-900">12</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">
-              Quick Stats
-            </h2>
-            <div className="space-y-3">
-              <div>
-                <p className="text-sm text-gray-500">Total Patients</p>
-                <p className="text-2xl font-bold text-blue-600">30</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">Claims This Month</p>
-                <p className="text-2xl font-bold text-green-600">4</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">Avg. Approval Time</p>
-                <p className="text-2xl font-bold text-purple-600">2.3d</p>
-              </div>
+              {hospital.latitude && hospital.longitude && (
+                <div>
+                  <p className="text-sm text-gray-500">Coordinates</p>
+                  <p className="font-semibold text-gray-900 text-sm">
+                    {hospital.latitude}, {hospital.longitude}
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         </div>
