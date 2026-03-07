@@ -19,6 +19,20 @@ export class InsurersService {
     private readonly labsRepository: LabsRepository,
   ) {}
 
+  // Helper to convert Prisma Decimal to number
+  private convertPlanDecimal(plan: any) {
+    return {
+      ...plan,
+      sumInsured: plan.sumInsured
+        ? parseFloat(String(plan.sumInsured))
+        : plan.sumInsured,
+    };
+  }
+
+  private convertPlansDecimal(plans: any[]) {
+    return plans.map((plan) => this.convertPlanDecimal(plan));
+  }
+
   // ============== Insurer CRUD ==============
 
   async create(userId: string, data: CreateInsurerDto) {
@@ -86,7 +100,8 @@ export class InsurersService {
       );
     }
 
-    return this.plansRepository.create(insurerId, data);
+    const plan = await this.plansRepository.create(insurerId, data);
+    return this.convertPlanDecimal(plan);
   }
 
   async getPlans(insurerId: string, isActive?: boolean) {
@@ -94,7 +109,11 @@ export class InsurersService {
     if (!insurer) {
       throw new NotFoundException(`Insurer with id ${insurerId} not found`);
     }
-    return this.plansRepository.findByInsurerId(insurerId, isActive);
+    const plans = await this.plansRepository.findByInsurerId(
+      insurerId,
+      isActive,
+    );
+    return this.convertPlansDecimal(plans);
   }
 
   async getPlanById(planId: string) {
@@ -102,7 +121,7 @@ export class InsurersService {
     if (!plan) {
       throw new NotFoundException(`Plan with id ${planId} not found`);
     }
-    return plan;
+    return this.convertPlanDecimal(plan);
   }
 
   async updatePlan(planId: string, data: UpdatePlanDto) {
@@ -110,7 +129,8 @@ export class InsurersService {
     if (!plan) {
       throw new NotFoundException(`Plan with id ${planId} not found`);
     }
-    return this.plansRepository.update(planId, data);
+    const updated = await this.plansRepository.update(planId, data);
+    return this.convertPlanDecimal(updated);
   }
 
   async deletePlan(planId: string) {

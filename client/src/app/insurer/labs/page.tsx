@@ -29,16 +29,26 @@ export default function InsurerLabsPage() {
   const [formError, setFormError] = useState("");
 
   // Form fields
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<{
+    labName: string;
+    city: string;
+    address: string;
+    licenseNumber: string;
+    contactPhone: string;
+    contactEmail: string;
+    testCategories: string[];
+    isActive: boolean;
+  }>({
     labName: "",
     city: "",
     address: "",
     licenseNumber: "",
     contactPhone: "",
     contactEmail: "",
-    testCategories: "" as string,
+    testCategories: [],
     isActive: true,
   });
+  const [newCategory, setNewCategory] = useState("");
 
   const fetchLabs = useCallback(async () => {
     if (!insurerId) return;
@@ -83,7 +93,7 @@ export default function InsurerLabsPage() {
   const totalPages = Math.ceil(filtered.length / perPage);
   const paginated = filtered.slice(
     (currentPage - 1) * perPage,
-    currentPage * perPage
+    currentPage * perPage,
   );
 
   function openCreate() {
@@ -95,15 +105,27 @@ export default function InsurerLabsPage() {
       licenseNumber: "",
       contactPhone: "",
       contactEmail: "",
-      testCategories: "",
+      testCategories: [],
       isActive: true,
     });
+    setNewCategory("");
     setFormError("");
     setShowModal(true);
   }
 
   function openEdit(lab: Lab) {
     setEditingLab(lab);
+    let categories: string[] = [];
+    if (Array.isArray(lab.testCategories)) {
+      categories = lab.testCategories.map(String);
+    } else if (typeof lab.testCategories === "string") {
+      categories = lab.testCategories
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
+    } else if (lab.testCategories && typeof lab.testCategories === "object") {
+      categories = Object.keys(lab.testCategories as object);
+    }
     setForm({
       labName: lab.labName,
       city: lab.city,
@@ -111,12 +133,10 @@ export default function InsurerLabsPage() {
       licenseNumber: lab.licenseNumber,
       contactPhone: lab.contactPhone,
       contactEmail: lab.contactEmail,
-      testCategories:
-        typeof lab.testCategories === "string"
-          ? lab.testCategories
-          : JSON.stringify(lab.testCategories),
+      testCategories: categories,
       isActive: lab.isActive,
     });
+    setNewCategory("");
     setFormError("");
     setShowModal(true);
   }
@@ -126,15 +146,21 @@ export default function InsurerLabsPage() {
     setIsSaving(true);
     setFormError("");
 
-    let parsedCategories: unknown;
-    try {
-      parsedCategories = JSON.parse(form.testCategories);
-    } catch {
-      parsedCategories = form.testCategories
-        .split(",")
-        .map((s) => s.trim())
-        .filter(Boolean);
+    if (form.testCategories.length === 0) {
+      setFormError("Please add at least one test category");
+      setIsSaving(false);
+      return;
     }
+
+    // Convert test categories array to object with boolean values
+    const testCategoriesObj = form.testCategories.reduce(
+      (acc, category) => {
+        const key = category.trim().toLowerCase();
+        if (key) acc[key] = true;
+        return acc;
+      },
+      {} as Record<string, boolean>,
+    );
 
     try {
       if (editingLab) {
@@ -144,7 +170,7 @@ export default function InsurerLabsPage() {
           address: form.address,
           contactPhone: form.contactPhone,
           contactEmail: form.contactEmail,
-          testCategories: parsedCategories,
+          testCategories: testCategoriesObj,
           isActive: form.isActive,
         };
         await insurersApi.updateLab(editingLab.id, payload);
@@ -156,7 +182,7 @@ export default function InsurerLabsPage() {
           licenseNumber: form.licenseNumber,
           contactPhone: form.contactPhone,
           contactEmail: form.contactEmail,
-          testCategories: parsedCategories,
+          testCategories: testCategoriesObj,
           isActive: form.isActive,
         };
         await insurersApi.createLab(insurerId, payload);
@@ -196,9 +222,7 @@ export default function InsurerLabsPage() {
         {/* Header */}
         <div className="flex justify-between items-center mb-6">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">
-              Network Labs
-            </h1>
+            <h1 className="text-3xl font-bold text-gray-900">Network Labs</h1>
             <p className="text-gray-600 mt-1">
               Manage your network of diagnostic and pathology laboratories
             </p>
@@ -320,7 +344,7 @@ export default function InsurerLabsPage() {
                       className="px-4 py-8 text-center text-gray-500"
                     >
                       {labs.length === 0
-                        ? "No labs added yet. Click "+ Add Lab" to get started."
+                        ? 'No labs added yet. Click "+ Add Lab" to get started.'
                         : "No labs match your filters."}
                     </td>
                   </tr>
@@ -403,7 +427,7 @@ export default function InsurerLabsPage() {
                     >
                       {page}
                     </button>
-                  )
+                  ),
                 )}
                 <button
                   onClick={() =>
@@ -528,23 +552,128 @@ export default function InsurerLabsPage() {
                     </div>
                   </div>
 
+                  {/* Test Categories */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Test Categories *{" "}
-                      <span className="text-gray-400 font-normal">
-                        (comma-separated)
-                      </span>
+                      Test Categories *
                     </label>
-                    <input
-                      type="text"
-                      value={form.testCategories}
-                      onChange={(e) =>
-                        setForm({ ...form, testCategories: e.target.value })
-                      }
-                      placeholder="Blood Tests, Radiology, Pathology"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                      required
-                    />
+                    {/* Quick-add presets */}
+                    <div className="flex flex-wrap gap-1.5 mb-2">
+                      {[
+                        "Blood Tests",
+                        "Pathology",
+                        "Radiology",
+                        "Ultrasound",
+                        "ECG",
+                        "X-Ray",
+                        "CT Scan",
+                        "MRI",
+                      ].map((preset) => {
+                        const already = form.testCategories
+                          .map((s) => s.toLowerCase())
+                          .includes(preset.toLowerCase());
+                        return (
+                          <button
+                            key={preset}
+                            type="button"
+                            onClick={() => {
+                              if (!already)
+                                setForm({
+                                  ...form,
+                                  testCategories: [
+                                    ...form.testCategories,
+                                    preset,
+                                  ],
+                                });
+                            }}
+                            className={`px-2 py-0.5 rounded-full text-xs border transition-colors ${
+                              already
+                                ? "bg-red-100 text-red-600 border-red-200 cursor-default"
+                                : "bg-gray-100 text-gray-600 border-gray-200 hover:bg-red-50 hover:text-red-600 hover:border-red-200"
+                            }`}
+                          >
+                            {already ? "✓ " : "+ "}
+                            {preset}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {/* Added categories as chips */}
+                    {form.testCategories.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mb-2 p-2.5 bg-gray-50 rounded-lg border border-gray-200 min-h-10">
+                        {form.testCategories.map((cat, idx) => (
+                          <span
+                            key={idx}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 bg-red-100 text-red-700 rounded-full text-sm font-medium"
+                          >
+                            {cat}
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setForm({
+                                  ...form,
+                                  testCategories: form.testCategories.filter(
+                                    (_, i) => i !== idx,
+                                  ),
+                                })
+                              }
+                              className="ml-0.5 text-red-400 hover:text-red-700 leading-none"
+                            >
+                              ×
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    {/* Custom category input */}
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={newCategory}
+                        onChange={(e) => setNewCategory(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            const val = newCategory.trim();
+                            if (
+                              val &&
+                              !form.testCategories
+                                .map((s) => s.toLowerCase())
+                                .includes(val.toLowerCase())
+                            ) {
+                              setForm({
+                                ...form,
+                                testCategories: [...form.testCategories, val],
+                              });
+                              setNewCategory("");
+                            }
+                          }
+                        }}
+                        placeholder="Type a custom category and press Add…"
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const val = newCategory.trim();
+                          if (
+                            val &&
+                            !form.testCategories
+                              .map((s) => s.toLowerCase())
+                              .includes(val.toLowerCase())
+                          ) {
+                            setForm({
+                              ...form,
+                              testCategories: [...form.testCategories, val],
+                            });
+                            setNewCategory("");
+                          }
+                        }}
+                        className="px-3 py-2 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700"
+                      >
+                        Add
+                      </button>
+                    </div>
                   </div>
 
                   <div className="flex items-center gap-2">
@@ -581,8 +710,8 @@ export default function InsurerLabsPage() {
                     {isSaving
                       ? "Saving..."
                       : editingLab
-                      ? "Update Lab"
-                      : "Create Lab"}
+                        ? "Update Lab"
+                        : "Create Lab"}
                   </button>
                 </div>
               </div>

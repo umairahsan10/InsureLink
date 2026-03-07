@@ -30,14 +30,22 @@ export default function InsurerPlansPage() {
   // Detail drawer
   const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
 
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<{
+    planName: string;
+    planCode: string;
+    sumInsured: string;
+    coveredServices: string[];
+    serviceLimits: { service: string; limit: string }[];
+    isActive: boolean;
+  }>({
     planName: "",
     planCode: "",
     sumInsured: "",
-    coveredServices: "",
-    serviceLimits: "",
+    coveredServices: [],
+    serviceLimits: [],
     isActive: true,
   });
+  const [newService, setNewService] = useState("");
 
   const fetchPlans = useCallback(async () => {
     if (!insurerId) return;
@@ -83,43 +91,68 @@ export default function InsurerPlansPage() {
       planName: "",
       planCode: "",
       sumInsured: "",
-      coveredServices: "",
-      serviceLimits: "",
+      coveredServices: [],
+      serviceLimits: [],
       isActive: true,
     });
+    setNewService("");
     setFormError("");
     setShowModal(true);
   }
 
   function openEdit(plan: Plan) {
     setEditingPlan(plan);
+
+    let cs: string[] = [];
+    if (Array.isArray(plan.coveredServices)) {
+      cs = plan.coveredServices.map(String);
+    } else if (typeof plan.coveredServices === "string") {
+      cs = plan.coveredServices
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
+    } else if (
+      plan.coveredServices &&
+      typeof plan.coveredServices === "object"
+    ) {
+      cs = Object.keys(plan.coveredServices as object);
+    }
+
+    let sl: { service: string; limit: string }[] = [];
+    if (
+      typeof plan.serviceLimits === "object" &&
+      plan.serviceLimits !== null &&
+      !Array.isArray(plan.serviceLimits)
+    ) {
+      sl = Object.entries(plan.serviceLimits as Record<string, unknown>).map(
+        ([k, v]) => ({
+          service: k,
+          limit: String(v),
+        }),
+      );
+    } else if (typeof plan.serviceLimits === "string") {
+      try {
+        const parsed = JSON.parse(plan.serviceLimits);
+        sl = Object.entries(parsed).map(([k, v]) => ({
+          service: k,
+          limit: String(v),
+        }));
+      } catch {
+        // ignore malformed
+      }
+    }
+
     setForm({
       planName: plan.planName,
       planCode: plan.planCode,
       sumInsured: String(plan.sumInsured),
-      coveredServices:
-        typeof plan.coveredServices === "string"
-          ? plan.coveredServices
-          : JSON.stringify(plan.coveredServices, null, 2),
-      serviceLimits:
-        typeof plan.serviceLimits === "string"
-          ? plan.serviceLimits
-          : JSON.stringify(plan.serviceLimits, null, 2),
+      coveredServices: cs,
+      serviceLimits: sl,
       isActive: plan.isActive,
     });
+    setNewService("");
     setFormError("");
     setShowModal(true);
-  }
-
-  function parseJsonOrArray(value: string): unknown {
-    try {
-      return JSON.parse(value);
-    } catch {
-      return value
-        .split(",")
-        .map((s) => s.trim())
-        .filter(Boolean);
-    }
   }
 
   async function handleSave() {
@@ -134,13 +167,38 @@ export default function InsurerPlansPage() {
       return;
     }
 
+    if (form.coveredServices.length === 0) {
+      setFormError("Please add at least one covered service");
+      setIsSaving(false);
+      return;
+    }
+
+    // Convert covered services array to object with boolean values
+    const coveredServicesObj = form.coveredServices.reduce(
+      (acc, service) => {
+        const key = service.trim().toLowerCase();
+        if (key) acc[key] = true;
+        return acc;
+      },
+      {} as Record<string, boolean>,
+    );
+
+    const serviceLimitsObj = form.serviceLimits.reduce(
+      (acc, { service, limit }) => {
+        const key = service.trim().toLowerCase();
+        if (key) acc[key] = Number(limit) || 0;
+        return acc;
+      },
+      {} as Record<string, number>,
+    );
+
     try {
       if (editingPlan) {
         const payload: UpdatePlanRequest = {
           planName: form.planName,
           sumInsured,
-          coveredServices: parseJsonOrArray(form.coveredServices),
-          serviceLimits: parseJsonOrArray(form.serviceLimits),
+          coveredServices: coveredServicesObj,
+          serviceLimits: serviceLimitsObj,
           isActive: form.isActive,
         };
         await insurersApi.updatePlan(editingPlan.id, payload);
@@ -149,8 +207,8 @@ export default function InsurerPlansPage() {
           planName: form.planName,
           planCode: form.planCode,
           sumInsured,
-          coveredServices: parseJsonOrArray(form.coveredServices),
-          serviceLimits: parseJsonOrArray(form.serviceLimits),
+          coveredServices: coveredServicesObj,
+          serviceLimits: serviceLimitsObj,
           isActive: form.isActive,
         };
         await insurersApi.createPlan(insurerId, payload);
@@ -576,42 +634,215 @@ export default function InsurerPlansPage() {
                     />
                   </div>
 
+                  {/* Covered Services */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Covered Services *{" "}
-                      <span className="text-gray-400 font-normal">
-                        (comma-separated or JSON)
-                      </span>
+                      Covered Services *
                     </label>
-                    <textarea
-                      value={form.coveredServices}
-                      onChange={(e) =>
-                        setForm({ ...form, coveredServices: e.target.value })
-                      }
-                      rows={3}
-                      placeholder='OPD, IPD, Maternity, Dental or {"opd": true, "ipd": true}'
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg font-mono text-sm"
-                      required
-                    />
+                    {/* Quick-add presets */}
+                    <div className="flex flex-wrap gap-1.5 mb-2">
+                      {[
+                        "OPD",
+                        "IPD",
+                        "Maternity",
+                        "Dental",
+                        "Vision",
+                        "Emergency",
+                        "Surgery",
+                        "Physiotherapy",
+                      ].map((preset) => {
+                        const already = form.coveredServices
+                          .map((s) => s.toLowerCase())
+                          .includes(preset.toLowerCase());
+                        return (
+                          <button
+                            key={preset}
+                            type="button"
+                            onClick={() => {
+                              if (!already)
+                                setForm({
+                                  ...form,
+                                  coveredServices: [
+                                    ...form.coveredServices,
+                                    preset,
+                                  ],
+                                });
+                            }}
+                            className={`px-2 py-0.5 rounded-full text-xs border transition-colors ${
+                              already
+                                ? "bg-red-100 text-red-600 border-red-200 cursor-default"
+                                : "bg-gray-100 text-gray-600 border-gray-200 hover:bg-red-50 hover:text-red-600 hover:border-red-200"
+                            }`}
+                          >
+                            {already ? "✓ " : "+ "}
+                            {preset}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {/* Added services as chips */}
+                    {form.coveredServices.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mb-2 p-2.5 bg-gray-50 rounded-lg border border-gray-200 min-h-10">
+                        {form.coveredServices.map((svc, idx) => (
+                          <span
+                            key={idx}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 bg-red-100 text-red-700 rounded-full text-sm font-medium"
+                          >
+                            {svc}
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setForm({
+                                  ...form,
+                                  coveredServices: form.coveredServices.filter(
+                                    (_, i) => i !== idx,
+                                  ),
+                                })
+                              }
+                              className="ml-0.5 text-red-400 hover:text-red-700 leading-none"
+                            >
+                              ×
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    {/* Custom service input */}
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={newService}
+                        onChange={(e) => setNewService(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            const val = newService.trim();
+                            if (
+                              val &&
+                              !form.coveredServices
+                                .map((s) => s.toLowerCase())
+                                .includes(val.toLowerCase())
+                            ) {
+                              setForm({
+                                ...form,
+                                coveredServices: [...form.coveredServices, val],
+                              });
+                              setNewService("");
+                            }
+                          }
+                        }}
+                        placeholder="Type a custom service and press Add…"
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const val = newService.trim();
+                          if (
+                            val &&
+                            !form.coveredServices
+                              .map((s) => s.toLowerCase())
+                              .includes(val.toLowerCase())
+                          ) {
+                            setForm({
+                              ...form,
+                              coveredServices: [...form.coveredServices, val],
+                            });
+                            setNewService("");
+                          }
+                        }}
+                        className="px-3 py-2 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700"
+                      >
+                        Add
+                      </button>
+                    </div>
                   </div>
 
+                  {/* Service Limits */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Service Limits *{" "}
-                      <span className="text-gray-400 font-normal">
-                        (comma-separated or JSON)
+                      Service Limits{" "}
+                      <span className="text-gray-400 font-normal text-xs">
+                        (coverage amount per service in PKR)
                       </span>
                     </label>
-                    <textarea
-                      value={form.serviceLimits}
-                      onChange={(e) =>
-                        setForm({ ...form, serviceLimits: e.target.value })
-                      }
-                      rows={3}
-                      placeholder='{"opd": 50000, "ipd": 500000, "maternity": 100000}'
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg font-mono text-sm"
-                      required
-                    />
+                    <div className="space-y-2">
+                      {form.serviceLimits.map((row, idx) => (
+                        <div key={idx} className="flex gap-2 items-center">
+                          <input
+                            type="text"
+                            value={row.service}
+                            onChange={(e) => {
+                              const updated = [...form.serviceLimits];
+                              updated[idx] = {
+                                ...updated[idx],
+                                service: e.target.value,
+                              };
+                              setForm({ ...form, serviceLimits: updated });
+                            }}
+                            placeholder="Service (e.g. OPD)"
+                            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                          />
+                          <input
+                            type="number"
+                            value={row.limit}
+                            onChange={(e) => {
+                              const updated = [...form.serviceLimits];
+                              updated[idx] = {
+                                ...updated[idx],
+                                limit: e.target.value,
+                              };
+                              setForm({ ...form, serviceLimits: updated });
+                            }}
+                            placeholder="Limit (PKR)"
+                            min="0"
+                            className="w-36 px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                          />
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setForm({
+                                ...form,
+                                serviceLimits: form.serviceLimits.filter(
+                                  (_, i) => i !== idx,
+                                ),
+                              })
+                            }
+                            className="p-2 text-gray-400 hover:text-red-600 rounded-lg hover:bg-red-50 transition-colors"
+                            title="Remove"
+                          >
+                            <svg
+                              className="w-4 h-4"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                              />
+                            </svg>
+                          </button>
+                        </div>
+                      ))}
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setForm({
+                            ...form,
+                            serviceLimits: [
+                              ...form.serviceLimits,
+                              { service: "", limit: "" },
+                            ],
+                          })
+                        }
+                        className="w-full px-3 py-2 border border-dashed border-gray-300 rounded-lg text-sm text-gray-500 hover:border-red-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                      >
+                        + Add Service Limit
+                      </button>
+                    </div>
                   </div>
 
                   <div className="flex items-center gap-2">

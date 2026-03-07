@@ -455,7 +455,7 @@ export default function Sidebar({ userRole }: SidebarProps) {
           </div>
         </div>
 
-        <nav className="p-2 md:p-4 flex-1">
+        <nav className="p-2 md:p-4 flex-1 overflow-y-auto">
           <ul className="space-y-1 md:space-y-2">
             {items.map((item) => {
               const isActive = pathname === item.href;
