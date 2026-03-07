@@ -8,7 +8,7 @@ import {
 export class CreateHospitalVisitDto {
   @IsNotEmpty()
   @IsString()
-  employeeId: string;
+  employeeNumber: string;
 
   @IsOptional()
   @IsString()

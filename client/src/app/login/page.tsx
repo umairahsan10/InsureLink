@@ -1,7 +1,8 @@
 'use client';
-import { useState, Suspense } from 'react';
+import { useState, useContext, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { AuthContext } from '@/contexts/AuthContext';
 
 const userTypes = ['Insurer', 'Corporate', 'Hospital', 'Patient'];
 
@@ -9,20 +10,45 @@ function LoginForm() {
   const [selectedUserType, setSelectedUserType] = useState('Patient');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
   const nextUrl = searchParams.get('next');
+  const auth = useContext(AuthContext);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Mock authentication - set auth token cookie
-    document.cookie = `auth_token=mock_token_${Date.now()}; path=/; max-age=86400`; // 24 hours
-    
-    // Redirect to the intended page or default dashboard
-    const rolePath = selectedUserType.toLowerCase();
-    const redirectPath = nextUrl || `/${rolePath}/dashboard`;
-    router.push(redirectPath);
+    setError('');
+    setIsSubmitting(true);
+
+    try {
+      const user = await auth!.signIn(email, password);
+      const rolePath = user.role.toLowerCase();
+
+      // Check if the user needs onboarding (no entity linked)
+      if (rolePath === 'hospital' && !user.hospitalId) {
+        router.push('/onboard-hospital');
+        return;
+      }
+      if (rolePath === 'insurer' && !user.insurerId) {
+        router.push('/onboard-insurer');
+        return;
+      }
+
+      const redirectPath = nextUrl || `/${rolePath}/dashboard`;
+      router.push(redirectPath);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Login failed';
+      try {
+        const parsed = JSON.parse(message);
+        setError(parsed.message || 'Invalid credentials');
+      } catch {
+        setError(message || 'Invalid credentials');
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -56,6 +82,12 @@ function LoginForm() {
               <p className="text-sm text-blue-800">
                 You&apos;ll be redirected to: <span className="font-medium break-all">{nextUrl}</span>
               </p>
+            </div>
+          )}
+
+          {error && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-sm text-red-800">{error}</p>
             </div>
           )}
 
@@ -100,9 +132,10 @@ function LoginForm() {
 
             <button
               type="submit"
-              className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors font-semibold text-base"
+              disabled={isSubmitting}
+              className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors font-semibold text-base disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Sign In
+              {isSubmitting ? 'Signing in...' : 'Sign In'}
             </button>
           </form>
 

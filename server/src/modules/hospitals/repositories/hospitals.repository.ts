@@ -138,6 +138,15 @@ export class HospitalsRepository {
     return hospital ? serializeHospital(hospital) : null;
   }
 
+  async findAllPublic(): Promise<Hospital[]> {
+    const hospitals = await this.prisma.hospital.findMany({
+      where: { isActive: true },
+      orderBy: { hospitalName: 'asc' },
+      include: { emergencyContacts: true },
+    });
+    return serializeHospitals(hospitals);
+  }
+
   async findByCity(city: string, isActive?: boolean): Promise<Hospital[]> {
     const hospitals = await this.prisma.hospital.findMany({
       where: {
@@ -157,10 +166,22 @@ export class HospitalsRepository {
     longitude: number,
     radiusKm: number = 50,
   ): Promise<Hospital[]> {
-    // PostgreSQL PostGIS query using raw SQL
-    // Using Haversine formula for distance calculation
     const hospitals = await this.prisma.$queryRaw<Hospital[]>`
-      SELECT *
+      SELECT 
+        id,
+        user_id as "userId",
+        hospital_name as "hospitalName",
+        license_number as "licenseNumber",
+        city,
+        address,
+        latitude,
+        longitude,
+        emergency_phone as "emergencyPhone",
+        hospital_type as "hospitalType",
+        has_emergency_unit as "hasEmergencyUnit",
+        is_active as "isActive",
+        created_at as "createdAt",
+        updated_at as "updatedAt"
       FROM hospitals
       WHERE 
         latitude IS NOT NULL
@@ -180,7 +201,46 @@ export class HospitalsRepository {
           ) + sin(radians(${latitude})) * sin(radians(latitude))
         )
     `;
-    // Serialize to convert Decimal types to numbers
+    return serializeHospitals(hospitals);
+  }
+
+  async findAllOrderedByDistance(
+    latitude: number,
+    longitude: number,
+  ): Promise<Hospital[]> {
+    const hospitals = await this.prisma.$queryRaw<Hospital[]>`
+      SELECT 
+        id,
+        user_id as "userId",
+        hospital_name as "hospitalName",
+        license_number as "licenseNumber",
+        city,
+        address,
+        latitude,
+        longitude,
+        emergency_phone as "emergencyPhone",
+        hospital_type as "hospitalType",
+        has_emergency_unit as "hasEmergencyUnit",
+        is_active as "isActive",
+        created_at as "createdAt",
+        updated_at as "updatedAt",
+        CASE
+          WHEN latitude IS NOT NULL AND longitude IS NOT NULL THEN
+            6371 * acos(
+              LEAST(1.0,
+                cos(radians(${latitude})) * cos(radians(latitude)) * cos(
+                  radians(longitude) - radians(${longitude})
+                ) + sin(radians(${latitude})) * sin(radians(latitude))
+              )
+            )
+          ELSE NULL
+        END AS distance_km
+      FROM hospitals
+      WHERE is_active = true
+      ORDER BY
+        CASE WHEN latitude IS NOT NULL AND longitude IS NOT NULL THEN 0 ELSE 1 END,
+        distance_km ASC NULLS LAST
+    `;
     return serializeHospitals(hospitals);
   }
 }

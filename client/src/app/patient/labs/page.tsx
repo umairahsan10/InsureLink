@@ -1,62 +1,80 @@
 'use client';
 
-import { useState, useMemo } from 'react';
-import labsData from '@/data/labs.json';
+import { useState, useMemo, useEffect, useCallback } from 'react';
+import { insurersApi, Lab } from '@/lib/api/insurers';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function PatientLabsPage() {
+  const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCity, setSelectedCity] = useState('All Cities');
-  const [selectedType, setSelectedType] = useState('All Types');
+  const [labs, setLabs] = useState<Lab[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  // Get unique cities from the data
+  const loadLabs = useCallback(async () => {
+    setLoading(true);
+    setError('');
+    try {
+      if (!user?.insurerId) {
+        setError('Insurer information not available.');
+        return;
+      }
+      const data = await insurersApi.getLabs(user.insurerId);
+      const labsList: Lab[] = Array.isArray(data) ? data : (data as any).data ?? [];
+      setLabs(labsList.filter((l) => l.isActive));
+    } catch {
+      setError('Failed to load labs.');
+    } finally {
+      setLoading(false);
+    }
+  }, [user?.insurerId]);
+
+  useEffect(() => {
+    loadLabs();
+  }, [loadLabs]);
+
   const cities = useMemo(() => {
-    const citySet = new Set(labsData.map(lab => lab.city));
+    const citySet = new Set(labs.map(lab => lab.city).filter(Boolean));
     return Array.from(citySet).sort();
-  }, []);
+  }, [labs]);
 
-  // Get unique types from the data
-  const types = useMemo(() => {
-    const typeSet = new Set(labsData.map(lab => lab.type));
-    return Array.from(typeSet).sort();
-  }, []);
-
-  // Filter labs based on search term, city, and type
   const filteredLabs = useMemo(() => {
-    let filtered = labsData;
+    let filtered = labs;
 
-    // Filter by search term
     if (searchTerm) {
+      const q = searchTerm.toLowerCase();
       filtered = filtered.filter(lab =>
-        lab.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        lab.city.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        lab.address.toLowerCase().includes(searchTerm.toLowerCase())
+        lab.labName.toLowerCase().includes(q) ||
+        lab.city.toLowerCase().includes(q) ||
+        lab.address.toLowerCase().includes(q)
       );
     }
 
-    // Filter by city
     if (selectedCity !== 'All Cities') {
       filtered = filtered.filter(lab => lab.city === selectedCity);
     }
 
-    // Filter by type
-    if (selectedType !== 'All Types') {
-      filtered = filtered.filter(lab => lab.type === selectedType);
-    }
-
     return filtered;
-  }, [searchTerm, selectedCity, selectedType]);
+  }, [labs, searchTerm, selectedCity]);
 
-  // Group labs by city
   const labsByCity = useMemo(() => {
-    const grouped: { [key: string]: typeof labsData } = {};
+    const grouped: { [key: string]: Lab[] } = {};
     filteredLabs.forEach(lab => {
-      if (!grouped[lab.city]) {
-        grouped[lab.city] = [];
-      }
-      grouped[lab.city].push(lab);
+      const city = lab.city || 'Unknown';
+      if (!grouped[city]) grouped[city] = [];
+      grouped[city].push(lab);
     });
     return grouped;
   }, [filteredLabs]);
+
+  if (loading) {
+    return (
+      <div className="p-6 flex justify-center items-center min-h-[400px]">
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600" />
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 sm:p-6 bg-gray-50 min-h-screen">
@@ -71,7 +89,7 @@ export default function PatientLabsPage() {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
             <p className="text-sm text-gray-500 mb-1">Total Labs</p>
-            <p className="text-2xl font-bold text-gray-900">{labsData.length}</p>
+            <p className="text-2xl font-bold text-gray-900">{labs.length}</p>
           </div>
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
             <p className="text-sm text-gray-500 mb-1">Cities Covered</p>
@@ -83,9 +101,15 @@ export default function PatientLabsPage() {
           </div>
         </div>
 
+        {error && (
+          <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg">
+            {error}
+          </div>
+        )}
+
         {/* Filters */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Search Labs</label>
               <input
@@ -106,19 +130,6 @@ export default function PatientLabsPage() {
                 <option>All Cities</option>
                 {cities.map(city => (
                   <option key={city} value={city}>{city}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Filter by Type</label>
-              <select
-                value={selectedType}
-                onChange={(e) => setSelectedType(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option>All Types</option>
-                {types.map(type => (
-                  <option key={type} value={type}>{type}</option>
                 ))}
               </select>
             </div>
@@ -165,12 +176,7 @@ export default function PatientLabsPage() {
                       {labs.map((lab) => (
                         <div key={lab.id} className="border border-gray-200 rounded-lg hover:border-blue-300 hover:shadow-md transition-all p-4">
                           <div className="flex items-start justify-between mb-3">
-                            <h3 className="text-lg font-semibold text-gray-900">{lab.name}</h3>
-                            {lab.type !== 'Laboratory' && (
-                              <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-1 rounded-full whitespace-nowrap ml-2">
-                                {lab.type}
-                              </span>
-                            )}
+                            <h3 className="text-lg font-semibold text-gray-900">{lab.labName}</h3>
                           </div>
                           
                           <div className="space-y-2 text-sm">
@@ -182,18 +188,23 @@ export default function PatientLabsPage() {
                               <p className="text-gray-600">{lab.address}</p>
                             </div>
                             
-                            <div className="flex items-center text-gray-600">
-                              <svg className="w-4 h-4 text-gray-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                              </svg>
-                              {lab.contact}
-                            </div>
-                            
-                            <div className="flex items-center">
-                              <span className="bg-green-100 text-green-800 text-xs font-medium px-2 py-1 rounded">
-                                {lab.discount}
-                              </span>
-                            </div>
+                            {lab.contactPhone && (
+                              <div className="flex items-center text-gray-600">
+                                <svg className="w-4 h-4 text-gray-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                                </svg>
+                                {lab.contactPhone}
+                              </div>
+                            )}
+
+                            {lab.contactEmail && (
+                              <div className="flex items-center text-gray-600">
+                                <svg className="w-4 h-4 text-gray-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                </svg>
+                                {lab.contactEmail}
+                              </div>
+                            )}
                           </div>
                         </div>
                       ))}
@@ -207,7 +218,7 @@ export default function PatientLabsPage() {
             <div className="text-gray-400 text-6xl mb-4">🏥</div>
             <h3 className="text-lg font-medium text-gray-900 mb-2">No labs found</h3>
             <p className="text-gray-500 mb-4">
-              {searchTerm || selectedCity !== 'All Cities' || selectedType !== 'All Types'
+              {searchTerm || selectedCity !== 'All Cities'
                 ? 'No labs match your current filters. Try adjusting your search criteria.'
                 : 'No labs are available at the moment.'}
             </p>
@@ -215,7 +226,6 @@ export default function PatientLabsPage() {
               onClick={() => {
                 setSearchTerm('');
                 setSelectedCity('All Cities');
-                setSelectedType('All Types');
               }}
               className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
             >

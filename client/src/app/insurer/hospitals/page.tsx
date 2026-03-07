@@ -1,11 +1,8 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useMemo, useState, useEffect, useCallback } from "react";
 import DashboardLayout from "@/components/layouts/DashboardLayout";
-import notificationsData from "@/data/insurerNotifications.json";
-import hospitalsData from "@/data/hospitals.json";
-import { AlertNotification } from "@/types";
+import { hospitalsApi, Hospital } from "@/lib/api/hospitals";
 import HospitalInfoDrawer from "@/components/hospitals/HospitalInfoDrawer";
 
 interface HospitalRow {
@@ -23,7 +20,6 @@ interface HospitalRow {
 }
 
 export default function InsurerHospitalsPage() {
-  const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("All Status");
   const [locationFilter, setLocationFilter] = useState("All Locations");
@@ -32,84 +28,44 @@ export default function InsurerHospitalsPage() {
   );
   const [hospitalData, setHospitalData] = useState<HospitalRow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
 
-  useEffect(() => {
-    // Map the data from hospitals.json to match our HospitalRow interface
-    const activeHospitals: HospitalRow[] = hospitalsData.map((hospital) => {
-      const hospitalId = hospital.id.toUpperCase();
-      return {
-        id: hospitalId,
-        name: hospital.name,
-        location: hospital.city,
-        specializations: hospital.specialties?.join(", ") || "General",
-        phone: hospital.contact,
-        address: hospital.address,
-        status: "Active" as const,
-        city: hospital.city,
-        specialties: hospital.specialties,
-        type: hospital.type,
-        tier: hospital.tier,
-      };
-    });
-
-    // Add some pending hospitals
-    const pendingHospitals: HospitalRow[] = [
-      {
-        id: "PEND-001",
-        name: "Al-Noor Specialized Hospital",
-        location: "Karachi",
-        specializations: "Cardiology, Neurology, General Surgery",
-        phone: "+92-21-1234567",
-        address: "Main Boulevard, DHA Phase 5, Karachi",
-        status: "Pending" as const,
-        city: "Karachi",
-        specialties: ["Cardiology", "Neurology", "General Surgery"],
-        type: "reimbursable",
-        tier: "Tier-2",
-      },
-      {
-        id: "PEND-002",
-        name: "Shaukat Khanum Cancer Hospital",
-        location: "Peshawar",
-        specializations: "Oncology, Radiotherapy, Hematology",
-        phone: "+92-91-1234567",
-        address: "University Road, Peshawar Cantt",
-        status: "Pending" as const,
-        city: "Peshawar",
-        specialties: ["Oncology", "Radiotherapy", "Hematology"],
-        type: "reimbursable",
-        tier: "Tier-1",
-      },
-      {
-        id: "PEND-003",
-        name: "Rawal General Hospital",
-        location: "Islamabad",
-        specializations: "General Medicine, Pediatrics, Gynecology",
-        phone: "+92-51-1234567",
-        address: "Jinnah Avenue, Blue Area, Islamabad",
-        status: "Pending" as const,
-        city: "Islamabad",
-        specialties: ["General Medicine", "Pediatrics", "Gynecology"],
-        type: "reimbursable",
-        tier: "Tier-2",
-      },
-    ];
-
-    setHospitalData([...activeHospitals, ...pendingHospitals]);
-    setIsLoading(false);
+  const loadHospitals = useCallback(async () => {
+    setIsLoading(true);
+    setError("");
+    try {
+      const data = await hospitalsApi.getHospitals();
+      const hospitals: Hospital[] = Array.isArray(data) ? data : (data as any).data ?? [];
+      const mapped: HospitalRow[] = hospitals.map((h) => ({
+        id: h.id,
+        name: h.hospitalName,
+        location: h.city || "",
+        specializations: h.hospitalType || "General",
+        phone: h.emergencyPhone || "",
+        address: h.address || "",
+        status: h.isActive ? ("Active" as const) : ("Pending" as const),
+        city: h.city,
+        type: h.hospitalType,
+      }));
+      setHospitalData(mapped);
+    } catch {
+      setError("Failed to load hospitals.");
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
 
-  const insurerNotifications = useMemo(
-    () =>
-      (notificationsData as AlertNotification[]).map((notification) => ({
-        ...notification,
-      })),
-    []
-  );
+  useEffect(() => {
+    loadHospitals();
+  }, [loadHospitals]);
+
+  const locations = useMemo(() => {
+    const cities = new Set(hospitalData.map((h) => h.location).filter(Boolean));
+    return Array.from(cities).sort();
+  }, [hospitalData]);
 
   const filteredHospitals = useMemo(() => {
-    // Sort hospitals: Pending first, then Active
     const sortedHospitals = [...hospitalData].sort((a, b) => {
       if (a.status === "Pending" && b.status !== "Pending") return -1;
       if (a.status !== "Pending" && b.status === "Pending") return 1;
@@ -120,26 +76,20 @@ export default function InsurerHospitalsPage() {
       const matchesSearch =
         searchQuery === "" ||
         hospital.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (hospital.location &&
-          hospital.location
-            .toLowerCase()
-            .includes(searchQuery.toLowerCase())) ||
-        (hospital.specializations &&
-          hospital.specializations
-            .toLowerCase()
-            .includes(searchQuery.toLowerCase()));
+        hospital.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        hospital.specializations
+          .toLowerCase()
+          .includes(searchQuery.toLowerCase());
 
       const matchesStatus =
         statusFilter === "All Status" || hospital.status === statusFilter;
       const matchesLocation =
-        locationFilter === "All Locations" ||
-        (hospital.location && hospital.location === locationFilter);
+        locationFilter === "All Locations" || hospital.location === locationFilter;
 
       return matchesSearch && matchesStatus && matchesLocation;
     });
   }, [hospitalData, searchQuery, statusFilter, locationFilter]);
 
-  // Pagination
   const hospitalsPerPage = 10;
   const totalPages = Math.ceil(filteredHospitals.length / hospitalsPerPage);
   const paginatedHospitals = filteredHospitals.slice(
@@ -149,28 +99,15 @@ export default function InsurerHospitalsPage() {
 
   if (isLoading) {
     return (
-      <DashboardLayout
-        userRole="insurer"
-        userName="HealthGuard Insurance"
-        notifications={[]}
-      >
+      <DashboardLayout userRole="insurer">
         <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-red-500" />
         </div>
       </DashboardLayout>
     );
   }
   return (
-    <DashboardLayout
-      userRole="insurer"
-      userName="HealthGuard Insurance"
-      notifications={insurerNotifications}
-      onNotificationSelect={(notification) => {
-        if (notification.category === "messaging") {
-          router.push("/insurer/claims");
-        }
-      }}
-    >
+    <DashboardLayout userRole="insurer">
       <div className="p-8 bg-gray-50 min-h-screen">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
@@ -180,6 +117,12 @@ export default function InsurerHospitalsPage() {
             Manage and monitor your network of healthcare providers
           </p>
         </div>
+
+        {error && (
+          <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg">
+            {error}
+          </div>
+        )}
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
           <div className="bg-white rounded-lg shadow p-4">
@@ -207,8 +150,8 @@ export default function InsurerHospitalsPage() {
             </p>
           </div>
           <div className="bg-white rounded-lg shadow p-4">
-            <p className="text-sm text-gray-500">Total Claims</p>
-            <p className="text-2xl font-bold text-blue-600">12.4K</p>
+            <p className="text-sm text-gray-500">Cities Covered</p>
+            <p className="text-2xl font-bold text-blue-600">{locations.length}</p>
           </div>
         </div>
 
@@ -237,9 +180,11 @@ export default function InsurerHospitalsPage() {
                 className="px-4 py-2 border border-gray-300 rounded-lg"
               >
                 <option>All Locations</option>
-                <option>Islamabad</option>
-                <option>Lahore</option>
-                <option>Karachi</option>
+                {locations.map((city) => (
+                  <option key={city} value={city}>
+                    {city}
+                  </option>
+                ))}
               </select>
             </div>
           </div>

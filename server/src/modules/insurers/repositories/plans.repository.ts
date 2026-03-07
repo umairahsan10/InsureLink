@@ -67,10 +67,14 @@ export class PlansRepository {
     return this.prisma.plan.update({
       where: { id },
       data: {
-        ...(data.planName && { planName: data.planName }),
-        ...(data.sumInsured && { sumInsured: data.sumInsured }),
-        ...(data.coveredServices && { coveredServices: data.coveredServices }),
-        ...(data.serviceLimits && { serviceLimits: data.serviceLimits }),
+        ...(data.planName !== undefined && { planName: data.planName }),
+        ...(data.sumInsured !== undefined && { sumInsured: data.sumInsured }),
+        ...(data.coveredServices !== undefined && {
+          coveredServices: data.coveredServices,
+        }),
+        ...(data.serviceLimits !== undefined && {
+          serviceLimits: data.serviceLimits,
+        }),
         ...(typeof data.isActive !== 'undefined' && {
           isActive: data.isActive,
         }),
