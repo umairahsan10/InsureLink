@@ -1,9 +1,62 @@
-import { Controller } from '@nestjs/common';
+import { Controller, Get, Param, Query } from '@nestjs/common';
+import { Auth } from '../auth/decorators/auth.decorator';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { CurrentUserDto } from '../auth/dto/current-user.dto';
+import { ListPatientsQueryDto } from './dto/list-patients-query.dto';
+import { PatientCoverageDto } from './dto/patient-coverage.dto';
+import { PaginatedPatientsDto, PatientClaimsDto, PatientVisitsDto } from './dto/patient-response.dto';
 import { PatientsService } from './patients.service';
 
 @Controller('patients')
 export class PatientsController {
   constructor(private readonly patientsService: PatientsService) {}
-}
 
+  @Auth()
+  @Get('me')
+  async getMe(@CurrentUser() actor: CurrentUserDto) {
+    return this.patientsService.getMe(actor);
+  }
+
+  @Auth()
+  @Get()
+  async listPatients(
+    @Query() query: ListPatientsQueryDto,
+    @CurrentUser() actor: CurrentUserDto,
+  ): Promise<PaginatedPatientsDto> {
+    return this.patientsService.listPatients(query, actor);
+  }
+
+  @Auth()
+  @Get(':id')
+  async getPatientById(@Param('id') id: string, @CurrentUser() actor: CurrentUserDto) {
+    return this.patientsService.getPatientById(id, actor);
+  }
+
+  @Auth()
+  @Get(':id/coverage')
+  async getPatientCoverage(
+    @Param('id') id: string,
+    @CurrentUser() actor: CurrentUserDto,
+  ): Promise<PatientCoverageDto> {
+    return this.patientsService.getPatientCoverage(id, actor);
+  }
+
+  @Auth()
+  @Get(':id/claims')
+  async getPatientClaims(
+    @Param('id') id: string,
+    @CurrentUser() actor: CurrentUserDto,
+  ): Promise<PatientClaimsDto> {
+    return this.patientsService.getPatientClaims(id, actor);
+  }
+
+  @Auth()
+  @Get(':id/hospital-visits')
+  async getPatientVisits(
+    @Param('id') id: string,
+    @CurrentUser() actor: CurrentUserDto,
+  ): Promise<PatientVisitsDto> {
+    return this.patientsService.getPatientVisits(id, actor);
+  }
+}
 

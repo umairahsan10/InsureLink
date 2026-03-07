@@ -2051,6 +2051,23 @@ async function main() {
   console.log('   ✅ All tables cleared\n');
 
   // ========================================================================
+  // STEP 0: Create Admin User
+  // ========================================================================
+  console.log('👤 Creating Admin User...');
+  const adminUser = await prisma.user.create({
+    data: {
+      email: 'superadmin@insurelink.com',
+      passwordHash,
+      firstName: 'Super',
+      lastName: 'Admin',
+      phone: '+92-300-0000000',
+      userRole: 'admin',
+      address: 'InsureLink HQ, Pakistan',
+    },
+  });
+  console.log('   ✅ Admin user created: superadmin@insurelink.com\n');
+
+  // ========================================================================
   // STEP 1: Create Insurer User + Insurer
   // ========================================================================
   console.log('🏢 Creating Insurer...');
@@ -2556,6 +2573,7 @@ async function main() {
   console.log('🔑 LOGIN CREDENTIALS:');
   console.log('  All users: password123');
   console.log('');
+  console.log('  Admin:      superadmin@insurelink.com');
   console.log('  Insurer:    admin@insurelink.com');
   console.log('  Corp (Acme): sara.ahmed@acme.com');
   console.log('  Corp (Beta): imran.shah@beta.com');

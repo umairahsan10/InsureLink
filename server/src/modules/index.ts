@@ -2,6 +2,7 @@
 export * from './auth/auth.module';
 export * from './users/users.module';
 export * from './corporates/corporates.module';
+export * from './employees/employees.module';
 export * from './dependents/dependents.module';
 export * from './patients/patients.module';
 export * from './hospitals/hospitals.module';
