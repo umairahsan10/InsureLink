@@ -400,13 +400,13 @@ export default function InsurerProfilePage() {
                 </div>
                 <div>
                   <p className="text-sm text-gray-900">Operating Since</p>
-                  <p className="font-semibold">
+                  <p className="font-semibold text-gray-900">
                     {insurer.operatingSince || "—"}
                   </p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-900">Member Since</p>
-                  <p className="font-semibold">
+                  <p className="font-semibold text-gray-900">
                     {new Date(insurer.createdAt).toLocaleDateString("en-US", {
                       year: "numeric",
                       month: "long",

@@ -7,6 +7,7 @@ import { PrismaModule } from './common/prisma/prisma.module';
 import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
 
 // Feature modules
+import { AdminModule } from './modules/admin/admin.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 import { CorporatesModule } from './modules/corporates/corporates.module';
@@ -32,6 +33,9 @@ import { VerificationModule } from './modules/verification/verification.module';
 
     // Database
     PrismaModule,
+
+    // Admin module — user management
+    AdminModule,
 
     // Feature modules — Dev A owns: auth, users, corporates, dependents, patients
     AuthModule,

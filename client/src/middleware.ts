@@ -1,6 +1,7 @@
 import { NextResponse, NextRequest } from "next/server";
 
 const PROTECTED_PREFIXES = [
+  "/admin",
   "/patient",
   "/hospital",
   "/insurer",
@@ -41,6 +42,7 @@ export function middleware(req: NextRequest) {
 
 export const config = {
   matcher: [
+    "/admin/:path*",
     "/patient/:path*",
     "/hospital/:path*",
     "/insurer/:path*",
@@ -48,4 +50,3 @@ export const config = {
     "/dashboard/:path*",
   ],
 };
-

@@ -126,6 +126,20 @@ export class InsurersRepository {
           isActive: data.isActive,
         }),
       },
+      include: {
+        plans: {
+          where: { isActive: true },
+          orderBy: { createdAt: 'desc' },
+        },
+        labs: {
+          where: { isActive: true },
+          orderBy: { createdAt: 'desc' },
+        },
+        corporates: {
+          orderBy: { createdAt: 'desc' },
+          take: 10,
+        },
+      },
     });
   }
 

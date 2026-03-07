@@ -33,6 +33,17 @@ export class InsurersService {
     return plans.map((plan) => this.convertPlanDecimal(plan));
   }
 
+  // Helper to convert Insurer Decimal fields to numbers
+  private convertInsurerDecimal(insurer: any) {
+    return {
+      ...insurer,
+      maxCoverageLimit: insurer.maxCoverageLimit
+        ? parseFloat(String(insurer.maxCoverageLimit))
+        : insurer.maxCoverageLimit,
+      plans: insurer.plans ? this.convertPlansDecimal(insurer.plans) : insurer.plans,
+    };
+  }
+
   // ============== Insurer CRUD ==============
 
   async create(userId: string, data: CreateInsurerDto) {
@@ -44,7 +55,8 @@ export class InsurersService {
         'Insurer with this license number already exists',
       );
     }
-    return this.insurersRepository.create({ ...data, userId });
+    const created = await this.insurersRepository.create({ ...data, userId });
+    return this.convertInsurerDecimal(created);
   }
 
   async findById(id: string) {
@@ -52,7 +64,7 @@ export class InsurersService {
     if (!insurer) {
       throw new NotFoundException(`Insurer with id ${id} not found`);
     }
-    return insurer;
+    return this.convertInsurerDecimal(insurer);
   }
 
   async findAll(
@@ -63,7 +75,7 @@ export class InsurersService {
     sortBy: string = 'createdAt',
     order: 'asc' | 'desc' = 'desc',
   ) {
-    return this.insurersRepository.findAll(
+    const result = await this.insurersRepository.findAll(
       page,
       limit,
       city,
@@ -71,6 +83,10 @@ export class InsurersService {
       sortBy,
       order,
     );
+    return {
+      ...result,
+      insurers: result.insurers.map((insurer) => this.convertInsurerDecimal(insurer)),
+    };
   }
 
   async update(id: string, data: UpdateInsurerDto) {
@@ -79,7 +95,8 @@ export class InsurersService {
       throw new NotFoundException(`Insurer with id ${id} not found`);
     }
 
-    return this.insurersRepository.update(id, data);
+    const updated = await this.insurersRepository.update(id, data);
+    return this.convertInsurerDecimal(updated);
   }
 
   // ============== Plan CRUD ==============
