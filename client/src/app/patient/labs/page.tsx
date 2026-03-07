@@ -2,8 +2,10 @@
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { insurersApi, Lab } from '@/lib/api/insurers';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function PatientLabsPage() {
+  const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCity, setSelectedCity] = useState('All Cities');
   const [labs, setLabs] = useState<Lab[]>([]);
@@ -14,7 +16,11 @@ export default function PatientLabsPage() {
     setLoading(true);
     setError('');
     try {
-      const data = await insurersApi.getLabs();
+      if (!user?.insurerId) {
+        setError('Insurer information not available.');
+        return;
+      }
+      const data = await insurersApi.getLabs(user.insurerId);
       const labsList: Lab[] = Array.isArray(data) ? data : (data as any).data ?? [];
       setLabs(labsList.filter((l) => l.isActive));
     } catch {
@@ -22,7 +28,7 @@ export default function PatientLabsPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [user?.insurerId]);
 
   useEffect(() => {
     loadLabs();

@@ -40,7 +40,9 @@ export class InsurersService {
       maxCoverageLimit: insurer.maxCoverageLimit
         ? parseFloat(String(insurer.maxCoverageLimit))
         : insurer.maxCoverageLimit,
-      plans: insurer.plans ? this.convertPlansDecimal(insurer.plans) : insurer.plans,
+      plans: insurer.plans
+        ? this.convertPlansDecimal(insurer.plans)
+        : insurer.plans,
     };
   }
 
@@ -85,7 +87,9 @@ export class InsurersService {
     );
     return {
       ...result,
-      insurers: result.insurers.map((insurer) => this.convertInsurerDecimal(insurer)),
+      insurers: result.insurers.map((insurer) =>
+        this.convertInsurerDecimal(insurer),
+      ),
     };
   }
 
