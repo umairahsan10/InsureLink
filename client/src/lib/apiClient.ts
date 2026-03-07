@@ -1,4 +1,6 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
+import { getAccessToken } from '@/lib/auth/session';
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
 interface RequestOptions extends RequestInit {
   data?: unknown;
@@ -13,11 +15,13 @@ class ApiClient {
 
   private async request<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
     const { data, headers, ...restOptions } = options;
+    const token = getAccessToken();
 
     const config: RequestInit = {
       ...restOptions,
       headers: {
         'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
         ...headers,
       },
     };
@@ -29,7 +33,8 @@ class ApiClient {
     const response = await fetch(`${this.baseUrl}${endpoint}`, config);
 
     if (!response.ok) {
-      throw new Error(`API Error: ${response.statusText}`);
+      const message = `${response.status} ${response.statusText}`;
+      throw new Error(`API Error: ${message}`);
     }
 
     return response.json();

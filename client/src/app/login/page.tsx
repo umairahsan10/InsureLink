@@ -2,6 +2,14 @@
 import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { useAuth } from '@/hooks/useAuth';
+
+const ROLE_MAP = {
+  Insurer: 'insurer',
+  Corporate: 'corporate',
+  Hospital: 'hospital',
+  Patient: 'patient',
+} as const;
 
 const userTypes = ['Insurer', 'Corporate', 'Hospital', 'Patient'];
 
@@ -9,20 +17,31 @@ function LoginForm() {
   const [selectedUserType, setSelectedUserType] = useState('Patient');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { signIn } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const nextUrl = searchParams.get('next');
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Mock authentication - set auth token cookie
-    document.cookie = `auth_token=mock_token_${Date.now()}; path=/; max-age=86400`; // 24 hours
-    
-    // Redirect to the intended page or default dashboard
-    const rolePath = selectedUserType.toLowerCase();
-    const redirectPath = nextUrl || `/${rolePath}/dashboard`;
-    router.push(redirectPath);
+
+    try {
+      setIsSubmitting(true);
+      setError(null);
+
+      const role = ROLE_MAP[selectedUserType as keyof typeof ROLE_MAP];
+      await signIn(email, password, role);
+
+      // Redirect to the intended page or default dashboard
+      const redirectPath = nextUrl || `/${role}/dashboard`;
+      router.push(redirectPath);
+    } catch {
+      setError('Sign-in failed. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -56,6 +75,12 @@ function LoginForm() {
               <p className="text-sm text-blue-800">
                 You&apos;ll be redirected to: <span className="font-medium break-all">{nextUrl}</span>
               </p>
+            </div>
+          )}
+
+          {error && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+              {error}
             </div>
           )}
 
@@ -100,9 +125,10 @@ function LoginForm() {
 
             <button
               type="submit"
+              disabled={isSubmitting}
               className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors font-semibold text-base"
             >
-              Sign In
+              {isSubmitting ? 'Signing In...' : 'Sign In'}
             </button>
           </form>
 
