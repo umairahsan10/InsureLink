@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import HospitalSidebar from "@/components/hospital/HospitalSidebar";
-import SubmitClaimForm from "@/components/hospital/SubmitClaimForm";
+import SubmitClaimFormV2 from "@/components/hospital/SubmitClaimFormV2";
 import SubmitClaimHeader from "@/components/hospital/SubmitClaimHeader";
 import MessageButton from "@/components/messaging/MessageButton";
 import { useClaimsMessaging } from "@/contexts/ClaimsMessagingContext";
@@ -17,21 +17,60 @@ import {
   clearDocumentHashes,
 } from "@/utils/documentVerification";
 import ClaimDetailsModal from "@/components/modals/ClaimDetailsModal";
-import claimsDataRaw from "@/data/claims.json";
-import {
-  CLAIMS_STORAGE_KEY as INSURER_CLAIMS_STORAGE_KEY,
-  CLAIMS_UPDATED_EVENT,
-  loadStoredClaims,
-  type ClaimData,
-} from "@/data/claimsData";
+import ClaimEditModal from "@/components/modals/ClaimEditModal";
+import { claimsApi } from "@/lib/api/claims";
 import { formatPKR } from "@/lib/format";
-import type { Claim } from "@/types/claims";
-import {
-  syncHardcodedClaimsToInsurer,
-  syncAllClaimsWithInsurer,
-} from "@/utils/claimsSyncUtils";
 
-const claimsData = claimsDataRaw as Claim[];
+// ── API response types ──────────────────────────────────────────────────────
+
+interface ApiClaim {
+  id: string;
+  claimNumber: string;
+  claimStatus: string;
+  amountClaimed: string | number;
+  approvedAmount: string | number;
+  treatmentCategory?: string;
+  priority: string;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+  hospitalVisit: {
+    id: string;
+    visitDate: string;
+    hospital: { id: string; hospitalName: string; city: string };
+    employee?: {
+      id: string;
+      employeeNumber: string;
+      user: { firstName: string; lastName: string; cnic?: string };
+    } | null;
+    dependent?: {
+      id: string;
+      firstName: string;
+      lastName: string;
+      relationship: string;
+    } | null;
+  };
+  corporate: { id: string; name: string };
+  plan: {
+    id: string;
+    planName: string;
+    planCode: string;
+    sumInsured: string | number;
+  };
+  insurer: { id: string; companyName: string };
+}
+
+function getPatientName(claim: ApiClaim): string {
+  if (claim.hospitalVisit?.dependent) {
+    const d = claim.hospitalVisit.dependent;
+    return `${d.firstName} ${d.lastName}`;
+  }
+  if (claim.hospitalVisit?.employee?.user) {
+    const u = claim.hospitalVisit.employee.user;
+    return `${u.firstName} ${u.lastName}`;
+  }
+  return "Unknown";
+}
 
 export default function HospitalClaimsPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -41,57 +80,19 @@ export default function HospitalClaimsPage() {
   const [amountFilter, setAmountFilter] = useState("All Amounts");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
-  const [isHydrated, setIsHydrated] = useState(false);
-  const [localClaims, setLocalClaims] = useState<Claim[]>([]);
-  const currentHospitalId = "hosp-001"; // This would come from auth context in production
 
-  // Load claims from localStorage on mount
-  useEffect(() => {
-    const CLAIMS_STORAGE_KEY = "hospital_claims_hosp-001";
-    const savedClaims = localStorage.getItem(CLAIMS_STORAGE_KEY);
-    if (savedClaims) {
-      try {
-        setLocalClaims(JSON.parse(savedClaims));
-      } catch (e) {
-        console.error("Failed to parse saved claims", e);
-      }
-    }
+  // API state
+  const [apiClaims, setApiClaims] = useState<ApiClaim[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [apiError, setApiError] = useState<string | null>(null);
+  const [apiMeta, setApiMeta] = useState({ total: 0, totalPages: 1 });
+  const [stats, setStats] = useState({
+    totalClaims: 0,
+    totalApprovedClaims: 0,
+    pendingClaims: 0,
+  });
 
-    // Sync hardcoded claims to insurer's localStorage on mount
-    const defaultClaims = claimsData.filter(
-      (claim) => claim.hospitalId === currentHospitalId
-    );
-    if (defaultClaims.length > 0) {
-      syncHardcodedClaimsToInsurer(defaultClaims);
-    }
-
-    setIsHydrated(true);
-  }, []);
-
-  // Save claims to localStorage whenever they change
-  useEffect(() => {
-    if (isHydrated && localClaims.length > 0) {
-      const CLAIMS_STORAGE_KEY = "hospital_claims_hosp-001";
-      localStorage.setItem(CLAIMS_STORAGE_KEY, JSON.stringify(localClaims));
-    }
-  }, [localClaims, isHydrated]);
-
-  // Combine default claims with locally saved claims and sync insurer status
-  const allClaimsData = useMemo(() => {
-    const defaultClaims = claimsData.filter(
-      (claim) => claim.hospitalId === currentHospitalId
-    );
-    // Add locally saved claims that aren't in default data
-    const combined = [...defaultClaims, ...localClaims];
-    // Remove duplicates by ID
-    const uniqueClaims = Array.from(
-      new Map(combined.map((claim) => [claim.id, claim])).values()
-    );
-
-    // Sync all claims with insurer's latest status
-    const synced = syncAllClaimsWithInsurer(uniqueClaims);
-    return synced;
-  }, [localClaims, isHydrated]);
+  // Document verification state
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [resultModalOpen, setResultModalOpen] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
@@ -110,8 +111,13 @@ export default function HospitalClaimsPage() {
     snippet: "",
     treatmentCategory: "" as string | "",
   });
-  const [selectedClaimId, setSelectedClaimId] = useState<string | null>(null);
+  const [selectedClaimData, setSelectedClaimData] = useState<any>(null);
   const [isClaimDetailsOpen, setIsClaimDetailsOpen] = useState(false);
+  const [editClaimId, setEditClaimId] = useState<string | null>(null);
+  const [editClaimData, setEditClaimData] = useState<any>(null);
+  const [deleteClaimId, setDeleteClaimId] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
   const { hasUnreadAlert } = useClaimsMessaging();
   const templateOptions = useMemo(() => getTemplateOptions(), []);
 
@@ -120,199 +126,119 @@ export default function HospitalClaimsPage() {
     seedDemoHashesFromImages();
   }, []);
 
-  // Listen for insurer claim updates and sync status back to hospital storage
-  useEffect(() => {
-    if (typeof window === "undefined") {
-      return;
+  // Fetch summary stats (total, approved, pending counts)
+  const fetchStats = useCallback(async () => {
+    try {
+      const [totalRes, approvedRes, pendingRes] = await Promise.all([
+        claimsApi.getClaims({ limit: 1, page: 1 }),
+        claimsApi.getClaims({ status: "Approved" as any, limit: 1, page: 1 }),
+        claimsApi.getClaims({ status: "Pending" as any, limit: 1, page: 1 }),
+      ]);
+      setStats({
+        totalClaims: totalRes.meta.total,
+        totalApprovedClaims: approvedRes.meta.total,
+        pendingClaims: pendingRes.meta.total,
+      });
+    } catch {
+      // Stats are non-critical
     }
-
-    const handleInsurerClaimsUpdate = (event: Event) => {
-      const customEvent = event as CustomEvent<ClaimData[]>;
-      if (customEvent.detail) {
-        const insurerClaims = customEvent.detail;
-
-        // Update local claims with status changes from insurer
-        setLocalClaims((prevClaims) => {
-          const updated = prevClaims.map((claim) => {
-            const insurerClaim = insurerClaims.find((ic) => ic.id === claim.id);
-            if (insurerClaim && insurerClaim.status !== claim.status) {
-              // Update the claim status from insurer
-              return {
-                ...claim,
-                status: insurerClaim.status as
-                  | "Pending"
-                  | "Approved"
-                  | "Rejected",
-                approvedAmount:
-                  insurerClaim.status === "Approved" ? claim.amountClaimed : 0,
-                updatedAt: new Date().toISOString(),
-              };
-            }
-            return claim;
-          });
-          return updated;
-        });
-
-        // Also sync default/hardcoded claims that might be updated by insurer
-        // This ensures hardcoded claims are updated when insurer changes their status
-        const defaultClaims = claimsData.filter(
-          (claim) => claim.hospitalId === currentHospitalId
-        );
-        const defaultClaimsNeedUpdate = defaultClaims.some((claim) => {
-          const insurerClaim = insurerClaims.find((ic) => ic.id === claim.id);
-          return insurerClaim && insurerClaim.status !== claim.status;
-        });
-
-        if (defaultClaimsNeedUpdate) {
-          // Force a re-render of allClaimsData to pick up the new insurer status
-          // by triggering a dummy state update
-          setLocalClaims((prev) => [...prev]);
-        }
-      }
-    };
-
-    const handleStorage = (event: StorageEvent) => {
-      if (event.key === INSURER_CLAIMS_STORAGE_KEY) {
-        // Re-sync from insurer storage when it changes
-        const stored = loadStoredClaims();
-        setLocalClaims((prevClaims) => {
-          const updated = prevClaims.map((claim) => {
-            const insurerClaim = stored.find((ic) => ic.id === claim.id);
-            if (insurerClaim && insurerClaim.status !== claim.status) {
-              return {
-                ...claim,
-                status: insurerClaim.status as
-                  | "Pending"
-                  | "Approved"
-                  | "Rejected",
-                approvedAmount:
-                  insurerClaim.status === "Approved" ? claim.amountClaimed : 0,
-                updatedAt: new Date().toISOString(),
-              };
-            }
-            return claim;
-          });
-          return updated;
-        });
-
-        // Also check if any default claims need updating
-        const defaultClaims = claimsData.filter(
-          (claim) => claim.hospitalId === currentHospitalId
-        );
-        const defaultClaimsNeedUpdate = defaultClaims.some((claim) => {
-          const insurerClaim = stored.find((ic) => ic.id === claim.id);
-          return insurerClaim && insurerClaim.status !== claim.status;
-        });
-
-        if (defaultClaimsNeedUpdate) {
-          setLocalClaims((prev) => [...prev]);
-        }
-      }
-    };
-
-    window.addEventListener(CLAIMS_UPDATED_EVENT, handleInsurerClaimsUpdate);
-    window.addEventListener("storage", handleStorage);
-
-    return () => {
-      window.removeEventListener(
-        CLAIMS_UPDATED_EVENT,
-        handleInsurerClaimsUpdate
-      );
-      window.removeEventListener("storage", handleStorage);
-    };
   }, []);
 
-  const handleClaimSubmitted = (newClaim: Claim) => {
-    // Add new claim to local claims
-    setLocalClaims((prevClaims) => [...prevClaims, newClaim]);
-    // Close modal
-    setShowSubmitForm(false);
-  };
+  // Fetch paginated claims from API
+  const fetchClaims = useCallback(async () => {
+    setIsLoading(true);
+    setApiError(null);
+    try {
+      const filters: any = { page: currentPage, limit: itemsPerPage };
+      if (statusFilter !== "All Status") {
+        filters.status = statusFilter;
+      }
+      const res = await claimsApi.getClaims(filters);
+      setApiClaims((res.data as unknown as ApiClaim[]) || []);
+      setApiMeta(res.meta);
+    } catch (err: any) {
+      setApiError(err?.message || "Failed to load claims");
+    } finally {
+      setIsLoading(false);
+    }
+  }, [currentPage, itemsPerPage, statusFilter]);
 
-  const allClaims = allClaimsData
-    .map((claim) => ({
-      id: claim.id,
-      patient: claim.employeeName,
-      treatment: "Insurance Claim",
-      date: claim.createdAt.split("T")[0],
-      amount: formatPKR(claim.amountClaimed),
-      status: claim.status,
-      createdAt: claim.createdAt,
-    }))
-    .sort(
-      (a, b) =>
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    )
-    .map(({ createdAt, ...claim }) => claim);
+  useEffect(() => {
+    fetchClaims();
+  }, [fetchClaims]);
 
-  // Calculate statistics
-  const claimsStats = useMemo(() => {
-    const hospitalClaims = allClaimsData;
-    const totalClaims = hospitalClaims.length;
+  useEffect(() => {
+    fetchStats();
+  }, [fetchStats]);
 
-    const totalApprovedClaims = hospitalClaims.filter(
-      (claim) => claim.status === "Approved"
-    ).length;
-
-    const pendingClaims = hospitalClaims.filter(
-      (claim) => claim.status === "Pending"
-    ).length;
-
-    const totalAmount = hospitalClaims.reduce(
-      (sum, claim) => sum + claim.amountClaimed,
-      0
-    );
-
-    return {
-      totalClaims,
-      totalApprovedClaims,
-      pendingClaims,
-      totalAmount: Math.round(totalAmount / 1000),
-    };
-  }, [allClaimsData]);
-
-  // Filter claims based on search and filters
-  const filteredClaims = allClaims.filter((claim) => {
-    // Search filter - matches claim ID or patient name
-    const matchesSearch =
-      searchQuery === "" ||
-      claim.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      claim.patient.toLowerCase().includes(searchQuery.toLowerCase());
-
-    // Status filter (compare with canonical status values)
-    const matchesStatus =
-      statusFilter === "All Status" || claim.status === statusFilter;
-
-    // Amount filter
-    const claimAmountNum = parseInt(claim.amount.replace(/[^0-9]/g, "")) || 0;
-    const matchesAmount =
-      amountFilter === "All Amounts" ||
-      (amountFilter === "Under 50K" && claimAmountNum < 50000) ||
-      (amountFilter === "50K - 100K" &&
-        claimAmountNum >= 50000 &&
-        claimAmountNum <= 100000) ||
-      (amountFilter === "100K - 500K" &&
-        claimAmountNum > 100000 &&
-        claimAmountNum <= 500000) ||
-      (amountFilter === "Over 500K" && claimAmountNum > 500000);
-
-    return matchesSearch && matchesStatus && matchesAmount;
-  });
-
-  // Reset page when filters or page size change
+  // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, statusFilter, amountFilter, itemsPerPage]);
+  }, [statusFilter, amountFilter, searchQuery, itemsPerPage]);
 
-  const totalPages = Math.max(
-    1,
-    Math.ceil(filteredClaims.length / itemsPerPage)
+  const handleClaimSubmitted = useCallback(
+    (_claimId?: string) => {
+      setShowSubmitForm(false);
+      fetchClaims();
+      fetchStats();
+    },
+    [fetchClaims, fetchStats],
   );
 
-  const displayedClaims = useMemo(() => {
-    const start = (currentPage - 1) * itemsPerPage;
-    return filteredClaims.slice(start, start + itemsPerPage);
-  }, [filteredClaims, currentPage, itemsPerPage]);
+  // Map API claims to display format, with client-side search + amount filter
+  const filteredClaims = useMemo(() => {
+    // Helper to safely convert to number
+    const toNumber = (val: any): number => {
+      if (val === null || val === undefined) return 0;
+      if (typeof val === "number") return val;
+      if (typeof val === "string") return parseFloat(val) || 0;
+      // Handle Prisma Decimal or objects with toString
+      if (val && typeof val.toString === "function") {
+        const str = val.toString();
+        return parseFloat(str) || 0;
+      }
+      return 0;
+    };
+
+    return apiClaims
+      .map((claim) => {
+        const amountNum = toNumber(claim.amountClaimed);
+        const approvedNum = toNumber(claim.approvedAmount);
+
+        return {
+          id: claim.id,
+          claimNumber: claim.claimNumber,
+          patient: getPatientName(claim),
+          treatment: claim.treatmentCategory || "Insurance Claim",
+          date: claim.createdAt.split("T")[0],
+          amount: formatPKR(amountNum),
+          amountNum: amountNum,
+          approvedAmount: approvedNum,
+          approvedAmountDisplay: approvedNum > 0 ? formatPKR(approvedNum) : "-",
+          status: claim.claimStatus,
+          rawClaim: claim,
+        };
+      })
+      .filter((claim) => {
+        const matchesSearch =
+          searchQuery === "" ||
+          claim.claimNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          claim.patient.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesAmount =
+          amountFilter === "All Amounts" ||
+          (amountFilter === "Under 50K" && claim.amountNum < 50000) ||
+          (amountFilter === "50K - 100K" &&
+            claim.amountNum >= 50000 &&
+            claim.amountNum <= 100000) ||
+          (amountFilter === "100K - 500K" &&
+            claim.amountNum > 100000 &&
+            claim.amountNum <= 500000) ||
+          (amountFilter === "Over 500K" && claim.amountNum > 500000);
+        return matchesSearch && matchesAmount;
+      });
+  }, [apiClaims, searchQuery, amountFilter]);
+
+  const totalPages = apiMeta.totalPages;
 
   return (
     <>
@@ -370,34 +296,26 @@ export default function HospitalClaimsPage() {
           {/* Page Content */}
           <main className="flex-1 p-4 lg:p-6">
             {/* Stats Cards */}
-            {isHydrated && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                <div className="bg-white rounded-lg shadow p-4">
-                  <p className="text-sm text-gray-500">Total Claims</p>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {claimsStats.totalClaims}
-                  </p>
-                </div>
-                <div className="bg-white rounded-lg shadow p-4">
-                  <p className="text-sm text-gray-500">Approved Claims</p>
-                  <p className="text-2xl font-bold text-green-600">
-                    {claimsStats.totalApprovedClaims}
-                  </p>
-                </div>
-                <div className="bg-white rounded-lg shadow p-4">
-                  <p className="text-sm text-gray-500">Pending Review</p>
-                  <p className="text-2xl font-bold text-yellow-600">
-                    {claimsStats.pendingClaims}
-                  </p>
-                </div>
-                <div className="bg-white rounded-lg shadow p-4">
-                  <p className="text-sm text-gray-500">Total Amount</p>
-                  <p className="text-2xl font-bold text-blue-600">
-                    Rs. {claimsStats.totalAmount}K
-                  </p>
-                </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+              <div className="bg-white rounded-lg shadow p-4">
+                <p className="text-sm text-gray-500">Total Claims</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {stats.totalClaims}
+                </p>
               </div>
-            )}
+              <div className="bg-white rounded-lg shadow p-4">
+                <p className="text-sm text-gray-500">Approved Claims</p>
+                <p className="text-2xl font-bold text-green-600">
+                  {stats.totalApprovedClaims}
+                </p>
+              </div>
+              <div className="bg-white rounded-lg shadow p-4">
+                <p className="text-sm text-gray-500">Pending Review</p>
+                <p className="text-2xl font-bold text-yellow-600">
+                  {stats.pendingClaims}
+                </p>
+              </div>
+            </div>
 
             {/* Claims Table */}
             <div className="bg-white rounded-lg shadow overflow-hidden">
@@ -419,6 +337,8 @@ export default function HospitalClaimsPage() {
                     <option>Pending</option>
                     <option>Approved</option>
                     <option>Rejected</option>
+                    <option>OnHold</option>
+                    <option>Paid</option>
                   </select>
                   <select
                     value={amountFilter}
@@ -435,11 +355,11 @@ export default function HospitalClaimsPage() {
               </div>
 
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[640px]">
+                <table className="w-full min-w-160">
                   <thead className="bg-gray-50">
                     <tr>
                       <th className="px-3 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                        Claim ID
+                        Claim #
                       </th>
                       <th className="px-3 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                         Patient
@@ -451,7 +371,10 @@ export default function HospitalClaimsPage() {
                         Date
                       </th>
                       <th className="px-3 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                        Amount
+                        Claimed
+                      </th>
+                      <th className="px-3 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        Approved
                       </th>
                       <th className="px-3 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                         Status
@@ -465,17 +388,42 @@ export default function HospitalClaimsPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
-                    {filteredClaims.length === 0 ? (
+                    {isLoading ? (
+                      <tr>
+                        <td colSpan={9} className="px-6 py-12 text-center">
+                          <div className="flex items-center justify-center">
+                            <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
+                            <span className="ml-3 text-gray-500">
+                              Loading claims...
+                            </span>
+                          </div>
+                        </td>
+                      </tr>
+                    ) : apiError ? (
+                      <tr>
+                        <td colSpan={9} className="px-6 py-8 text-center">
+                          <div className="rounded-lg bg-red-50 p-4 text-sm text-red-700 inline-block">
+                            {apiError}
+                            <button
+                              onClick={fetchClaims}
+                              className="ml-3 underline hover:no-underline"
+                            >
+                              Retry
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ) : filteredClaims.length === 0 ? (
                       <tr>
                         <td
-                          colSpan={8}
+                          colSpan={9}
                           className="px-6 py-8 text-center text-gray-500"
                         >
                           No claims found matching your search criteria.
                         </td>
                       </tr>
                     ) : (
-                      displayedClaims.map((claim) => {
+                      filteredClaims.map((claim) => {
                         const hasAlert = hasUnreadAlert(claim.id, "hospital");
                         return (
                           <tr
@@ -485,7 +433,7 @@ export default function HospitalClaimsPage() {
                             }`}
                           >
                             <td className="px-3 lg:px-6 py-4 text-xs lg:text-sm font-medium text-gray-900">
-                              {claim.id}
+                              {claim.claimNumber}
                             </td>
                             <td className="px-3 lg:px-6 py-4 text-xs lg:text-sm text-gray-900">
                               {claim.patient}
@@ -501,41 +449,91 @@ export default function HospitalClaimsPage() {
                             </td>
                             <td className="px-3 lg:px-6 py-4 text-xs lg:text-sm">
                               <span
+                                className={`${claim.approvedAmount > 0 ? "text-green-600 font-semibold" : "text-gray-400"}`}
+                              >
+                                {claim.approvedAmountDisplay}
+                              </span>
+                            </td>
+                            <td className="px-3 lg:px-6 py-4 text-xs lg:text-sm">
+                              <span
                                 className={`inline-block px-2 py-1 text-xs rounded-full ${
                                   claim.status === "Approved"
                                     ? "bg-green-100 text-green-800"
                                     : claim.status === "Rejected"
-                                    ? "bg-red-100 text-red-800"
-                                    : "bg-yellow-100 text-yellow-800"
+                                      ? "bg-red-100 text-red-800"
+                                      : claim.status === "OnHold"
+                                        ? "bg-amber-100 text-amber-800"
+                                        : claim.status === "Paid"
+                                          ? "bg-blue-100 text-blue-800"
+                                          : "bg-yellow-100 text-yellow-800"
                                 }`}
                               >
                                 {claim.status}
                               </span>
                             </td>
                             <td className="px-3 lg:px-6 py-4 text-xs lg:text-sm">
-                              <button
-                                onClick={() => {
-                                  console.log(
-                                    "Clicking View for claim:",
-                                    claim.id,
-                                    "Full claim data:",
-                                    claim
-                                  );
-                                  const foundClaim = claimsData.find(
-                                    (c) => c.id === claim.id
-                                  );
-                                  console.log(
-                                    "Found in claimsData:",
-                                    foundClaim
-                                  );
-                                  setSidebarOpen(false);
-                                  setSelectedClaimId(claim.id);
-                                  setIsClaimDetailsOpen(true);
-                                }}
-                                className="text-blue-600 hover:text-blue-800"
-                              >
-                                View
-                              </button>
+                              <div className="relative">
+                                <button
+                                  onClick={() => setOpenDropdownId(openDropdownId === claim.id ? null : claim.id)}
+                                  className="inline-flex items-center gap-2 px-3 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                                >
+                                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M10.5 1.5H9.5V10H1.5V11H9.5V19.5H10.5V11H18.5V10H10.5V1.5Z" transform="translate(5, 5) rotate(90)" />
+                                  </svg>
+                                  Actions
+                                  <svg className={`w-4 h-4 transition-transform ${openDropdownId === claim.id ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                                  </svg>
+                                </button>
+
+                                {openDropdownId === claim.id && (
+                                  <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+                                    <button
+                                      onClick={() => {
+                                        setSelectedClaimData(claim.rawClaim);
+                                        setIsClaimDetailsOpen(true);
+                                        setOpenDropdownId(null);
+                                      }}
+                                      className="flex w-full px-4 py-2 text-blue-600 hover:bg-blue-50 first:rounded-t-lg items-center gap-2 justify-start"
+                                    >
+                                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                      </svg>
+                                      View Details
+                                    </button>
+                                    {claim.status === "Pending" && (
+                                      <>
+                                        <button
+                                          onClick={() => {
+                                            setEditClaimId(claim.id);
+                                            setEditClaimData(claim.rawClaim);
+                                            setOpenDropdownId(null);
+                                          }}
+                                          className="flex w-full px-4 py-2 text-amber-600 hover:bg-amber-50 items-center gap-2 justify-start"
+                                        >
+                                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                          </svg>
+                                          Edit Claim
+                                        </button>
+                                        <button
+                                          onClick={() => {
+                                            setDeleteClaimId(claim.id);
+                                            setOpenDropdownId(null);
+                                          }}
+                                          className="flex w-full px-4 py-2 text-red-600 hover:bg-red-50 last:rounded-b-lg items-center gap-2 justify-start"
+                                        >
+                                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                          </svg>
+                                          Delete Claim
+                                        </button>
+                                      </>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
                             </td>
                             <td className="px-3 lg:px-6 py-4 text-xs lg:text-sm">
                               <MessageButton
@@ -551,35 +549,25 @@ export default function HospitalClaimsPage() {
                 </table>
 
                 {/* Pagination Info */}
-                {filteredClaims.length > 0 && (
+                {!isLoading && apiMeta.total > 0 && (
                   <div className="mt-6 bg-white rounded-lg shadow-sm border border-gray-200 px-6 py-3">
                     <div className="flex flex-col sm:flex-row items-center sm:justify-between gap-3">
                       <div className="flex items-center space-x-4">
                         <p className="text-sm text-gray-700">
                           Showing{" "}
                           <span className="font-medium">
-                            {filteredClaims.length === 0
-                              ? 0
-                              : (currentPage - 1) * itemsPerPage + 1}
+                            {(currentPage - 1) * itemsPerPage + 1}
                           </span>{" "}
                           to{" "}
                           <span className="font-medium">
                             {Math.min(
-                              filteredClaims.length,
-                              currentPage * itemsPerPage
+                              apiMeta.total,
+                              currentPage * itemsPerPage,
                             )}
                           </span>{" "}
                           of{" "}
-                          <span className="font-medium">
-                            {filteredClaims.length}
-                          </span>{" "}
+                          <span className="font-medium">{apiMeta.total}</span>{" "}
                           claims
-                          {filteredClaims.length !== allClaims.length && (
-                            <span className="text-gray-500">
-                              {" "}
-                              (filtered from {allClaims.length} total)
-                            </span>
-                          )}
                         </p>
 
                         <label className="text-sm text-gray-600">
@@ -616,7 +604,7 @@ export default function HospitalClaimsPage() {
 
                         {Array.from(
                           { length: totalPages },
-                          (_, i) => i + 1
+                          (_, i) => i + 1,
                         ).map((p) => (
                           <button
                             key={p}
@@ -679,11 +667,9 @@ export default function HospitalClaimsPage() {
                     </button>
                   </div>
                   <div className="p-6">
-                    <SubmitClaimForm
+                    <SubmitClaimFormV2
                       onCancel={() => setShowSubmitForm(false)}
-                      onSuccess={() => {
-                        setShowSubmitForm(false);
-                      }}
+                      onSuccess={handleClaimSubmitted}
                       onClaimSubmitted={handleClaimSubmitted}
                     />
                   </div>
@@ -692,18 +678,73 @@ export default function HospitalClaimsPage() {
             )}
 
             <ClaimDetailsModal
-              isOpen={isClaimDetailsOpen && !!selectedClaimId}
+              isOpen={isClaimDetailsOpen && !!selectedClaimData}
               onClose={() => {
                 setIsClaimDetailsOpen(false);
-                setSelectedClaimId(null);
+                setSelectedClaimData(null);
               }}
-              claimId={selectedClaimId || ""}
-              claimData={
-                selectedClaimId
-                  ? allClaimsData.find((c) => c.id === selectedClaimId)
-                  : undefined
-              }
+              claimId={selectedClaimData?.id || ""}
+              claimData={selectedClaimData}
             />
+
+            {/* Edit Claim Modal */}
+            <ClaimEditModal
+              isOpen={!!editClaimId}
+              onClose={() => {
+                setEditClaimId(null);
+                setEditClaimData(null);
+              }}
+              claimId={editClaimId || ""}
+              claimData={editClaimData}
+              onSuccess={() => {
+                setEditClaimId(null);
+                setEditClaimData(null);
+                fetchClaims();
+                fetchStats();
+              }}
+            />
+
+            {/* Delete Claim Confirmation */}
+            {deleteClaimId && (
+              <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+                <div className="bg-white rounded-lg shadow-xl max-w-sm w-full p-6">
+                  <h3 className="text-lg font-bold text-gray-900 mb-2">
+                    Delete Claim
+                  </h3>
+                  <p className="text-sm text-gray-600 mb-4">
+                    Are you sure you want to delete this claim? This action
+                    cannot be undone.
+                  </p>
+                  <div className="flex justify-end gap-3">
+                    <button
+                      onClick={() => setDeleteClaimId(null)}
+                      className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={async () => {
+                        setIsDeleting(true);
+                        try {
+                          await claimsApi.deleteClaim(deleteClaimId);
+                          setDeleteClaimId(null);
+                          fetchClaims();
+                          fetchStats();
+                        } catch (err: any) {
+                          alert(err?.message || "Failed to delete claim");
+                        } finally {
+                          setIsDeleting(false);
+                        }
+                      }}
+                      disabled={isDeleting}
+                      className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
+                    >
+                      {isDeleting ? "Deleting..." : "Delete"}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Upload Modal */}
             {uploadModalOpen && (
@@ -854,7 +895,7 @@ export default function HospitalClaimsPage() {
                           {templateOptions
                             .find(
                               (template) =>
-                                template.key === formState.templateKey
+                                template.key === formState.templateKey,
                             )
                             ?.keywords.join(", ")}
                         </p>
@@ -957,7 +998,7 @@ export default function HospitalClaimsPage() {
                         } catch (error) {
                           console.error("Verification error", error);
                           setFormError(
-                            "Unable to run verification in the browser."
+                            "Unable to run verification in the browser.",
                           );
                         } finally {
                           setIsVerifying(false);
@@ -1013,15 +1054,15 @@ export default function HospitalClaimsPage() {
                             verificationResult.score >= 80
                               ? "bg-green-100 text-green-800"
                               : verificationResult.score >= 50
-                              ? "bg-yellow-100 text-yellow-800"
-                              : "bg-red-100 text-red-800"
+                                ? "bg-yellow-100 text-yellow-800"
+                                : "bg-red-100 text-red-800"
                           }`}
                         >
                           {verificationResult.score >= 80
                             ? "Auto Accept"
                             : verificationResult.score >= 50
-                            ? "Needs Review"
-                            : "High Risk"}
+                              ? "Needs Review"
+                              : "High Risk"}
                         </span>
                       </div>
                       <p className="mt-3 text-sm text-gray-600">

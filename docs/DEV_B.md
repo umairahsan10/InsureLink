@@ -19,7 +19,7 @@ Both devs do this together once to avoid conflicts:
    - Roles enum: `ADMIN`, `CORPORATE`, `HOSPITAL`, `INSURER`, `PATIENT`
    - `GET /auth/me` response shape
 
-5. **Decide file storage:** pick Supabase Storage or local disk for now (can swap later since the provider is abstracted). Recommend starting with **local disk** and switching to Supabase when ready.
+5. **File storage setup:** Use **Supabase Storage** directly from the start. Environment variables should include `SUPABASE_URL` and `SUPABASE_KEY` (anon/publishable key). Create buckets: `claim-documents`, `chat-attachments`, and `temp-uploads` with appropriate access policies.
 
 ---
 
@@ -102,10 +102,10 @@ This is the biggest and most complex module. Build it in layers.
 | Step | What to do |
 |------|------------|
 | 1 | **Fix `file-upload.module.ts`** — it doesn't register controller/service; add them |
-| 2 | Implement local disk provider first (save to `uploads/` folder), abstract behind an interface so you can swap to Supabase later |
-| 3 | Create `upload-response.dto.ts`, `file-metadata.dto.ts` |
-| 4 | Implement `POST /upload` (multipart, use `@UseInterceptors(FileInterceptor)` from `@nestjs/platform-express`), `DELETE /upload/:fileId`, `GET /upload/:fileId/metadata` |
-| 5 | `pdf-extraction.service.ts` already has PDF logic — integrate it into the upload flow for claim documents |
+| 2 | Implement Supabase Storage provider using `@supabase/supabase-js` client. Create `SupabaseStorageService` with methods: `upload(bucket, file, path)`, `download(bucket, path)`, `delete(bucket, path)`, `getPublicUrl(bucket, path)` |
+| 3 | Create `upload-response.dto.ts` (includes Supabase file path & public URL), `file-metadata.dto.ts` |
+| 4 | Implement `POST /upload` (multipart, use `@UseInterceptors(FileInterceptor)` from `@nestjs/platform-express`), `DELETE /upload/:fileId`, `GET /upload/:fileId/metadata`. Use appropriate bucket based on file type (claim docs → `claim-documents`, chat attachments → `chat-attachments`) |
+| 5 | `pdf-extraction.service.ts` already has PDF logic — integrate it into the upload flow for claim documents. Download from Supabase temporarily for processing if needed |
 
 ### Messaging Module (`server/src/modules/messaging/`)
 
@@ -179,7 +179,7 @@ These are supporting modules — important but lower risk.
 
 - **Build order:** hospitals/insurers → claims → messaging/upload → notifications/audit/analytics (dependency-driven)
 - **Auth bypass:** use `@Public()` for weeks 1-2, swap to real guards in week 3-4 when Dev A delivers auth
-- **File storage:** start with local disk, abstract behind interface, swap to Supabase later
+- **File storage:** use Supabase Storage directly with organized buckets (`claim-documents`, `chat-attachments`, `temp-uploads`). Store file metadata (URLs, paths) in database
 - **Messaging route:** nest under `/claims/:id/messages` (not standalone `/messaging`) since chat is claim-scoped
 - **One branch per module** to keep PRs small and reviewable
 

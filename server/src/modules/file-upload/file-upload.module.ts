@@ -1,12 +1,12 @@
 import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
+import { FileUploadService } from './file-upload.service';
+import { SupabaseStorageProvider } from './providers/supabase.provider';
 
 @Module({
-  imports: [],
+  imports: [ConfigModule],
   controllers: [],
-  providers: [],
-  exports: [],
+  providers: [FileUploadService, SupabaseStorageProvider],
+  exports: [FileUploadService],
 })
 export class FileUploadModule {}
-
-
-
