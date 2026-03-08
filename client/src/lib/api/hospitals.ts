@@ -103,6 +103,47 @@ export interface CreateHospitalVisitRequest {
   dischargeDate?: string;
 }
 
+// ── Unclaimed Visits Response ────────────────────────────────────────────
+
+export interface UnclaimedVisitEmployee {
+  id: string;
+  firstName: string;
+  lastName: string;
+  employeeNumber: string;
+  corporateId: string;
+  planId: string;
+  insurerId: string;
+  coverageAmount: number;
+  usedAmount: number;
+  remainingCoverage: number;
+}
+
+export interface UnclaimedVisit {
+  id: string;
+  visitDate: string;
+  dischargeDate?: string;
+  status: "Pending" | "Claimed";
+  employee?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+  };
+  plan?: {
+    id: string;
+    planName: string;
+    sumInsured: number;
+  };
+  corporate?: {
+    id: string;
+    name: string;
+  };
+}
+
+export interface UnclaimedVisitsResponse {
+  employee: UnclaimedVisitEmployee;
+  visits: UnclaimedVisit[];
+}
+
 // ── API ──────────────────────────────────────────────────────────────────
 
 const BASE = "/api/v1/hospitals";
@@ -246,6 +287,22 @@ export const hospitalsApi = {
       method: "POST",
       body: JSON.stringify(data),
     });
+    return res.data;
+  },
+
+  // ── Unclaimed Visits (for Claims) ────────────────────────────────────
+  /**
+   * Get all unclaimed hospital visits for an employee at the current hospital.
+   * Used during claim creation workflow.
+   */
+  async getUnclaimedVisitsByEmployee(
+    employeeNumber: string,
+  ): Promise<UnclaimedVisitsResponse> {
+    const q = new URLSearchParams();
+    q.append("employeeNumber", employeeNumber);
+    const res = await apiFetch<UnclaimedVisitsResponse>(
+      `${BASE}/visits/unclaimed?${q.toString()}`,
+    );
     return res.data;
   },
 };

@@ -1,16 +1,28 @@
 import { Module } from '@nestjs/common';
+import { MulterModule } from '@nestjs/platform-express';
 import { ClaimsController } from './claims.controller';
 import { ClaimsService } from './claims.service';
 import { ClaimsRepository } from './repositories/claims.repository';
+import { ClaimEventsRepository } from './repositories/claim-events.repository';
+import { ClaimDocumentsRepository } from './repositories/claim-documents.repository';
+import { ClaimProcessingService } from './services/claim-processing.service';
 import { ClaimValidationService } from './workflows/claim-validation.service';
 import { PaymentQueueService } from './workflows/payment-queue.service';
 import { RulesEngineService } from './workflows/rules-engine.service';
 
 @Module({
+  imports: [
+    MulterModule.register({
+      dest: './uploads/claims',
+    }),
+  ],
   controllers: [ClaimsController],
   providers: [
     ClaimsService,
     ClaimsRepository,
+    ClaimEventsRepository,
+    ClaimDocumentsRepository,
+    ClaimProcessingService,
     ClaimValidationService,
     PaymentQueueService,
     RulesEngineService,
@@ -18,6 +30,3 @@ import { RulesEngineService } from './workflows/rules-engine.service';
   exports: [ClaimsService],
 })
 export class ClaimsModule {}
-
-
-

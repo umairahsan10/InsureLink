@@ -11,6 +11,7 @@ import {
   ClassSerializerInterceptor,
   HttpCode,
   HttpStatus,
+  BadRequestException,
 } from '@nestjs/common';
 import { HospitalsService } from './hospitals.service';
 import { HospitalFinderService } from './services/hospital-finder.service';
@@ -170,5 +171,24 @@ export class HospitalsController {
       ...data,
       hospitalId: id,
     });
+  }
+
+  /**
+   * Get unclaimed visits for an employee at my hospital
+   * Used when creating a claim - hospital staff enters employee number and gets list of visits to select
+   */
+  @Get('visits/unclaimed')
+  @Roles('hospital')
+  async getUnclaimedVisits(
+    @Query('employeeNumber') employeeNumber: string,
+    @CurrentUser() user: CurrentUserDto,
+  ) {
+    if (!employeeNumber) {
+      throw new BadRequestException('employeeNumber query param is required');
+    }
+    return this.hospitalsService.getUnclaimedVisitsByEmployeeNumber(
+      employeeNumber,
+      user.id,
+    );
   }
 }

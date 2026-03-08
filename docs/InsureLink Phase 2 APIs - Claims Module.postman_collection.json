@@ -1,0 +1,1064 @@
+{
+  "info": {
+    "_postman_id": "b0160362-22c4-410e-8073-9dbb15d2cfdb",
+    "name": "InsureLink Phase 2 APIs - Claims Module",
+    "description": "Complete test collection for Claims Core Module with JWT authentication.\n\nWorkflow:\n1. Login as Hospital user to submit claims\n2. Login as Insurer user to approve/reject claims\n\nClaim Status Flow:\nPending → Approved/Rejected/OnHold → Paid (terminal)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "41275481"
+  },
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Login Hospital User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set('access_token', jsonData.data.access_token);",
+                  "    pm.collectionVariables.set('refresh_token', jsonData.data.refresh_token);",
+                  "    console.log('✅ Hospital token saved! Use this for submitting claims.');",
+                  "}"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"umairh@gmail.com\",\n  \"password\": \"Pass1234\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Login Insurer User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set('access_token', jsonData.data.access_token);",
+                  "    pm.collectionVariables.set('refresh_token', jsonData.data.refresh_token);",
+                  "    console.log('✅ Insurer token saved! Use this for approving/rejecting claims.');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"insurer@test.com\",\n  \"password\": \"Insurer123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Current User",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/auth/me",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "me"
+              ]
+            }
+          },
+          "response": []
+        }
+      ],
+      "description": "Login as different users to test role-based access.\n\nHospitals can: Submit claims, view their claims\nInsurers can: Approve/Reject claims, view all claims"
+    },
+    {
+      "name": "Claims - CRUD",
+      "item": [
+        {
+          "name": "Submit Claim (Hospital)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set('claim_id', jsonData.data.id);",
+                  "    pm.collectionVariables.set('claim_number', jsonData.data.claimNumber);",
+                  "    console.log('✅ Claim created:', jsonData.data.claimNumber);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"hospitalVisitId\": \"{{visit_id}}\",\n  \"corporateId\": \"{{corporate_id}}\",\n  \"planId\": \"{{plan_id}}\",\n  \"insurerId\": \"{{insurer_id}}\",\n  \"amountClaimed\": 125000.50,\n  \"treatmentCategory\": \"Inpatient Surgery\",\n  \"priority\": \"Normal\",\n  \"notes\": \"Laparoscopic appendectomy - patient admitted for 3 days post-operation monitoring\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/v1/claims",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "claims"
+              ]
+            },
+            "description": "Submit a new claim. Requires Hospital role.\n\nRequired fields:\n- hospitalVisitId (UUID)\n- corporateId (UUID)\n- planId (UUID)\n- insurerId (UUID)\n- amountClaimed (number with 2 decimals)\n\nOptional fields:\n- treatmentCategory (string)\n- priority (Low, Normal, High)\n- notes (string)"
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Claims",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/claims?page=1&limit=10",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "claims"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "status",
+                  "value": "Pending",
+                  "disabled": true
+                },
+                {
+                  "key": "hospitalId",
+                  "value": "{{hospital_id}}",
+                  "disabled": true
+                },
+                {
+                  "key": "insurerId",
+                  "value": "{{insurer_id}}",
+                  "disabled": true
+                },
+                {
+                  "key": "claimType",
+                  "value": "Inpatient",
+                  "disabled": true
+                },
+                {
+                  "key": "minAmount",
+                  "value": "10000",
+                  "disabled": true
+                },
+                {
+                  "key": "maxAmount",
+                  "value": "500000",
+                  "disabled": true
+                },
+                {
+                  "key": "fromDate",
+                  "value": "2024-01-01",
+                  "disabled": true
+                },
+                {
+                  "key": "toDate",
+                  "value": "2024-12-31",
+                  "disabled": true
+                },
+                {
+                  "key": "sortBy",
+                  "value": "createdAt",
+                  "disabled": true
+                },
+                {
+                  "key": "sortOrder",
+                  "value": "desc",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Get paginated list of claims with optional filters.\n\nHospitals see only their claims.\nInsurers see claims for their policies."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Claim by ID",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/claims/{{claim_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "claims",
+                "{{claim_id}}"
+              ]
+            },
+            "description": "Get detailed claim information including patient, hospital, and plan details."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Claim (Hospital)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amountClaimed\": 150000.75,\n  \"treatmentCategory\": \"Inpatient Surgery - Extended Care\",\n  \"priority\": \"High\",\n  \"notes\": \"Updated: Additional post-op care required due to minor complications\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/v1/claims/{{claim_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "claims",
+                "{{claim_id}}"
+              ]
+            },
+            "description": "Update claim details. Only allowed while claim is in Pending status.\n\nUpdatable fields:\n- amountClaimed\n- treatmentCategory\n- priority\n- notes"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Claim (Hospital)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/claims/{{claim_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "claims",
+                "{{claim_id}}"
+              ]
+            },
+            "description": "Soft delete a claim. Only allowed for Pending claims by the submitting hospital."
+          },
+          "response": []
+        }
+      ],
+      "description": "Basic CRUD operations for claims.\n\nHospitals submit claims.\nInsurers view and process claims."
+    },
+    {
+      "name": "Claims - Workflow",
+      "item": [
+        {
+          "name": "Approve Claim (PATCH)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"approvedAmount\": 45000,\n  \"eventNote\": \"Claim approved. Standard deductible of 5000 applied.\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/v1/claims/{{claim_id}}/approve",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "claims",
+                "{{claim_id}}",
+                "approve"
+              ]
+            },
+            "description": "Approve a pending claim. Requires Insurer role.\n\napprovedAmount must be ≤ billedAmount."
+          },
+          "response": []
+        },
+        {
+          "name": "Reject Claim (PATCH)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"eventNote\": \"Claim rejected: Pre-existing condition exclusion applies as per policy terms section 4.2.\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/v1/claims/{{claim_id}}/reject",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "claims",
+                "{{claim_id}}",
+                "reject"
+              ]
+            },
+            "description": "Reject a pending claim. Requires Insurer role and rejection reason."
+          },
+          "response": []
+        },
+        {
+          "name": "Put Claim On Hold",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Additional documentation required: Please provide itemized hospital bill and discharge summary.\",\n  \"requiredDocuments\": [\"Itemized Bill\", \"Discharge Summary\", \"Lab Reports\"]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/v1/claims/{{claim_id}}/on-hold",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "claims",
+                "{{claim_id}}",
+                "on-hold"
+              ]
+            },
+            "description": "Put a claim on hold pending additional information. Requires Insurer role."
+          },
+          "response": []
+        },
+        {
+          "name": "Mark Claim as Paid",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"paymentReference\": \"TXN-2024-0115-789456\",\n  \"paidAmount\": 120000,\n  \"paymentMethod\": \"BankTransfer\",\n  \"notes\": \"Payment processed via IBFT to hospital account.\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/v1/claims/{{claim_id}}/paid",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "claims",
+                "{{claim_id}}",
+                "paid"
+              ]
+            },
+            "description": "Mark an approved claim as paid. Terminal state. Requires Insurer role."
+          },
+          "response": []
+        },
+        {
+          "name": "Bulk Approve Claims",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    console.log('✅ Bulk approve results:');",
+                  "    console.log('  Successful:', jsonData.data.successful.length);",
+                  "    console.log('  Failed:', jsonData.data.failed.length);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"claimIds\": [\"claim-id-1\", \"claim-id-2\", \"claim-id-3\"],\n  \"notes\": \"Batch approval for verified claims.\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/v1/claims/bulk-approve",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "claims",
+                "bulk-approve"
+              ]
+            },
+            "description": "Approve multiple claims at once. Returns list of successful and failed operations."
+          },
+          "response": []
+        }
+      ],
+      "description": "Claim status workflow operations.\n\nInsurers approve/reject/hold claims.\nStatus flow: Pending → Approved/Rejected/OnHold → Paid"
+    },
+    {
+      "name": "Claims - Events",
+      "item": [
+        {
+          "name": "Get Claim Events",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/claims/{{claim_id}}/events",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "claims",
+                "{{claim_id}}",
+                "events"
+              ]
+            },
+            "description": "Get complete audit history of a claim including all status changes, approvals, rejections, and document uploads."
+          },
+          "response": []
+        }
+      ],
+      "description": "Audit trail for claim status changes and actions."
+    },
+    {
+      "name": "Claims - Documents",
+      "item": [
+        {
+          "name": "Upload Claim Document",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set('document_id', jsonData.data.id);",
+                  "    console.log('✅ Document uploaded:', jsonData.data.fileName);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "description": "Select a PDF, JPG, or PNG file (max 10MB)",
+                  "value": ""
+                },
+                {
+                  "key": "documentType",
+                  "value": "MedicalBill",
+                  "type": "text",
+                  "description": "Type: MedicalBill, DischargeSummary, LabReport, Prescription, InsuranceCard, Other"
+                },
+                {
+                  "key": "notes",
+                  "value": "Itemized hospital bill for appendectomy procedure",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/v1/claims/{{claim_id}}/documents",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "claims",
+                "{{claim_id}}",
+                "documents"
+              ]
+            },
+            "description": "Upload supporting document for a claim.\n\nDocument types:\n- MedicalBill\n- DischargeSummary\n- LabReport\n- Prescription\n- InsuranceCard\n- Other"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Claim Documents",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/claims/{{claim_id}}/documents",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "claims",
+                "{{claim_id}}",
+                "documents"
+              ]
+            },
+            "description": "List all documents attached to a claim."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Claim Document",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/claims/{{claim_id}}/documents/{{document_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "claims",
+                "{{claim_id}}",
+                "documents",
+                "{{document_id}}"
+              ]
+            },
+            "description": "Delete a document from a claim. Only allowed while claim is in Pending status."
+          },
+          "response": []
+        }
+      ],
+      "description": "Document upload and management for claims.\n\nSupported formats: PDF, JPG, PNG\nMax file size: 10MB"
+    },
+    {
+      "name": "Claims - Analytics",
+      "item": [
+        {
+          "name": "Get Claims Stats",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/claims/stats",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "claims",
+                "stats"
+              ],
+              "query": [
+                {
+                  "key": "hospitalId",
+                  "value": "{{hospital_id}}",
+                  "disabled": true
+                },
+                {
+                  "key": "insurerId",
+                  "value": "{{insurer_id}}",
+                  "disabled": true
+                },
+                {
+                  "key": "fromDate",
+                  "value": "2024-01-01",
+                  "disabled": true
+                },
+                {
+                  "key": "toDate",
+                  "value": "2024-12-31",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Get aggregated claim statistics:\n- Total claims count\n- Claims by status\n- Total billed/approved/paid amounts\n- Average processing time"
+          },
+          "response": []
+        }
+      ],
+      "description": "Claims statistics and reporting endpoints."
+    },
+    {
+      "name": "Error Test Cases",
+      "item": [
+        {
+          "name": "Submit Claim - Missing Required Fields",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"claimType\": \"Inpatient\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/v1/claims",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "claims"
+              ]
+            },
+            "description": "Expected: 400 Bad Request with validation errors"
+          },
+          "response": []
+        },
+        {
+          "name": "Approve Already Approved Claim",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"approvedAmount\": 100000\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/v1/claims/{{claim_id}}/approve",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "claims",
+                "{{claim_id}}",
+                "approve"
+              ]
+            },
+            "description": "Expected: 400 Bad Request - Invalid status transition"
+          },
+          "response": []
+        },
+        {
+          "name": "Access Claim Without Auth",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/claims",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "claims"
+              ]
+            },
+            "description": "Expected: 401 Unauthorized"
+          },
+          "response": []
+        },
+        {
+          "name": "Approve Amount > Billed Amount",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"approvedAmount\": 999999999\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/v1/claims/{{claim_id}}/approve",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "claims",
+                "{{claim_id}}",
+                "approve"
+              ]
+            },
+            "description": "Expected: 400 Bad Request - Approved amount cannot exceed billed amount"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Non-Existent Claim",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/claims/non-existent-id-12345",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "claims",
+                "non-existent-id-12345"
+              ]
+            },
+            "description": "Expected: 404 Not Found"
+          },
+          "response": []
+        }
+      ],
+      "description": "Test invalid operations and error handling."
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3001/api",
+      "type": "string"
+    },
+    {
+      "key": "access_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "refresh_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "claim_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "claim_number",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "document_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "hospital_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "insurer_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "corporate_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "plan_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "visit_id",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}

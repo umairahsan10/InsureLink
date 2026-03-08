@@ -1,52 +1,217 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import BaseModal from "./BaseModal";
 import { formatPKR } from "@/lib/format";
-import type { Claim } from "@/types/claims";
+import { claimsApi } from "@/lib/api/claims";
 
 interface ClaimDetailsModalProps {
   isOpen: boolean;
   onClose: () => void;
   claimId: string;
-  claimData?: Claim | any;
+  claimData?: any; // Keep for backwards compatibility but won't use it
+}
+
+// API response type matching the backend
+interface ApiClaim {
+  id: string;
+  claimNumber: string;
+  claimStatus: string;
+  amountClaimed: string | number;
+  approvedAmount: string | number;
+  treatmentCategory?: string;
+  priority: string;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+  claimEvents?: Array<{
+    id: string;
+    action: string;
+    statusTo: string;
+    eventNote?: string;
+    actorName: string;
+    actorRole: string;
+    timestamp: string;
+  }>;
+  hospitalVisit: {
+    id: string;
+    visitDate: string;
+    admissionDate?: string;
+    dischargeDate?: string;
+    hospital: { id: string; hospitalName: string; city: string };
+    employee?: {
+      id: string;
+      employeeNumber: string;
+      user: { firstName: string; lastName: string; cnic?: string };
+    } | null;
+    dependent?: {
+      id: string;
+      firstName: string;
+      lastName: string;
+      relationship: string;
+    } | null;
+  };
+  corporate: { id: string; name: string };
+  plan: {
+    id: string;
+    planName: string;
+    planCode: string;
+    sumInsured: string | number;
+  };
+  insurer: { id: string; companyName: string };
+}
+
+function transformApiClaim(claim: any) {
+  const patient = claim.hospitalVisit?.dependent
+    ? `${claim.hospitalVisit.dependent.firstName} ${claim.hospitalVisit.dependent.lastName}`
+    : claim.hospitalVisit?.employee?.user
+      ? `${claim.hospitalVisit.employee.user.firstName} ${claim.hospitalVisit.employee.user.lastName}`
+      : "Unknown";
+
+  // Helper function to safely convert values to numbers
+  const toNumber = (val: any): number => {
+    if (val === null || val === undefined) return 0;
+    if (typeof val === "number") return val;
+    if (typeof val === "string") return parseFloat(val) || 0;
+    // Handle Prisma Decimal or objects with toString
+    if (val && typeof val.toString === "function") {
+      const str = val.toString();
+      return parseFloat(str) || 0;
+    }
+    return 0;
+  };
+
+  const amountValue = toNumber(claim.amountClaimed);
+  const approvedValue = toNumber(claim.approvedAmount);
+
+  console.log("Transform claim:", {
+    rawAmountClaimed: claim.amountClaimed,
+    rawApprovedAmount: claim.approvedAmount,
+    amountValue,
+    approvedValue,
+  });
+
+  // Extract claim events with notes (insurer decisions)
+  const claimEvents =
+    claim.claimEvents && Array.isArray(claim.claimEvents)
+      ? claim.claimEvents.map((event: any) => ({
+          id: event.id,
+          action: event.action,
+          status: event.statusTo,
+          actorName: event.actorName,
+          actorRole: event.actorRole,
+          note: event.eventNote,
+          timestamp: event.timestamp,
+        }))
+      : [];
+
+  return {
+    id: claim.id,
+    claimNumber: claim.claimNumber,
+    status: claim.claimStatus,
+    employeeName: patient,
+    patientName: patient,
+    amountClaimed: amountValue,
+    approvedAmount: approvedValue,
+    treatmentCategory: claim.treatmentCategory,
+    priority: claim.priority,
+    notes: claim.notes,
+    claimEvents: claimEvents,
+    hospitalName: claim.hospitalVisit?.hospital?.hospitalName,
+    corporateName: claim.corporate?.name,
+    planName: claim.plan?.planName,
+    planId: claim.plan?.id,
+    employeeId: claim.hospitalVisit?.employee?.employeeNumber,
+    cnic: claim.hospitalVisit?.employee?.user?.cnic,
+    admissionDate: claim.hospitalVisit?.admissionDate,
+    dischargeDate: claim.hospitalVisit?.dischargeDate,
+    createdAt: claim.createdAt,
+    updatedAt: claim.updatedAt,
+  };
 }
 
 export default function ClaimDetailsModal({
   isOpen,
   onClose,
   claimId,
-  claimData,
+  claimData: initialData,
 }: ClaimDetailsModalProps) {
-  // Debug: log what we're receiving
-  console.log(
-    "ClaimDetailsModal - claimId:",
-    claimId,
-    "claimData:",
-    claimData,
-    "isOpen:",
-    isOpen
+  // Show initialData (from list) immediately; silently refresh in background
+  const [claimData, setClaimData] = useState<any>(
+    initialData ? transformApiClaim(initialData) : null,
   );
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (isOpen && claimId) {
+      // Reset to new initialData when a different claim is opened
+      setClaimData(initialData ? transformApiClaim(initialData) : null);
+      setError(null);
+
+      // Silently refresh in the background to pick up any latest changes
+      claimsApi
+        .getClaim(claimId)
+        .then((response: any) => {
+          setClaimData(transformApiClaim(response));
+        })
+        .catch((err) => {
+          // Only show error if we have nothing to display
+          if (!initialData) {
+            setError(err?.message || "Failed to load claim details");
+          }
+        });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, claimId]);
 
   return (
     <BaseModal isOpen={isOpen} onClose={onClose} title="" size="xl">
       {!claimData ? (
         <div className="text-center py-12">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-blue-100 mb-4">
-            <svg
-              className="w-6 h-6 text-blue-600 animate-spin"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-              />
-            </svg>
-          </div>
-          <p className="text-gray-600 font-medium">Loading claim details...</p>
+          {error ? (
+            <>
+              <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-red-100 mb-4">
+                <svg
+                  className="w-6 h-6 text-red-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+              </div>
+              <p className="text-red-600 font-medium mb-2">
+                Error Loading Claim
+              </p>
+              <p className="text-gray-500 text-sm">{error}</p>
+            </>
+          ) : (
+            <>
+              <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-blue-100 mb-4">
+                <svg
+                  className="w-6 h-6 text-blue-600 animate-spin"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                  />
+                </svg>
+              </div>
+              <p className="text-gray-600 font-medium">
+                Loading claim details...
+              </p>
+            </>
+          )}
         </div>
       ) : (
         <div className="space-y-6 -mx-6 -mb-6">
@@ -71,8 +236,8 @@ export default function ClaimDetailsModal({
                       claimData.status === "Approved"
                         ? "bg-emerald-400/30 text-emerald-50 border border-emerald-300"
                         : claimData.status === "Rejected"
-                        ? "bg-rose-400/30 text-rose-50 border border-rose-300"
-                        : "bg-amber-400/30 text-amber-50 border border-amber-300"
+                          ? "bg-rose-400/30 text-rose-50 border border-rose-300"
+                          : "bg-amber-400/30 text-amber-50 border border-amber-300"
                     }`}
                   >
                     {claimData.status}
@@ -158,9 +323,9 @@ export default function ClaimDetailsModal({
                     {typeof claimData.amountClaimed === "number"
                       ? formatPKR(claimData.amountClaimed)
                       : typeof claimData.amount === "number"
-                      ? formatPKR(claimData.amount)
-                      : claimData.amount ||
-                        formatPKR(claimData.amountClaimed || 0)}
+                        ? formatPKR(claimData.amount)
+                        : claimData.amount ||
+                          formatPKR(claimData.amountClaimed || 0)}
                   </p>
                 </div>
                 {claimData.approvedAmount !== undefined && (
@@ -261,8 +426,8 @@ export default function ClaimDetailsModal({
                         claimData.priority === "High"
                           ? "bg-red-100 text-red-800"
                           : claimData.priority === "Low"
-                          ? "bg-blue-100 text-blue-800"
-                          : "bg-gray-100 text-gray-800"
+                            ? "bg-blue-100 text-blue-800"
+                            : "bg-gray-100 text-gray-800"
                       }`}
                     >
                       {claimData.priority}
@@ -309,12 +474,12 @@ export default function ClaimDetailsModal({
               </div>
             )}
 
-            {/* Additional Notes */}
+            {/* Hospital Notes */}
             {claimData.notes && (
               <div>
                 <h4 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
                   <span className="w-1 h-6 bg-blue-600 rounded-full" />
-                  Additional Notes
+                  Hospital Notes
                 </h4>
                 <div className="bg-blue-50/50 border border-blue-200 rounded-lg p-4">
                   <p className="text-sm leading-relaxed text-gray-700">
@@ -324,7 +489,65 @@ export default function ClaimDetailsModal({
               </div>
             )}
 
-            {/* Events/Timeline */}
+            {/* Insurer Decision Notes */}
+            {claimData.claimEvents && claimData.claimEvents.length > 0 && (
+              <div>
+                <h4 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                  <span className="w-1 h-6 bg-blue-600 rounded-full" />
+                  Insurer Decision Timeline
+                </h4>
+                <div className="space-y-4">
+                  {claimData.claimEvents.map((event: any, idx: number) => (
+                    <div
+                      key={idx}
+                      className="bg-gray-50 rounded-lg border border-gray-200 p-4"
+                    >
+                      <div className="flex items-start justify-between mb-2">
+                        <div>
+                          <p className="font-semibold text-gray-900">
+                            {event.action}
+                          </p>
+                          <p className="text-xs text-gray-600">
+                            <span className="font-medium">
+                              {event.actorName}
+                            </span>
+                            {event.actorRole && (
+                              <span> • {event.actorRole}</span>
+                            )}
+                          </p>
+                        </div>
+                        <span
+                          className={`inline-block px-3 py-1 text-xs font-bold rounded-full ${
+                            event.status === "Approved"
+                              ? "bg-emerald-100 text-emerald-800"
+                              : event.status === "Rejected"
+                                ? "bg-rose-100 text-rose-800"
+                                : event.status === "OnHold"
+                                  ? "bg-amber-100 text-amber-800"
+                                  : "bg-gray-100 text-gray-800"
+                          }`}
+                        >
+                          {event.status}
+                        </span>
+                      </div>
+                      <p className="text-xs text-gray-600 mb-2">
+                        {new Date(event.timestamp).toLocaleString()}
+                      </p>
+                      {event.note && (
+                        <div className="mt-3 p-3 bg-white border border-gray-200 rounded">
+                          <p className="text-xs font-semibold text-gray-700 mb-1">
+                            Note:
+                          </p>
+                          <p className="text-sm text-gray-700">{event.note}</p>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Events/Timeline - Legacy */}
             {claimData.events && claimData.events.length > 0 && (
               <div>
                 <h4 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">

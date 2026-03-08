@@ -94,7 +94,7 @@ export default function HospitalPatientDetailsPage() {
           employee.employeeNumber
             .toLowerCase()
             .includes(searchTerm.toLowerCase()) ||
-          employee.email.toLowerCase().includes(searchTerm.toLowerCase())
+          employee.email.toLowerCase().includes(searchTerm.toLowerCase()),
       );
       setSearchResults(results);
       setIsSearching(false);
@@ -106,7 +106,7 @@ export default function HospitalPatientDetailsPage() {
 
     // Filter claims for this patient
     const patientClaims = claims.filter(
-      (claim) => claim.employeeId === patient.id
+      (claim) => claim.employeeId === patient.id,
     );
     setFilteredClaims(patientClaims);
 
@@ -395,7 +395,7 @@ export default function HospitalPatientDetailsPage() {
               {/* Corporate Information */}
               {(() => {
                 const corporate = getCorporateDetails(
-                  selectedPatient.corporateId
+                  selectedPatient.corporateId,
                 );
                 if (!corporate) return null;
                 return (
@@ -511,10 +511,10 @@ export default function HospitalPatientDetailsPage() {
                                   claim.status === "Approved"
                                     ? "bg-green-100 text-green-800"
                                     : claim.status === "Rejected"
-                                    ? "bg-red-100 text-red-800"
-                                    : claim.status === "Pending"
-                                    ? "bg-yellow-100 text-yellow-800"
-                                    : "bg-gray-100 text-gray-800"
+                                      ? "bg-red-100 text-red-800"
+                                      : claim.status === "Pending"
+                                        ? "bg-yellow-100 text-yellow-800"
+                                        : "bg-gray-100 text-gray-800"
                                 }`}
                               >
                                 {claim.status}
