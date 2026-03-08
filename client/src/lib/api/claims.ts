@@ -3,37 +3,95 @@ import { apiFetch } from "./client";
 // Base path for claims API (v1 versioned)
 const BASE = "/api/v1/claims";
 
+// ── Nested types matching backend response ──────────────────────────────
+
+export interface ClaimHospitalVisit {
+  id: string;
+  visitDate: string;
+  dischargeDate?: string | null;
+  hospital: { id: string; hospitalName: string; city: string };
+  employee?: {
+    id: string;
+    employeeNumber: string;
+    user: { firstName: string; lastName: string; cnic?: string };
+  } | null;
+  dependent?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    relationship: string;
+  } | null;
+}
+
+export interface ClaimEvent {
+  id: string;
+  claimId: string;
+  actorUserId?: string;
+  actorName: string;
+  actorRole: string;
+  action: string;
+  statusFrom?: string | null;
+  statusTo: string;
+  eventNote?: string | null;
+  timestamp: string;
+  createdAt: string;
+}
+
+export interface ClaimDocument {
+  id: string;
+  claimId: string;
+  originalFilename: string;
+  filePath: string;
+  fileUrl: string;
+  fileSizeBytes: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Claim {
   id: string;
   claimNumber: string;
-  patientName?: string;
-  hospital?: string;
-  hospitalName?: string;
-  amount?: string | number;
-  billedAmount?: number;
-  approvedAmount?: number;
-  date?: string;
-  status?: string;
-  treatment?: string;
-  diagnosis?: string;
-  claimType?: string;
-  createdAt?: string;
-  updatedAt?: string;
+  claimStatus: string;
+  amountClaimed: string | number;
+  approvedAmount: string | number;
+  treatmentCategory?: string;
+  priority: string;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+  hospitalVisit: ClaimHospitalVisit;
+  corporate: { id: string; name: string };
+  plan: {
+    id: string;
+    planName: string;
+    planCode: string;
+    sumInsured: string | number;
+  };
+  insurer: { id: string; companyName: string };
+  claimEvents?: ClaimEvent[];
+  claimDocuments?: ClaimDocument[];
 }
 
 export interface ApproveClaimRequest {
   claimId: string;
   approvedAmount?: number;
-  notes?: string;
+  eventNote?: string;
 }
 
 export interface RejectClaimRequest {
   claimId: string;
-  reason: string;
+  eventNote: string;
 }
 
 export interface BulkApproveRequest {
   claimIds: string[];
+  eventNote?: string;
+}
+
+export interface UpdateClaimRequest {
+  amountClaimed?: number;
+  treatmentCategory?: string;
+  priority?: "Low" | "Normal" | "High";
   notes?: string;
 }
 
@@ -42,7 +100,10 @@ export interface ClaimFilters {
   hospital?: string;
   hospitalId?: string;
   insurerId?: string;
+  corporateId?: string;
   claimType?: string;
+  priority?: string;
+  claimNumber?: string;
   minAmount?: number;
   maxAmount?: number;
   fromDate?: string;
@@ -98,14 +159,26 @@ export const claimsApi = {
     return response.data;
   },
 
+  async updateClaim(claimId: string, data: UpdateClaimRequest): Promise<Claim> {
+    const response = await apiFetch<Claim>(`${BASE}/${claimId}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    });
+    return response.data;
+  },
+
+  async deleteClaim(claimId: string): Promise<void> {
+    await apiFetch(`${BASE}/${claimId}`, { method: "DELETE" });
+  },
+
   async approveClaim(request: ApproveClaimRequest): Promise<Claim> {
     const response = await apiFetch<Claim>(
       `${BASE}/${request.claimId}/approve`,
       {
-        method: "POST",
+        method: "PATCH",
         body: JSON.stringify({
           approvedAmount: request.approvedAmount,
-          notes: request.notes,
+          eventNote: request.eventNote,
         }),
       },
     );
@@ -116,8 +189,8 @@ export const claimsApi = {
     const response = await apiFetch<Claim>(
       `${BASE}/${request.claimId}/reject`,
       {
-        method: "POST",
-        body: JSON.stringify({ reason: request.reason }),
+        method: "PATCH",
+        body: JSON.stringify({ eventNote: request.eventNote }),
       },
     );
     return response.data;
@@ -125,12 +198,12 @@ export const claimsApi = {
 
   async putOnHold(
     claimId: string,
-    reason: string,
+    eventNote: string,
     requiredDocuments?: string[],
   ): Promise<Claim> {
     const response = await apiFetch<Claim>(`${BASE}/${claimId}/on-hold`, {
       method: "PATCH",
-      body: JSON.stringify({ reason, requiredDocuments }),
+      body: JSON.stringify({ eventNote, requiredDocuments }),
     });
     return response.data;
   },
@@ -140,23 +213,35 @@ export const claimsApi = {
     paymentReference: string,
     paidAmount: number,
     paymentMethod?: string,
+    notes?: string,
   ): Promise<Claim> {
     const response = await apiFetch<Claim>(`${BASE}/${claimId}/paid`, {
       method: "PATCH",
-      body: JSON.stringify({ paymentReference, paidAmount, paymentMethod }),
+      body: JSON.stringify({
+        paymentReference,
+        paidAmount,
+        paymentMethod,
+        notes,
+      }),
     });
     return response.data;
   },
 
-  async bulkApprove(
-    request: BulkApproveRequest,
-  ): Promise<{ successful: Claim[]; failed: { id: string; error: string }[] }> {
+  async bulkApprove(request: BulkApproveRequest): Promise<{
+    message: string;
+    success: string[];
+    failed: { id: string; reason: string }[];
+  }> {
     const response = await apiFetch<{
-      successful: Claim[];
-      failed: { id: string; error: string }[];
+      message: string;
+      success: string[];
+      failed: { id: string; reason: string }[];
     }>(`${BASE}/bulk-approve`, {
       method: "POST",
-      body: JSON.stringify(request),
+      body: JSON.stringify({
+        claimIds: request.claimIds,
+        eventNote: request.eventNote,
+      }),
     });
     return response.data;
   },
@@ -164,11 +249,14 @@ export const claimsApi = {
   async getClaims(filters?: ClaimFilters): Promise<PaginatedResponse<Claim>> {
     const queryParams = new URLSearchParams();
     if (filters?.status) queryParams.append("status", filters.status);
-    if (filters?.hospital) queryParams.append("hospitalId", filters.hospital);
     if (filters?.hospitalId)
       queryParams.append("hospitalId", filters.hospitalId);
     if (filters?.insurerId) queryParams.append("insurerId", filters.insurerId);
-    if (filters?.claimType) queryParams.append("claimType", filters.claimType);
+    if (filters?.corporateId)
+      queryParams.append("corporateId", filters.corporateId);
+    if (filters?.priority) queryParams.append("priority", filters.priority);
+    if (filters?.claimNumber)
+      queryParams.append("claimNumber", filters.claimNumber);
     if (filters?.minAmount)
       queryParams.append("minAmount", filters.minAmount.toString());
     if (filters?.maxAmount)
@@ -186,96 +274,58 @@ export const claimsApi = {
     return response.data;
   },
 
-  async getClaimEvents(
-    claimId: string,
-  ): Promise<
-    { action: string; performedBy: string; timestamp: string; notes?: string }[]
-  > {
-    const response = await apiFetch<
-      {
-        action: string;
-        performedBy: string;
-        timestamp: string;
-        notes?: string;
-      }[]
-    >(`${BASE}/${claimId}/events`);
-    return response.data;
+  async getClaimEvents(claimId: string): Promise<ClaimEvent[]> {
+    const response = await apiFetch<{ data: ClaimEvent[] }>(
+      `${BASE}/${claimId}/events`,
+    );
+    // Backend may return paginated { data, meta } or a plain array
+    const raw = response.data as any;
+    return Array.isArray(raw) ? raw : (raw.data ?? []);
   },
 
-  async getClaimDocuments(
-    claimId: string,
-  ): Promise<
-    { id: string; fileName: string; documentType: string; uploadedAt: string }[]
-  > {
-    const response = await apiFetch<
-      {
-        id: string;
-        fileName: string;
-        documentType: string;
-        uploadedAt: string;
-      }[]
-    >(`${BASE}/${claimId}/documents`);
-    return response.data;
+  async getClaimDocuments(claimId: string): Promise<ClaimDocument[]> {
+    const response = await apiFetch<ClaimDocument[]>(
+      `${BASE}/${claimId}/documents`,
+    );
+    const raw = response.data as any;
+    return Array.isArray(raw) ? raw : (raw.data ?? []);
   },
 
-  async uploadDocument(
-    claimId: string,
-    file: File,
-    documentType: string,
-    notes?: string,
-  ): Promise<{ id: string; fileName: string }> {
+  async uploadDocument(claimId: string, file: File): Promise<ClaimDocument> {
     const formData = new FormData();
     formData.append("file", file);
-    formData.append("documentType", documentType);
-    if (notes) formData.append("notes", notes);
 
-    const response = await apiFetch<{ id: string; fileName: string }>(
-      `${BASE}/${claimId}/documents`,
-      {
-        method: "POST",
-        headers: {}, // Let browser set Content-Type for FormData
-        body: formData as unknown as BodyInit,
+    // Note: We need to manually handle this upload to avoid Content-Type override
+    // Import getAccessToken dynamically to avoid circular dependencies
+    const { getAccessToken } = await import("@/lib/auth/session");
+    const baseUrl =
+      process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3001";
+    const token = getAccessToken();
+
+    const response = await fetch(`${baseUrl}${BASE}/${claimId}/documents`, {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        Authorization: token ? `Bearer ${token}` : "",
+        // Do NOT set Content-Type - browser will set it with boundary for FormData
       },
-    );
-    return response.data;
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const error = await response
+        .json()
+        .catch(() => ({ message: "Upload failed" }));
+      throw new Error(error.message || "Failed to upload document");
+    }
+
+    const data = await response.json();
+    return data.data || data;
   },
 
   async deleteDocument(claimId: string, documentId: string): Promise<void> {
     await apiFetch(`${BASE}/${claimId}/documents/${documentId}`, {
       method: "DELETE",
     });
-  },
-
-  async getStats(filters?: {
-    hospitalId?: string;
-    insurerId?: string;
-    fromDate?: string;
-    toDate?: string;
-  }): Promise<{
-    totalClaims: number;
-    pendingClaims: number;
-    approvedClaims: number;
-    rejectedClaims: number;
-    totalBilledAmount: number;
-    totalApprovedAmount: number;
-    totalPaidAmount: number;
-  }> {
-    const queryParams = new URLSearchParams();
-    if (filters?.hospitalId)
-      queryParams.append("hospitalId", filters.hospitalId);
-    if (filters?.insurerId) queryParams.append("insurerId", filters.insurerId);
-    if (filters?.fromDate) queryParams.append("fromDate", filters.fromDate);
-    if (filters?.toDate) queryParams.append("toDate", filters.toDate);
-
-    const response = await apiFetch<{
-      totalClaims: number;
-      pendingClaims: number;
-      approvedClaims: number;
-      rejectedClaims: number;
-      totalBilledAmount: number;
-      totalApprovedAmount: number;
-      totalPaidAmount: number;
-    }>(`${BASE}/stats?${queryParams.toString()}`);
-    return response.data;
   },
 };

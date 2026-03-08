@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import BaseModal from "./BaseModal";
 import { formatPKR } from "@/lib/format";
 import { claimsApi } from "@/lib/api/claims";
+import ClaimDocumentsSection from "@/components/claims/ClaimDocumentsSection";
 
 interface ClaimDetailsModalProps {
   isOpen: boolean;
@@ -448,31 +449,12 @@ export default function ClaimDetailsModal({
             </div>
 
             {/* Documents */}
-            {claimData.documents && claimData.documents.length > 0 && (
-              <div>
-                <h4 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                  <span className="w-1 h-6 bg-blue-600 rounded-full" />
-                  Documents ({claimData.documents.length})
-                </h4>
-                <div className="space-y-2 bg-gray-50 p-4 rounded-lg border border-gray-200">
-                  {claimData.documents.map((doc: any, idx: number) => (
-                    <div
-                      key={idx}
-                      className="flex items-start gap-3 text-sm text-gray-700"
-                    >
-                      <svg
-                        className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0"
-                        fill="currentColor"
-                        viewBox="0 0 20 20"
-                      >
-                        <path d="M4 4a2 2 0 012-2h6a1 1 0 00-1 1v12a1 1 0 102 0V4a2 2 0 00-2-2H6a1 1 0 00-1 1v12a1 1 0 102 0V4z" />
-                      </svg>
-                      <span className="font-medium">{doc}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+            <div>
+              <ClaimDocumentsSection
+                claimId={claimId}
+                claimStatus={claimData.status}
+              />
+            </div>
 
             {/* Hospital Notes */}
             {claimData.notes && (

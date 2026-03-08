@@ -26,7 +26,11 @@ export class HospitalVisitsRepository {
     return this.prisma.hospitalVisit.findUnique({
       where: { id },
       include: {
-        employee: true,
+        employee: {
+          include: {
+            user: true,
+          },
+        },
         dependent: true,
         hospital: true,
       },
@@ -38,7 +42,11 @@ export class HospitalVisitsRepository {
       where: { hospitalId },
       orderBy: { visitDate: 'desc' },
       include: {
-        employee: true,
+        employee: {
+          include: {
+            user: true,
+          },
+        },
         dependent: true,
         hospital: true,
       },

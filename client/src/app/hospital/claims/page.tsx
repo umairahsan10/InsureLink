@@ -17,6 +17,7 @@ import {
   clearDocumentHashes,
 } from "@/utils/documentVerification";
 import ClaimDetailsModal from "@/components/modals/ClaimDetailsModal";
+import ClaimEditModal from "@/components/modals/ClaimEditModal";
 import { claimsApi } from "@/lib/api/claims";
 import { formatPKR } from "@/lib/format";
 
@@ -112,6 +113,11 @@ export default function HospitalClaimsPage() {
   });
   const [selectedClaimData, setSelectedClaimData] = useState<any>(null);
   const [isClaimDetailsOpen, setIsClaimDetailsOpen] = useState(false);
+  const [editClaimId, setEditClaimId] = useState<string | null>(null);
+  const [editClaimData, setEditClaimData] = useState<any>(null);
+  const [deleteClaimId, setDeleteClaimId] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
   const { hasUnreadAlert } = useClaimsMessaging();
   const templateOptions = useMemo(() => getTemplateOptions(), []);
 
@@ -331,6 +337,8 @@ export default function HospitalClaimsPage() {
                     <option>Pending</option>
                     <option>Approved</option>
                     <option>Rejected</option>
+                    <option>OnHold</option>
+                    <option>Paid</option>
                   </select>
                   <select
                     value={amountFilter}
@@ -453,22 +461,79 @@ export default function HospitalClaimsPage() {
                                     ? "bg-green-100 text-green-800"
                                     : claim.status === "Rejected"
                                       ? "bg-red-100 text-red-800"
-                                      : "bg-yellow-100 text-yellow-800"
+                                      : claim.status === "OnHold"
+                                        ? "bg-amber-100 text-amber-800"
+                                        : claim.status === "Paid"
+                                          ? "bg-blue-100 text-blue-800"
+                                          : "bg-yellow-100 text-yellow-800"
                                 }`}
                               >
                                 {claim.status}
                               </span>
                             </td>
                             <td className="px-3 lg:px-6 py-4 text-xs lg:text-sm">
-                              <button
-                                onClick={() => {
-                                  setSelectedClaimData(claim.rawClaim);
-                                  setIsClaimDetailsOpen(true);
-                                }}
-                                className="text-blue-600 hover:text-blue-800"
-                              >
-                                View
-                              </button>
+                              <div className="relative">
+                                <button
+                                  onClick={() => setOpenDropdownId(openDropdownId === claim.id ? null : claim.id)}
+                                  className="inline-flex items-center gap-2 px-3 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                                >
+                                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M10.5 1.5H9.5V10H1.5V11H9.5V19.5H10.5V11H18.5V10H10.5V1.5Z" transform="translate(5, 5) rotate(90)" />
+                                  </svg>
+                                  Actions
+                                  <svg className={`w-4 h-4 transition-transform ${openDropdownId === claim.id ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                                  </svg>
+                                </button>
+
+                                {openDropdownId === claim.id && (
+                                  <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+                                    <button
+                                      onClick={() => {
+                                        setSelectedClaimData(claim.rawClaim);
+                                        setIsClaimDetailsOpen(true);
+                                        setOpenDropdownId(null);
+                                      }}
+                                      className="flex w-full px-4 py-2 text-blue-600 hover:bg-blue-50 first:rounded-t-lg items-center gap-2 justify-start"
+                                    >
+                                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                      </svg>
+                                      View Details
+                                    </button>
+                                    {claim.status === "Pending" && (
+                                      <>
+                                        <button
+                                          onClick={() => {
+                                            setEditClaimId(claim.id);
+                                            setEditClaimData(claim.rawClaim);
+                                            setOpenDropdownId(null);
+                                          }}
+                                          className="flex w-full px-4 py-2 text-amber-600 hover:bg-amber-50 items-center gap-2 justify-start"
+                                        >
+                                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                          </svg>
+                                          Edit Claim
+                                        </button>
+                                        <button
+                                          onClick={() => {
+                                            setDeleteClaimId(claim.id);
+                                            setOpenDropdownId(null);
+                                          }}
+                                          className="flex w-full px-4 py-2 text-red-600 hover:bg-red-50 last:rounded-b-lg items-center gap-2 justify-start"
+                                        >
+                                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                          </svg>
+                                          Delete Claim
+                                        </button>
+                                      </>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
                             </td>
                             <td className="px-3 lg:px-6 py-4 text-xs lg:text-sm">
                               <MessageButton
@@ -621,6 +686,65 @@ export default function HospitalClaimsPage() {
               claimId={selectedClaimData?.id || ""}
               claimData={selectedClaimData}
             />
+
+            {/* Edit Claim Modal */}
+            <ClaimEditModal
+              isOpen={!!editClaimId}
+              onClose={() => {
+                setEditClaimId(null);
+                setEditClaimData(null);
+              }}
+              claimId={editClaimId || ""}
+              claimData={editClaimData}
+              onSuccess={() => {
+                setEditClaimId(null);
+                setEditClaimData(null);
+                fetchClaims();
+                fetchStats();
+              }}
+            />
+
+            {/* Delete Claim Confirmation */}
+            {deleteClaimId && (
+              <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+                <div className="bg-white rounded-lg shadow-xl max-w-sm w-full p-6">
+                  <h3 className="text-lg font-bold text-gray-900 mb-2">
+                    Delete Claim
+                  </h3>
+                  <p className="text-sm text-gray-600 mb-4">
+                    Are you sure you want to delete this claim? This action
+                    cannot be undone.
+                  </p>
+                  <div className="flex justify-end gap-3">
+                    <button
+                      onClick={() => setDeleteClaimId(null)}
+                      className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={async () => {
+                        setIsDeleting(true);
+                        try {
+                          await claimsApi.deleteClaim(deleteClaimId);
+                          setDeleteClaimId(null);
+                          fetchClaims();
+                          fetchStats();
+                        } catch (err: any) {
+                          alert(err?.message || "Failed to delete claim");
+                        } finally {
+                          setIsDeleting(false);
+                        }
+                      }}
+                      disabled={isDeleting}
+                      className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
+                    >
+                      {isDeleting ? "Deleting..." : "Delete"}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Upload Modal */}
             {uploadModalOpen && (

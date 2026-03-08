@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { formatPKR } from "@/lib/format";
 import {
   hospitalsApi,
@@ -8,6 +8,7 @@ import {
   type UnclaimedVisitEmployee,
 } from "@/lib/api/hospitals";
 import { claimsApi, type CreateClaimRequest } from "@/lib/api/claims";
+import ClaimDocumentsSection from "@/components/claims/ClaimDocumentsSection";
 
 // ── Types ────────────────────────────────────────────────────────────────
 
@@ -17,7 +18,11 @@ interface SubmitClaimFormV2Props {
   onClaimSubmitted?: (claim: any) => void;
 }
 
-type FormStep = "search" | "select-visit" | "claim-details";
+type FormStep =
+  | "search"
+  | "select-visit"
+  | "claim-details"
+  | "upload-documents";
 
 // ── Component ────────────────────────────────────────────────────────────
 
@@ -38,6 +43,12 @@ export default function SubmitClaimFormV2({
   const [employee, setEmployee] = useState<UnclaimedVisitEmployee | null>(null);
   const [visits, setVisits] = useState<UnclaimedVisit[]>([]);
   const [selectedVisit, setSelectedVisit] = useState<UnclaimedVisit | null>(
+    null,
+  );
+
+  // Created claim (after submission)
+  const [createdClaimId, setCreatedClaimId] = useState<string | null>(null);
+  const [createdClaimNumber, setCreatedClaimNumber] = useState<string | null>(
     null,
   );
 
@@ -64,6 +75,14 @@ export default function SubmitClaimFormV2({
     "Physical Therapy",
     "Other",
   ];
+
+  // Debug: Log step changes
+  useEffect(() => {
+    console.log("🔄 Current step changed to:", currentStep, {
+      createdClaimId,
+      createdClaimNumber,
+    });
+  }, [currentStep, createdClaimId, createdClaimNumber]);
 
   // ── Step 1: Search employee ────────────────────────────────────────────
 
@@ -168,25 +187,24 @@ export default function SubmitClaimFormV2({
 
       const newClaim = await claimsApi.createClaim(request);
 
-      setSuccessMessage(
-        `Claim ${newClaim.claimNumber} submitted successfully!`,
-      );
+      console.log("✅ Claim created successfully:", newClaim.claimNumber);
 
-      // Notify parent
-      if (onClaimSubmitted) {
-        onClaimSubmitted(newClaim);
-      }
+      // Store created claim info and move to next step
+      setCreatedClaimId(newClaim.id);
+      setCreatedClaimNumber(newClaim.claimNumber);
 
-      if (onSuccess) {
-        onSuccess(newClaim.id);
-      }
+      // Clear any previous errors
+      setErrors({});
+      setSuccessMessage("");
 
-      // Reset form after a delay
-      setTimeout(() => {
-        resetForm();
-      }, 3000);
+      // DON'T notify parent yet - wait until they finish uploading documents
+      // (otherwise parent might close the form before showing step 4)
+
+      // Move to document upload step - this should trigger step 4
+      console.log("📄 Moving to document upload step...");
+      setCurrentStep("upload-documents");
     } catch (error: any) {
-      console.error("Error submitting claim:", error);
+      console.error("❌ Error submitting claim:", error);
 
       // Parse backend error message for better display
       let errorMessage = "Failed to submit claim. Please try again.";
@@ -216,6 +234,8 @@ export default function SubmitClaimFormV2({
     setEmployee(null);
     setVisits([]);
     setSelectedVisit(null);
+    setCreatedClaimId(null);
+    setCreatedClaimNumber(null);
     setFormData({
       amountClaimed: "",
       treatmentCategory: "",
@@ -226,6 +246,24 @@ export default function SubmitClaimFormV2({
     setErrors({});
     setSuccessMessage("");
     setSearchError(null);
+  };
+
+  const handleFinish = () => {
+    // Notify parent that the claim process is complete
+    if (createdClaimId) {
+      // Call both callbacks for backwards compatibility
+      if (onSuccess) {
+        onSuccess(createdClaimId);
+      }
+      if (onClaimSubmitted) {
+        onClaimSubmitted({
+          id: createdClaimId,
+          claimNumber: createdClaimNumber,
+        });
+      }
+    }
+    // Don't reset form here - parent will close the modal/form
+    // resetForm() will be called when the component unmounts or reopens
   };
 
   const goBack = () => {
@@ -263,6 +301,8 @@ export default function SubmitClaimFormV2({
             "Select a hospital visit to create a claim for"}
           {currentStep === "claim-details" &&
             "Enter the claim details and submit"}
+          {currentStep === "upload-documents" &&
+            "Upload supporting documents for the claim (optional)"}
         </p>
       </div>
 
@@ -305,13 +345,30 @@ export default function SubmitClaimFormV2({
             className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
               currentStep === "claim-details"
                 ? "bg-blue-600 text-white"
-                : "bg-gray-300 text-gray-600"
+                : currentStep === "upload-documents"
+                  ? "bg-green-500 text-white"
+                  : "bg-gray-300 text-gray-600"
             }`}
           >
             3
           </div>
           <span className="ml-2 text-sm font-medium text-gray-700">
             Claim Details
+          </span>
+        </div>
+        <div className="w-12 h-0.5 mx-2 bg-gray-300" />
+        <div className="flex items-center">
+          <div
+            className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+              currentStep === "upload-documents"
+                ? "bg-blue-600 text-white"
+                : "bg-gray-300 text-gray-600"
+            }`}
+          >
+            4
+          </div>
+          <span className="ml-2 text-sm font-medium text-gray-700">
+            Documents
           </span>
         </div>
       </div>
@@ -556,7 +613,7 @@ export default function SubmitClaimFormV2({
                 }
                 placeholder="e.g., 50000"
                 min="0"
-                step="100"
+                step="any"
                 className={`w-full px-4 py-2 border rounded-lg text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                   errors.amountClaimed ? "border-red-500" : "border-gray-300"
                 }`}
@@ -757,6 +814,130 @@ export default function SubmitClaimFormV2({
             )}
           </div>
         </form>
+      )}
+
+      {/* Step 4: Upload Documents */}
+      {currentStep === "upload-documents" && createdClaimId && (
+        <div className="space-y-6">
+          {/* Success Banner */}
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0">
+                <svg
+                  className="w-6 h-6 text-green-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+              </div>
+              <div>
+                <h3 className="font-semibold text-green-900">
+                  Claim Submitted Successfully!
+                </h3>
+                <p className="text-sm text-green-700 mt-1">
+                  Claim <span className="font-bold">{createdClaimNumber}</span>{" "}
+                  has been created. You can now upload supporting documents.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Document Upload Section */}
+          <div className="bg-white border border-gray-200 rounded-lg p-6">
+            <ClaimDocumentsSection
+              claimId={createdClaimId}
+              claimStatus="Pending"
+            />
+            <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <h4 className="text-sm font-semibold text-blue-900 mb-2">
+                Recommended Documents
+              </h4>
+              <ul className="text-sm text-blue-800 space-y-1">
+                <li className="flex items-center gap-2">
+                  <svg
+                    className="w-4 h-4 text-blue-600"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  Discharge Summary
+                </li>
+                <li className="flex items-center gap-2">
+                  <svg
+                    className="w-4 h-4 text-blue-600"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  Medical Bills / Invoices
+                </li>
+                <li className="flex items-center gap-2">
+                  <svg
+                    className="w-4 h-4 text-blue-600"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  Lab Reports (if any)
+                </li>
+                <li className="flex items-center gap-2">
+                  <svg
+                    className="w-4 h-4 text-blue-600"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  Prescription / Doctor&apos;s Notes
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex gap-3 pt-6 border-t border-gray-200">
+            <button
+              type="button"
+              onClick={handleFinish}
+              className="flex-1 bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+            >
+              Finish & View Claims
+            </button>
+            <button
+              type="button"
+              onClick={resetForm}
+              className="px-6 py-3 bg-gray-100 text-gray-700 rounded-lg font-semibold hover:bg-gray-200 transition-colors"
+            >
+              Submit Another Claim
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );

@@ -380,6 +380,47 @@ export class ClaimsRepository {
   }
 
   /**
+   * Get employee coverage data only (lightweight - for validation)
+   * Returns only coverageAmount and usedAmount
+   */
+  async getEmployeeCoverageData(hospitalVisitId: string): Promise<{
+    coverageAmount: number;
+    usedAmount: number;
+  } | null> {
+    const visit = await this.prisma.hospitalVisit.findUnique({
+      where: { id: hospitalVisitId },
+      select: {
+        employee: {
+          select: {
+            coverageAmount: true,
+            usedAmount: true,
+          },
+        },
+        dependent: {
+          select: {
+            employee: {
+              select: {
+                coverageAmount: true,
+                usedAmount: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!visit) return null;
+
+    const employeeData = visit.employee || visit.dependent?.employee;
+    if (!employeeData) return null;
+
+    return {
+      coverageAmount: Number(employeeData.coverageAmount),
+      usedAmount: Number(employeeData.usedAmount),
+    };
+  }
+
+  /**
    * Build where clause for claim queries
    */
   private buildWhereClause(

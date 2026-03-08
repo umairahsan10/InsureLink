@@ -1,18 +1,27 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, Logger, VersioningType } from '@nestjs/common';
+import { NestExpressApplication } from '@nestjs/platform-express';
+import { join } from 'path';
 import { AppModule } from './app.module';
 import { PrismaService } from './common/prisma/prisma.service';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
   const logger = new Logger('Bootstrap');
 
   // CORS — allow frontend dev server
   app.enableCors({
     origin: process.env.CORS_ORIGIN ?? 'http://localhost:3000',
     credentials: true,
+  });
+
+  // Serve static files from uploads directory
+  const uploadsPath = join(__dirname, '..', 'uploads');
+  logger.log(`Serving static files from: ${uploadsPath}`);
+  app.useStaticAssets(uploadsPath, {
+    prefix: '/uploads/',
   });
 
   // Global prefix: all routes start with /api

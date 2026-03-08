@@ -14,6 +14,7 @@ import { ClaimsRepository } from './repositories/claims.repository';
 import { ClaimEventsRepository } from './repositories/claim-events.repository';
 import { ClaimDocumentsRepository } from './repositories/claim-documents.repository';
 import { ClaimProcessingService } from './services/claim-processing.service';
+import { FileUploadService } from '../file-upload/file-upload.service';
 import { CreateClaimDto } from './dto/create-claim.dto';
 import { UpdateClaimDto } from './dto/update-claim.dto';
 import { ClaimFilterDto } from './dto/claim-filter.dto';
@@ -32,6 +33,7 @@ export class ClaimsService {
     private readonly claimEventsRepository: ClaimEventsRepository,
     private readonly claimDocumentsRepository: ClaimDocumentsRepository,
     private readonly claimProcessingService: ClaimProcessingService,
+    private readonly fileUploadService: FileUploadService,
   ) {}
 
   /**
@@ -149,7 +151,8 @@ export class ClaimsService {
    * Update claim (only while Pending)
    */
   async update(id: string, data: UpdateClaimDto, user: CurrentUserDto) {
-    const claim = await this.claimsRepository.findById(id);
+    // Use minimal query for validation (much faster)
+    const claim = await this.claimsRepository.findByIdMinimal(id);
     if (!claim) {
       throw new NotFoundException('Claim not found');
     }
@@ -208,17 +211,15 @@ export class ClaimsService {
 
     // Validate new claimed amount if provided (Hospital updating Pending claim)
     if (data.amountClaimed !== undefined) {
-      // Get employee from the claim's hospital visit
-      const visit =
-        await this.claimsRepository.getHospitalVisitForClaimCreation(
+      // Get employee coverage data only (lightweight query)
+      const coverageData =
+        await this.claimsRepository.getEmployeeCoverageData(
           claim.hospitalVisitId,
         );
-      const employeeData = visit?.employee || visit?.dependent?.employee;
 
-      if (employeeData) {
+      if (coverageData) {
         // Validate against employee's remaining coverage
-        const coverageAmount = Number(employeeData.coverageAmount);
-        const usedAmount = Number(employeeData.usedAmount);
+        const { coverageAmount, usedAmount } = coverageData;
         const remainingCoverage = Math.max(0, coverageAmount - usedAmount);
 
         if (data.amountClaimed > remainingCoverage) {
@@ -416,7 +417,7 @@ export class ClaimsService {
   }
 
   /**
-   * Upload claim document
+   * Upload claim document to Supabase Storage
    */
   async uploadDocument(
     claimId: string,
@@ -440,14 +441,19 @@ export class ClaimsService {
       );
     }
 
+    // Upload to Supabase
+    const uploadResult = await this.fileUploadService.uploadFile(
+      file,
+      'claims',
+    );
+
     // Create document record
-    const baseUrl = process.env.BASE_URL || 'http://localhost:3001';
     const document = await this.claimDocumentsRepository.create({
       claimId,
       originalFilename: file.originalname,
-      filePath: file.path,
-      fileUrl: `${baseUrl}/${file.path.replace(/\\/g, '/')}`,
-      fileSizeBytes: file.size,
+      filePath: uploadResult.filePath,
+      fileUrl: uploadResult.publicUrl,
+      fileSizeBytes: uploadResult.fileSize,
     });
 
     // Log event
@@ -480,7 +486,7 @@ export class ClaimsService {
   }
 
   /**
-   * Delete claim document
+   * Delete claim document from Supabase Storage
    */
   async deleteDocument(
     claimId: string,
@@ -510,6 +516,10 @@ export class ClaimsService {
       throw new NotFoundException('Document not found');
     }
 
+    // Delete from Supabase Storage
+    await this.fileUploadService.deleteFile(document.filePath);
+
+    // Delete database record
     const deleted = await this.claimDocumentsRepository.delete(documentId);
 
     // Log event

@@ -9,12 +9,14 @@ import { ClaimProcessingService } from './services/claim-processing.service';
 import { ClaimValidationService } from './workflows/claim-validation.service';
 import { PaymentQueueService } from './workflows/payment-queue.service';
 import { RulesEngineService } from './workflows/rules-engine.service';
+import { FileUploadModule } from '../file-upload/file-upload.module';
 
 @Module({
   imports: [
     MulterModule.register({
-      dest: './uploads/claims',
+      storage: 'memory',
     }),
+    FileUploadModule,
   ],
   controllers: [ClaimsController],
   providers: [

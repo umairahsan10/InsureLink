@@ -13,12 +13,9 @@ import {
   UploadedFile,
   ParseFilePipe,
   MaxFileSizeValidator,
-  FileTypeValidator,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
-import { extname } from 'path';
-import { v4 as uuidv4 } from 'uuid';
+import { memoryStorage } from 'multer';
 import { ClaimsService } from './claims.service';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -32,15 +29,23 @@ import { OnHoldClaimDto } from './dto/on-hold-claim.dto';
 import { PaidClaimDto } from './dto/paid-claim.dto';
 import { BulkApproveClaimDto } from './dto/bulk-approve-claim.dto';
 
-// Configure multer storage for claim documents
-const claimDocumentStorage = diskStorage({
-  destination: './uploads/claims',
-  filename: (req, file, callback) => {
-    const uniqueSuffix = uuidv4();
-    const ext = extname(file.originalname);
-    callback(null, `${uniqueSuffix}${ext}`);
-  },
-});
+// Use memory storage for Supabase upload
+const claimDocumentStorage = memoryStorage();
+
+// File filter to accept only PDF, JPEG, and PNG
+const claimDocumentFileFilter = (req, file, callback) => {
+  const allowedMimeTypes = ['application/pdf', 'image/jpeg', 'image/png'];
+  if (allowedMimeTypes.includes(file.mimetype)) {
+    callback(null, true);
+  } else {
+    callback(
+      new Error(
+        `Invalid file type. Only PDF, JPEG, and PNG files are allowed. Received: ${file.mimetype}`,
+      ),
+      false,
+    );
+  }
+};
 
 @Controller({ path: 'claims', version: '1' })
 export class ClaimsController {
@@ -211,6 +216,7 @@ export class ClaimsController {
   @UseInterceptors(
     FileInterceptor('file', {
       storage: claimDocumentStorage,
+      fileFilter: claimDocumentFileFilter,
       limits: {
         fileSize: 10 * 1024 * 1024, // 10MB
       },
@@ -222,9 +228,6 @@ export class ClaimsController {
       new ParseFilePipe({
         validators: [
           new MaxFileSizeValidator({ maxSize: 10 * 1024 * 1024 }), // 10MB
-          new FileTypeValidator({
-            fileType: /^(application\/pdf|image\/(jpeg|png))$/,
-          }),
         ],
       }),
     )

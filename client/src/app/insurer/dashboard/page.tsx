@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import DashboardLayout from "@/components/layouts/DashboardLayout";
 import MessageButton from "@/components/messaging/MessageButton";
@@ -10,19 +10,33 @@ import { AlertNotification } from "@/types";
 import ClaimActionDrawer, {
   ClaimRecord,
 } from "@/components/claims/ClaimActionDrawer";
-import {
-  ClaimData,
-  CLAIMS_STORAGE_KEY,
-  CLAIMS_UPDATED_EVENT,
-  defaultClaimData,
-  loadStoredClaims,
-  persistClaims,
-} from "@/data/claimsData";
+import { claimsApi, type Claim } from "@/lib/api/claims";
 import { formatPKR } from "@/lib/format";
-import { sortClaimsByDateDesc } from "@/lib/sort";
 
-interface Claim extends ClaimData {
-  claimNumber: string;
+// Helper to safely convert Prisma Decimal values to number
+function toNumber(val: any): number {
+  if (val === null || val === undefined) return 0;
+  if (typeof val === "number") return val;
+  if (typeof val === "string") return parseFloat(val) || 0;
+  if (val && typeof val.toString === "function")
+    return parseFloat(val.toString()) || 0;
+  return 0;
+}
+
+function getPatientName(claim: Claim): string {
+  if (claim.hospitalVisit?.dependent) {
+    const d = claim.hospitalVisit.dependent;
+    return `${d.firstName} ${d.lastName}`;
+  }
+  if (claim.hospitalVisit?.employee?.user) {
+    const u = claim.hospitalVisit.employee.user;
+    return `${u.firstName} ${u.lastName}`;
+  }
+  return "Unknown";
+}
+
+function getHospitalName(claim: Claim): string {
+  return claim.hospitalVisit?.hospital?.hospitalName || "Unknown";
 }
 
 export default function InsurerDashboardPage() {
@@ -32,107 +46,78 @@ export default function InsurerDashboardPage() {
       (notificationsData as AlertNotification[]).map((notification) => ({
         ...notification,
       })),
-    []
+    [],
   );
   const router = useRouter();
-  const toClaim = (data: ClaimData): Claim => ({
-    ...data,
-    claimNumber: data.id,
-  });
 
-  const toClaimData = (claim: Claim): ClaimData => {
-    const { claimNumber, ...rest } = claim;
-    void claimNumber;
-    return rest;
-  };
-
-  const [claims, setClaims] = useState<Claim[]>(defaultClaimData.map(toClaim));
+  // API state
+  const [pendingClaims, setPendingClaims] = useState<Claim[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [selectedClaim, setSelectedClaim] = useState<ClaimRecord | null>(null);
   const [drawerMode, setDrawerMode] = useState<"view" | "review" | null>(null);
+  const [stats, setStats] = useState({
+    totalClaims: 0,
+    pendingCount: 0,
+    approvedCount: 0,
+    rejectedCount: 0,
+    onHoldCount: 0,
+    paidCount: 0,
+    flaggedCount: 0,
+  });
+
+  const fetchData = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const [
+        pendingRes,
+        totalRes,
+        approvedRes,
+        rejectedRes,
+        onHoldRes,
+        paidRes,
+        highRes,
+      ] = await Promise.all([
+        claimsApi.getClaims({
+          status: "Pending",
+          limit: 3,
+          page: 1,
+          sortBy: "createdAt",
+          sortOrder: "desc",
+        }),
+        claimsApi.getClaims({ limit: 1, page: 1 }),
+        claimsApi.getClaims({ status: "Approved", limit: 1, page: 1 }),
+        claimsApi.getClaims({ status: "Rejected", limit: 1, page: 1 }),
+        claimsApi.getClaims({ status: "OnHold", limit: 1, page: 1 }),
+        claimsApi.getClaims({ status: "Paid", limit: 1, page: 1 }),
+        claimsApi.getClaims({ priority: "High", limit: 1, page: 1 }),
+      ]);
+      setPendingClaims((pendingRes.data as Claim[]) || []);
+      setStats({
+        totalClaims: totalRes.meta.total,
+        pendingCount: pendingRes.meta.total,
+        approvedCount: approvedRes.meta.total,
+        rejectedCount: rejectedRes.meta.total,
+        onHoldCount: onHoldRes.meta.total,
+        paidCount: paidRes.meta.total,
+        flaggedCount: highRes.meta.total,
+      });
+    } catch {
+      // Non-critical dashboard load
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    if (typeof window === "undefined") {
-      return;
-    }
-
-    const applyStoredClaims = () => {
-      const stored = loadStoredClaims();
-      setClaims(stored.map(toClaim));
-    };
-
-    applyStoredClaims();
-
-    const handleClaimsUpdate = (event: Event) => {
-      const customEvent = event as CustomEvent<ClaimData[]>;
-      if (customEvent.detail) {
-        setClaims(customEvent.detail.map(toClaim));
-      }
-    };
-
-    const handleStorage = (event: StorageEvent) => {
-      if (event.key === CLAIMS_STORAGE_KEY) {
-        applyStoredClaims();
-      }
-    };
-
-    const claimsListener = handleClaimsUpdate as EventListener;
-    window.addEventListener(CLAIMS_UPDATED_EVENT, claimsListener);
-    window.addEventListener("storage", handleStorage);
-
-    return () => {
-      window.removeEventListener(CLAIMS_UPDATED_EVENT, claimsListener);
-      window.removeEventListener("storage", handleStorage);
-    };
-  }, []);
+    fetchData();
+  }, [fetchData]);
 
   const formatCurrency = (value: number) => formatPKR(value);
 
-  const stats = useMemo(() => {
-    const parseAmount = (amount: string | number) => {
-      if (typeof amount === "number") return amount;
-      if (typeof amount === "string")
-        return Number(amount.replace(/Rs\.?\s?/i, "").replace(/,/g, "")) || 0;
-      return 0;
-    };
-
-    const totalValue = claims.reduce(
-      (sum, claim) => sum + parseAmount(claim.amount),
-      0
-    );
-    const pendingCount = claims.filter(
-      (claim) => claim.status === "Pending"
-    ).length;
-    const approvedCount = claims.filter(
-      (claim) => claim.status === "Approved"
-    ).length;
-    const rejectedCount = claims.filter(
-      (claim) => claim.status === "Rejected"
-    ).length;
-    const paidClaims = claims.filter((claim) => claim.isPaid);
-    const paidCount = paidClaims.length;
-    const paidTotal = paidClaims.reduce(
-      (sum, claim) => sum + parseAmount(claim.amount),
-      0
-    );
-    const flaggedCount = claims.filter(
-      (claim) => claim.priority === "High"
-    ).length;
-    const approvalRate =
-      claims.length === 0
-        ? 0
-        : Math.round((approvedCount / claims.length) * 100);
-
-    return {
-      totalValue,
-      pendingCount,
-      approvedCount,
-      rejectedCount,
-      paidCount,
-      paidTotal,
-      flaggedCount,
-      approvalRate,
-    };
-  }, [claims]);
+  const approvalRate =
+    stats.totalClaims === 0
+      ? 0
+      : Math.round((stats.approvedCount / stats.totalClaims) * 100);
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
@@ -162,32 +147,25 @@ export default function InsurerDashboardPage() {
     }
   };
 
-  const updateClaimStatus = (
-    claimId: string,
-    status: "Approved" | "Rejected"
-  ) => {
-    setClaims((prevClaims) => {
-      const updated = prevClaims.map((claim) =>
-        claim.id === claimId
-          ? { ...claim, status, isPaid: status === "Approved" }
-          : claim
-      );
-      persistClaims(updated.map(toClaimData));
-      return updated;
-    });
-  };
+  // Map API Claim to drawer ClaimRecord
+  const toClaimRecord = (claim: Claim): ClaimRecord => ({
+    id: claim.id,
+    patient: getPatientName(claim),
+    hospital: getHospitalName(claim),
+    date: claim.createdAt?.split("T")[0] || "",
+    amount: toNumber(claim.amountClaimed),
+    priority: claim.priority,
+    status: claim.claimStatus,
+  });
 
-  const openDrawer = (claim: Claim) => {
-    const claimRecord: ClaimRecord = {
-      id: claim.id,
-      patient: claim.patient,
-      hospital: claim.hospital,
-      date: claim.date,
-      amount: claim.amount,
-      priority: claim.priority,
-      status: claim.status,
-    };
-    setSelectedClaim(claimRecord);
+  const displayClaims = pendingClaims.map((c) => ({
+    ...toClaimRecord(c),
+    claimNumber: c.claimNumber,
+    rawClaim: c,
+  }));
+
+  const openDrawer = (claim: (typeof displayClaims)[number]) => {
+    setSelectedClaim(claim);
     setDrawerMode("review");
   };
 
@@ -196,8 +174,24 @@ export default function InsurerDashboardPage() {
     setSelectedClaim(null);
   };
 
-  const handleDecision = (claimId: string, action: "approve" | "reject") => {
-    updateClaimStatus(claimId, action === "approve" ? "Approved" : "Rejected");
+  const handleDecision = async (
+    claimId: string,
+    action: "approve" | "reject",
+    notes?: string,
+  ) => {
+    try {
+      if (action === "approve") {
+        await claimsApi.approveClaim({ claimId, eventNote: notes });
+      } else {
+        await claimsApi.rejectClaim({
+          claimId,
+          eventNote: notes || "Rejected",
+        });
+      }
+      fetchData();
+    } catch (err: any) {
+      console.error("Decision failed:", err?.message);
+    }
   };
 
   const handleSaveNotes = (claimId: string, notes: string) => {
@@ -214,19 +208,17 @@ export default function InsurerDashboardPage() {
       "Priority",
       "Status",
     ];
-    const rows = sortClaimsByDateDesc(claims)
-      .slice(0, 3)
-      .map((claim) => [
-        claim.claimNumber,
-        claim.patient,
-        claim.hospital,
-        typeof claim.amount === "number"
-          ? formatPKR(claim.amount)
-          : claim.amount,
-        claim.date,
-        claim.priority,
-        claim.status,
-      ]);
+    const rows = displayClaims.map((claim) => [
+      claim.claimNumber,
+      claim.patient,
+      claim.hospital,
+      typeof claim.amount === "number"
+        ? formatPKR(claim.amount)
+        : String(claim.amount),
+      claim.date,
+      claim.priority,
+      claim.status,
+    ]);
 
     const escapeCsv = (value: string) => `"${value.replace(/"/g, '""')}"`;
     const csvContent = [headers, ...rows]
@@ -332,7 +324,7 @@ export default function InsurerDashboardPage() {
                   {stats.approvedCount}
                 </p>
                 <p className="text-xs md:text-sm text-gray-500">
-                  {formatCurrency(stats.paidTotal)}
+                  {stats.paidCount} paid
                 </p>
               </div>
               <div className="w-10 h-10 md:w-12 md:h-12 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0 ml-2">
@@ -389,13 +381,13 @@ export default function InsurerDashboardPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-red-100 text-xs md:text-sm mb-1">
-                  Total Claims Value
+                  Total Claims
                 </p>
                 <p className="text-2xl md:text-3xl font-bold">
-                  {formatCurrency(stats.totalValue)}
+                  {stats.totalClaims}
                 </p>
                 <p className="text-red-100 text-xs md:text-sm">
-                  Total Claims Value
+                  All claims in system
                 </p>
               </div>
             </div>
@@ -408,7 +400,7 @@ export default function InsurerDashboardPage() {
                   Approval Rate
                 </p>
                 <p className="text-2xl md:text-3xl font-bold">
-                  {stats.approvalRate}%
+                  {approvalRate}%
                 </p>
                 <p className="text-green-100 text-xs md:text-sm">
                   Approval Rate
@@ -479,9 +471,26 @@ export default function InsurerDashboardPage() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200 text-xs md:text-sm">
-                {sortClaimsByDateDesc(claims)
-                  .slice(0, 3)
-                  .map((claim) => {
+                {isLoading ? (
+                  <tr>
+                    <td colSpan={8} className="px-6 py-12 text-center">
+                      <div className="flex items-center justify-center">
+                        <div className="h-6 w-6 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
+                        <span className="ml-3 text-gray-500">Loading...</span>
+                      </div>
+                    </td>
+                  </tr>
+                ) : displayClaims.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan={8}
+                      className="px-6 py-8 text-center text-gray-500"
+                    >
+                      No pending claims to review.
+                    </td>
+                  </tr>
+                ) : (
+                  displayClaims.map((claim) => {
                     const hasAlert = hasUnreadAlert(claim.id, "insurer");
                     return (
                       <tr
@@ -510,12 +519,12 @@ export default function InsurerDashboardPage() {
                         <td className="px-3 md:px-4 py-3 whitespace-nowrap">
                           <span
                             className={`inline-flex items-center px-2 md:px-2.5 py-0.5 rounded-full text-[11px] md:text-xs font-medium border ${getPriorityColor(
-                              claim.priority
+                              claim.priority,
                             )}`}
                           >
                             <span
                               className={`w-2 h-2 rounded-full mr-1.5 ${getPriorityDot(
-                                claim.priority
+                                claim.priority,
                               )}`}
                             ></span>
                             {claim.priority}
@@ -549,7 +558,8 @@ export default function InsurerDashboardPage() {
                         </td>
                       </tr>
                     );
-                  })}
+                  })
+                )}
               </tbody>
             </table>
           </div>
