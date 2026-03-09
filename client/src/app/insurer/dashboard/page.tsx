@@ -491,7 +491,7 @@ export default function InsurerDashboardPage() {
                   </tr>
                 ) : (
                   displayClaims.map((claim) => {
-                    const hasAlert = hasUnreadAlert(claim.id, "insurer");
+                    const hasAlert = hasUnreadAlert(claim.id);
                     return (
                       <tr
                         key={claim.id}

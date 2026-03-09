@@ -384,7 +384,7 @@ export default function HospitalDashboardPage() {
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {recentClaims.map((claim) => {
-                const hasAlert = hasUnreadAlert(claim.id, "hospital");
+                const hasAlert = hasUnreadAlert(claim.id);
                 return (
                   <tr
                     key={claim.id}
