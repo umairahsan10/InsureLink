@@ -429,7 +429,7 @@ export default function InsurerClaimsPage() {
                   </tr>
                 ) : (
                   filteredClaims.map((claim) => {
-                    const hasAlert = hasUnreadAlert(claim.id, "insurer");
+                    const hasAlert = hasUnreadAlert(claim.id);
                     const isPending = claim.status === "Pending";
                     const isApproved = claim.status === "Approved";
                     return (

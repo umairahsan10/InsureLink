@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { SenderRole } from '@/types/messaging';
 import { useClaimsMessaging } from '@/contexts/ClaimsMessagingContext';
 import ClaimChatModal from './ClaimChatModal';
@@ -13,10 +13,15 @@ interface MessageButtonProps {
 
 export default function MessageButton({ claimId, userRole }: MessageButtonProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const { getUnreadCount, hasUnreadAlert } = useClaimsMessaging();
+  const { getUnreadCount, hasUnreadAlert, fetchUnreadCount } = useClaimsMessaging();
 
-  const unreadCount = getUnreadCount(claimId, userRole);
-  const alert = hasUnreadAlert(claimId, userRole);
+  // Fetch unread count from backend on mount
+  useEffect(() => {
+    fetchUnreadCount(claimId);
+  }, [claimId, fetchUnreadCount]);
+
+  const unreadCount = getUnreadCount(claimId);
+  const alert = hasUnreadAlert(claimId);
 
   return (
     <>

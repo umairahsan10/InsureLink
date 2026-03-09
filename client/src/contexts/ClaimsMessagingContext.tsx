@@ -1,178 +1,230 @@
 'use client';
 
 import React, { createContext, useContext, useState, useCallback, useRef } from 'react';
-import { ClaimMessage, SenderRole, Attachment } from '@/types/messaging';
-import { useBroadcastChannel } from '@/hooks/useBroadcastChannel';
-
-interface BroadcastMessageType {
-  type: 'claim-message' | 'mark-read';
-  claimId: string;
-  data?: unknown;
-}
+import { ClaimMessage, MessageSender, Attachment } from '@/types/messaging';
+import { messagingApi, SendMessageRequest, InlineAttachment } from '@/lib/api/messaging';
 
 interface ClaimsMessagingContextType {
   messages: Map<string, ClaimMessage[]>;
-  sendMessage: (
-    claimId: string,
-    text: string,
-    attachments: Attachment[],
-    sender: SenderRole,
-    receiver: SenderRole
-  ) => void;
-  markAsRead: (claimId: string, userRole: SenderRole) => void;
-  getUnreadCount: (claimId: string, userRole: SenderRole) => number;
-  hasUnreadAlert: (claimId: string, userRole: SenderRole) => boolean;
+  unreadCounts: Map<string, number>;
+  sendMessage: (claimId: string, data: SendMessageRequest, sender?: MessageSender, optimisticAttachments?: InlineAttachment[]) => Promise<ClaimMessage | null>;
+  markAsRead: (claimId: string) => Promise<void>;
+  getUnreadCount: (claimId: string) => number;
+  hasUnreadAlert: (claimId: string) => boolean;
   getMessages: (claimId: string) => ClaimMessage[];
+  fetchMessages: (claimId: string, page?: number, limit?: number) => Promise<void>;
+  fetchUnreadCount: (claimId: string) => Promise<number>;
+  addRealtimeMessage: (claimId: string, message: ClaimMessage) => void;
+  markMessagesReadLocally: (claimId: string) => void;
 }
 
 const ClaimsMessagingContext = createContext<ClaimsMessagingContextType | undefined>(undefined);
 
 export function ClaimsMessagingProvider({ children }: { children: React.ReactNode }) {
   const [messages, setMessages] = useState<Map<string, ClaimMessage[]>>(new Map());
+  const [unreadCounts, setUnreadCounts] = useState<Map<string, number>>(new Map());
   const processedMessageIds = useRef<Set<string>>(new Set());
 
-  // Handle incoming broadcast messages from other tabs  
-  const handleBroadcastMessage = useCallback((message: BroadcastMessageType): void => {
-    if (message.type === 'claim-message' && message.data) {
-      const newMessage = message.data as ClaimMessage;
-      
-      // Prevent processing the same message twice
-      if (processedMessageIds.current.has(newMessage.id)) {
-        return;
+  const fetchMessages = useCallback(async (claimId: string, page = 1, limit = 50) => {
+    try {
+      const result = await messagingApi.getMessages(claimId, page, limit);
+      setMessages((prev) => {
+        const newMap = new Map(prev);
+        newMap.set(claimId, result.data);
+        // Track all fetched message IDs
+        result.data.forEach((m) => processedMessageIds.current.add(m.id));
+        return newMap;
+      });
+      // After fetching, messages sent by others are auto-marked as read by backend
+      if (result.markedAsRead > 0) {
+        setUnreadCounts((prev) => {
+          const newMap = new Map(prev);
+          newMap.set(claimId, 0);
+          return newMap;
+        });
       }
-      processedMessageIds.current.add(newMessage.id);
-
-      setMessages((prev) => {
-        const newMap = new Map(prev);
-        const claimMessages = newMap.get(newMessage.claimId) || [];
-        newMap.set(newMessage.claimId, [...claimMessages, newMessage]);
-        return newMap;
-      });
-    } else if (message.type === 'mark-read' && message.claimId) {
-      // Handle mark as read from other tabs
-      setMessages((prev) => {
-        const newMap = new Map(prev);
-        const claimMessages = newMap.get(message.claimId) || [];
-        const updated = claimMessages.map((msg) => ({ ...msg, read: true }));
-        newMap.set(message.claimId, updated);
-        return newMap;
-      });
+    } catch (error) {
+      console.error('Failed to fetch messages:', error);
     }
   }, []);
 
-  const { postMessage } = useBroadcastChannel('claim-messaging', handleBroadcastMessage);
-
-  const sendMessage = useCallback(
-    (
-      claimId: string,
-      text: string,
-      attachments: Attachment[],
-      sender: SenderRole,
-      receiver: SenderRole
-    ) => {
-      const newMessage: ClaimMessage = {
-        id: `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        claimId,
-        sender,
-        receiver,
-        text,
-        attachments,
-        timestamp: Date.now(),
-        read: false,
-      };
-
-      // Mark as processed to prevent duplicates
-      processedMessageIds.current.add(newMessage.id);
-
-      // Add to local state
-      setMessages((prev) => {
+  const fetchUnreadCount = useCallback(async (claimId: string): Promise<number> => {
+    try {
+      const result = await messagingApi.getUnreadCount(claimId);
+      setUnreadCounts((prev) => {
         const newMap = new Map(prev);
-        const claimMessages = newMap.get(claimId) || [];
-        newMap.set(claimId, [...claimMessages, newMessage]);
+        newMap.set(claimId, result.unreadCount);
         return newMap;
       });
+      return result.unreadCount;
+    } catch (error) {
+      console.error('Failed to fetch unread count:', error);
+      return 0;
+    }
+  }, []);
 
+  const sendMessage = useCallback(
+    async (claimId: string, data: SendMessageRequest, sender?: MessageSender, optimisticAttachments?: InlineAttachment[]): Promise<ClaimMessage | null> => {
+      // Optimistic update — show message instantly before the API responds
+      const tempId = `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      if (sender) {
+        const optimisticAtts: Attachment[] = (optimisticAttachments || []).map((a, i) => ({
+          id: `temp-att-${i}`,
+          filename: a.filename,
+          filePath: a.filePath,
+          fileUrl: a.fileUrl,
+          fileSizeBytes: a.fileSizeBytes,
+        }));
+        const optimistic: ClaimMessage = {
+          id: tempId,
+          claimId,
+          senderId: sender.id,
+          receiverId: null,
+          messageText: data.messageText,
+          messageType: 'text',
+          isRead: true,
+          timestamp: new Date().toISOString(),
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          sender,
+          attachments: optimisticAtts,
+        };
+        processedMessageIds.current.add(tempId);
+        setMessages((prev) => {
+          const newMap = new Map(prev);
+          const existing = newMap.get(claimId) || [];
+          newMap.set(claimId, [...existing, optimistic]);
+          return newMap;
+        });
+      }
 
-      // Broadcast to other tabs
-      postMessage({
-        type: 'claim-message' as const,
-        claimId,
-        data: newMessage as unknown,
-      });
+      try {
+        const newMessage = await messagingApi.sendMessage(claimId, data);
+        processedMessageIds.current.add(newMessage.id);
+        setMessages((prev) => {
+          const newMap = new Map(prev);
+          const existing = newMap.get(claimId) || [];
+          // Replace the optimistic placeholder; also drop any Socket.IO duplicate
+          const deduped = existing.filter((m) => m.id !== tempId && m.id !== newMessage.id);
+          newMap.set(claimId, [...deduped, newMessage]);
+          return newMap;
+        });
+        return newMessage;
+      } catch (error) {
+        // Remove the optimistic message so the user sees the failure
+        if (sender) {
+          processedMessageIds.current.delete(tempId);
+          setMessages((prev) => {
+            const newMap = new Map(prev);
+            const existing = newMap.get(claimId) || [];
+            newMap.set(claimId, existing.filter((m) => m.id !== tempId));
+            return newMap;
+          });
+        }
+        console.error('Failed to send message:', error);
+        return null;
+      }
     },
-    [postMessage]
+    [],
   );
 
-  const markAsRead = useCallback(
-    (claimId: string, userRole: SenderRole) => {
+  const markAsRead = useCallback(async (claimId: string) => {
+    try {
+      await messagingApi.markAsRead(claimId);
+      setUnreadCounts((prev) => {
+        const newMap = new Map(prev);
+        newMap.set(claimId, 0);
+        return newMap;
+      });
       setMessages((prev) => {
         const newMap = new Map(prev);
         const claimMessages = newMap.get(claimId) || [];
-        const updated = claimMessages.map((msg) => {
-          // Mark as read if message is for current user
-          if (msg.receiver === userRole) {
-            return { ...msg, read: true };
-          }
-          return msg;
-        });
+        const updated = claimMessages.map((msg) => ({ ...msg, isRead: true }));
         newMap.set(claimId, updated);
         return newMap;
       });
+    } catch (error) {
+      console.error('Failed to mark as read:', error);
+    }
+  }, []);
 
-      // Broadcast mark as read to other tabs
-      postMessage({
-        type: 'mark-read' as const,
-        claimId,
-      });
-    },
-    [postMessage]
-  );
+  /**
+   * Add a message received via WebSocket in real time.
+   * Skips if we already have it (e.g. from our own send).
+   */
+  const addRealtimeMessage = useCallback((claimId: string, message: ClaimMessage) => {
+    if (processedMessageIds.current.has(message.id)) return;
+    processedMessageIds.current.add(message.id);
+
+    setMessages((prev) => {
+      const newMap = new Map(prev);
+      const existing = newMap.get(claimId) || [];
+      // Guard against duplicate if sendMessage already added this message
+      if (existing.some((m) => m.id === message.id)) return prev;
+      newMap.set(claimId, [...existing, message]);
+      return newMap;
+    });
+
+    // Increment unread count for incoming messages
+    setUnreadCounts((prev) => {
+      const newMap = new Map(prev);
+      const current = newMap.get(claimId) || 0;
+      newMap.set(claimId, current + 1);
+      return newMap;
+    });
+  }, []);
+
+  /**
+   * Mark messages as read locally (after WebSocket read receipt).
+   */
+  const markMessagesReadLocally = useCallback((claimId: string) => {
+    setMessages((prev) => {
+      const newMap = new Map(prev);
+      const claimMessages = newMap.get(claimId) || [];
+      const updated = claimMessages.map((msg) => ({ ...msg, isRead: true }));
+      newMap.set(claimId, updated);
+      return newMap;
+    });
+    setUnreadCounts((prev) => {
+      const newMap = new Map(prev);
+      newMap.set(claimId, 0);
+      return newMap;
+    });
+  }, []);
 
   const getUnreadCount = useCallback(
-    (claimId: string, userRole: SenderRole): number => {
-      const claimMessages = messages.get(claimId) || [];
-      return claimMessages.filter(
-        (msg) => msg.receiver === userRole && !msg.read
-      ).length;
+    (claimId: string): number => {
+      return unreadCounts.get(claimId) || 0;
     },
-    [messages]
+    [unreadCounts],
   );
 
   const hasUnreadAlert = useCallback(
-    (claimId: string, userRole: SenderRole): boolean => {
-      const claimMessages = messages.get(claimId) || [];
-      const unreadMessages = claimMessages.filter(
-        (msg) => msg.receiver === userRole && !msg.read
-      );
-
-      if (unreadMessages.length === 0) return false;
-
-      // Find oldest unread message
-      const oldestUnread = unreadMessages.reduce((oldest, msg) =>
-        msg.timestamp < oldest.timestamp ? msg : oldest
-      );
-
-      // Check if older than 24 hours
-      const hoursSinceOldest = (Date.now() - oldestUnread.timestamp) / (1000 * 60 * 60);
-      return hoursSinceOldest > 24;
+    (claimId: string): boolean => {
+      return (unreadCounts.get(claimId) || 0) > 0;
     },
-    [messages]
+    [unreadCounts],
   );
 
   const getMessages = useCallback(
     (claimId: string): ClaimMessage[] => {
       return messages.get(claimId) || [];
     },
-    [messages]
+    [messages],
   );
 
   const value: ClaimsMessagingContextType = {
     messages,
+    unreadCounts,
     sendMessage,
     markAsRead,
     getUnreadCount,
     hasUnreadAlert,
     getMessages,
+    fetchMessages,
+    fetchUnreadCount,
+    addRealtimeMessage,
+    markMessagesReadLocally,
   };
 
   return (

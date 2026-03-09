@@ -1,27 +1,38 @@
 export type SenderRole = 'hospital' | 'insurer';
 
+export interface MessageSender {
+  id: string;
+  email: string;
+  userRole: string;
+}
+
 export interface Attachment {
   id: string;
-  name: string;
-  type: string;
-  data: string; // base64 encoded
-  size: number; // in bytes
+  filename: string;
+  filePath: string;
+  fileUrl: string;
+  fileSizeBytes: number;
+  messageId?: string;
+  createdAt?: string;
 }
 
 export interface ClaimMessage {
   id: string;
   claimId: string;
-  sender: SenderRole;
-  receiver: SenderRole;
-  text: string;
+  senderId: string;
+  receiverId: string | null;
+  messageText: string;
+  messageType: 'text' | 'system' | 'attachment';
+  isRead: boolean;
+  timestamp: string; // ISO string from backend
+  createdAt: string;
+  updatedAt: string;
+  sender: MessageSender;
   attachments: Attachment[];
-  timestamp: number; // Unix timestamp in milliseconds
-  read: boolean;
 }
 
 export interface ClaimMessagingState {
   messages: Map<string, ClaimMessage[]>; // Map<claimId, messages[]>
   unreadCounts: Map<string, number>; // Map<claimId, unreadCount>
-  lastMessageTimestamps: Map<string, number>; // Map<claimId, timestamp>
 }
 
