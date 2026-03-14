@@ -25,6 +25,15 @@ export class HospitalsService {
   ) {}
 
   async create(userId: string, data: CreateHospitalDto) {
+    // Check if this user already has a hospital profile
+    const existingUserHospital =
+      await this.hospitalsRepository.findByUserId(userId);
+    if (existingUserHospital) {
+      throw new BadRequestException(
+        'A hospital profile is already registered for this account',
+      );
+    }
+
     // Check if hospital with same license number already exists
     const existingHospital = await this.hospitalsRepository.findByLicenseNumber(
       data.licenseNumber,
@@ -44,6 +53,10 @@ export class HospitalsService {
       throw new NotFoundException(`Hospital with id ${id} not found`);
     }
     return hospital;
+  }
+
+  async findAllPublic() {
+    return await this.hospitalsRepository.findAllPublic();
   }
 
   async findAll(
@@ -101,6 +114,16 @@ export class HospitalsService {
       throw new BadRequestException('Latitude and longitude are required');
     }
     return this.hospitalsRepository.findNear(latitude, longitude, radiusKm);
+  }
+
+  async findAllOrderedByDistance(latitude: number, longitude: number) {
+    if (!latitude || !longitude) {
+      throw new BadRequestException('Latitude and longitude are required');
+    }
+    return await this.hospitalsRepository.findAllOrderedByDistance(
+      latitude,
+      longitude,
+    );
   }
 
   // Emergency Contacts
@@ -184,18 +207,32 @@ export class HospitalsService {
       );
     }
 
-    // Validate employee exists
+    // Validate employee exists by employee number
     const employee = await this.prisma.employee.findUnique({
-      where: { id: data.employeeId },
+      where: { employeeNumber: data.employeeNumber },
     });
     if (!employee) {
       throw new NotFoundException(
-        `Employee with id ${data.employeeId} not found`,
+        `Employee with number ${data.employeeNumber} not found`,
       );
     }
 
-    // If dependentId is provided, validate dependent
+    // If dependentId is provided, validate it's a real database dependent
+    let validatedDependentId: string | undefined = undefined;
+
     if (data.dependentId) {
+      // Check if dependentId is a valid UUID
+      const uuidRegex =
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      const isValidUUID = uuidRegex.test(data.dependentId);
+
+      if (!isValidUUID) {
+        throw new BadRequestException(
+          `Invalid dependent ID format. Dependent ID must be a valid UUID.`,
+        );
+      }
+
+      // Query database for dependent
       const dependent = await this.prisma.dependent.findUnique({
         where: { id: data.dependentId },
         include: { employee: true },
@@ -203,26 +240,32 @@ export class HospitalsService {
 
       if (!dependent) {
         throw new NotFoundException(
-          `Dependent with id ${data.dependentId} not found`,
+          `Dependent with ID ${data.dependentId} not found`,
         );
       }
 
       // Validate dependent belongs to the employee
-      if (dependent.employeeId !== data.employeeId) {
+      if (dependent.employeeId !== employee.id) {
         throw new BadRequestException(
-          `Dependent does not belong to employee ${data.employeeId}`,
+          `Dependent does not belong to employee ${data.employeeNumber}`,
         );
       }
 
-      // Validate dependent status is Active
-      if (dependent.status !== 'Active') {
+      // Validate dependent status is Active or Approved
+      if (dependent.status !== 'Active' && dependent.status !== 'Approved') {
         throw new BadRequestException(
-          `Dependent must have 'Active' status to create a visit. Current status: ${dependent.status}`,
+          `Dependent must have 'Active' or 'Approved' status to create a visit. Current status: ${dependent.status}`,
         );
       }
+
+      validatedDependentId = dependent.id;
     }
 
-    return this.hospitalVisitsRepository.create(data);
+    return this.hospitalVisitsRepository.create({
+      ...data,
+      employeeId: employee.id,
+      dependentId: validatedDependentId,
+    });
   }
 
   async getHospitalVisits(hospitalId: string) {
@@ -241,5 +284,120 @@ export class HospitalsService {
       );
     }
     return visit;
+  }
+
+  /**
+   * Get unclaimed visits for an employee at the hospital's own hospital
+   * Used by hospitals to select a visit when creating a claim
+   * Optimized: Minimal includes, parallel queries
+   */
+  async getUnclaimedVisitsByEmployeeNumber(
+    employeeNumber: string,
+    userId: string,
+  ) {
+    // Get the hospital for this user
+    const hospital = await this.hospitalsRepository.findByUserId(userId);
+    if (!hospital) {
+      throw new NotFoundException('Hospital not found for this user');
+    }
+
+    // Find the employee by employee number (optimized: only essential fields)
+    const employee = await this.prisma.employee.findUnique({
+      where: { employeeNumber },
+      select: {
+        id: true,
+        employeeNumber: true,
+        designation: true,
+        department: true,
+        corporateId: true,
+        planId: true,
+        coverageAmount: true,
+        usedAmount: true,
+        corporate: {
+          select: {
+            name: true,
+          },
+        },
+        plan: {
+          select: {
+            planName: true,
+            planCode: true,
+            insurerId: true,
+            sumInsured: true,
+          },
+        },
+        user: {
+          select: {
+            firstName: true,
+            lastName: true,
+            cnic: true,
+          },
+        },
+      },
+    });
+
+    if (!employee) {
+      throw new NotFoundException(
+        `Employee with number ${employeeNumber} not found`,
+      );
+    }
+
+    // Get unclaimed visits for this employee at this hospital
+    const visits =
+      await this.hospitalVisitsRepository.findUnclaimedByEmployeeAndHospitalLightweight(
+        employee.id,
+        hospital.id,
+      );
+
+    // Calculate remaining coverage from employee's coverage tracking
+    const coverageAmount = Number(employee.coverageAmount);
+    const usedAmount = Number(employee.usedAmount);
+    const remainingCoverage = Math.max(0, coverageAmount - usedAmount);
+
+    return {
+      employee: {
+        id: employee.id,
+        employeeNumber: employee.employeeNumber,
+        firstName: employee.user.firstName,
+        lastName: employee.user.lastName,
+        cnic: employee.user.cnic,
+        designation: employee.designation,
+        department: employee.department,
+        corporateId: employee.corporateId,
+        corporateName: employee.corporate.name,
+        planId: employee.planId,
+        planName: employee.plan.planName,
+        planCode: employee.plan.planCode,
+        insurerId: employee.plan.insurerId,
+        coverageAmount: coverageAmount,
+        usedAmount: usedAmount,
+        remainingCoverage: remainingCoverage,
+      },
+      visits: visits.map((visit) => {
+        // Type assertion for included relations
+        const visitWithRelations = visit as typeof visit & {
+          dependent?: {
+            id: string;
+            firstName: string;
+            lastName: string;
+            relationship: string;
+          } | null;
+        };
+        return {
+          id: visitWithRelations.id,
+          visitDate: visitWithRelations.visitDate,
+          dischargeDate: visitWithRelations.dischargeDate,
+          status: visitWithRelations.status,
+          dependent: visitWithRelations.dependent
+            ? {
+                id: visitWithRelations.dependent.id,
+                firstName: visitWithRelations.dependent.firstName,
+                lastName: visitWithRelations.dependent.lastName,
+                relationship: visitWithRelations.dependent.relationship,
+              }
+            : null,
+        };
+      }),
+    };
   }
 }

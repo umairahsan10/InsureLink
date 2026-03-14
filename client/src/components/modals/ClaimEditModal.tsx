@@ -2,11 +2,18 @@
 
 import { useState, useEffect } from "react";
 import BaseModal from "./BaseModal";
+import { claimsApi } from "@/lib/api/claims";
+import ClaimDocumentsSection from "@/components/claims/ClaimDocumentsSection";
 
 interface EditableClaimData {
   id: string;
   amount?: string | number;
+  amountClaimed?: string | number;
   treatment?: string;
+  treatmentCategory?: string;
+  notes?: string;
+  claimStatus?: string;
+  status?: string;
 }
 
 interface ClaimEditForm {
@@ -21,6 +28,7 @@ interface ClaimEditModalProps {
   claimId: string;
   claimData?: EditableClaimData;
   onSave?: (updatedData: ClaimEditForm) => void;
+  onSuccess?: () => void;
 }
 
 export default function ClaimEditModal({
@@ -29,6 +37,7 @@ export default function ClaimEditModal({
   claimId,
   claimData,
   onSave,
+  onSuccess,
 }: ClaimEditModalProps) {
   const [formData, setFormData] = useState<ClaimEditForm>({
     amount: "",
@@ -37,6 +46,7 @@ export default function ClaimEditModal({
   });
   const [isSaving, setIsSaving] = useState(false);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
+  const claimStatus = claimData?.claimStatus || claimData?.status || "Pending";
 
   const validateForm = () => {
     const newErrors: { [key: string]: string } = {};
@@ -73,13 +83,14 @@ export default function ClaimEditModal({
 
   useEffect(() => {
     if (claimData) {
+      const rawAmount = claimData.amountClaimed ?? claimData.amount;
       setFormData({
-        amount: (typeof claimData.amount === "number"
-          ? String(claimData.amount)
-          : claimData.amount || ""
+        amount: (typeof rawAmount === "number"
+          ? String(rawAmount)
+          : String(rawAmount || "")
         ).replace("$", ""),
-        treatment: claimData.treatment || "",
-        description: "",
+        treatment: claimData.treatmentCategory || claimData.treatment || "",
+        description: claimData.notes || "",
       });
     }
   }, [claimData]);
@@ -93,13 +104,17 @@ export default function ClaimEditModal({
     setIsSaving(true);
 
     try {
-      // TODO: API call to update claim
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      await claimsApi.updateClaim(claimId, {
+        amountClaimed: parseFloat(formData.amount),
+        treatmentCategory: formData.treatment,
+        notes: formData.description || undefined,
+      });
       onSave?.(formData);
+      onSuccess?.();
       onClose();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to update claim", error);
-      alert("Failed to update claim. Please try again.");
+      alert(error?.message || "Failed to update claim. Please try again.");
     } finally {
       setIsSaving(false);
     }
@@ -140,7 +155,7 @@ export default function ClaimEditModal({
             type="number"
             required
             min="0"
-            step="0.01"
+            step="any"
             value={formData.amount}
             onChange={(e) =>
               setFormData({ ...formData, amount: e.target.value })
@@ -173,6 +188,12 @@ export default function ClaimEditModal({
             <p className="text-red-500 text-xs mt-1">{errors.description}</p>
           )}
         </div>
+
+        {/* Documents Section */}
+        <div className="border-t border-gray-200 pt-4 mt-4">
+          <ClaimDocumentsSection claimId={claimId} claimStatus={claimStatus} />
+        </div>
+
         <div className="mt-6 flex justify-end space-x-3">
           <button
             type="button"

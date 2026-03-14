@@ -2,12 +2,15 @@
 
 import { useState } from "react";
 import BaseModal from "./BaseModal";
+import ClaimDocumentsSection from "@/components/claims/ClaimDocumentsSection";
 
 interface ReviewClaimData {
   id: string;
   patientName?: string;
   amount?: string;
   hospital?: string;
+  claimStatus?: string;
+  status?: string;
 }
 
 interface ClaimReviewModalProps {
@@ -103,6 +106,8 @@ export default function ClaimReviewModal({
     hospital: "City General Hospital",
   };
 
+  const claimStatus = claimData?.claimStatus || claimData?.status || "Pending";
+
   return (
     <BaseModal isOpen={isOpen} onClose={onClose} title="Review Claim" size="lg">
       <div className="space-y-4">
@@ -175,6 +180,11 @@ export default function ClaimReviewModal({
               {errors.rejectionReason}
             </p>
           )}
+        </div>
+
+        {/* Documents Section */}
+        <div className="border-t border-gray-200 pt-4 mt-4">
+          <ClaimDocumentsSection claimId={claimId} claimStatus={claimStatus} />
         </div>
 
         <div className="mt-6 flex justify-end space-x-3">

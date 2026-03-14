@@ -1,6 +1,11 @@
-export type DependentStatus = 'Pending' | 'Approved' | 'Rejected';
-export type Relationship = 'Spouse' | 'Son' | 'Daughter' | 'Father' | 'Mother';
-export type Gender = 'Male' | 'Female' | 'Other';
+export type DependentStatus =
+  | "Pending"
+  | "Approved"
+  | "Rejected"
+  | "Active"
+  | "Inactive";
+export type Relationship = "Spouse" | "Son" | "Daughter" | "Father" | "Mother";
+export type Gender = "Male" | "Female" | "Other";
 
 export interface Dependent {
   id: string;
@@ -32,4 +37,3 @@ export interface DependentFormData {
   coverageStartDate: string;
   documents: File[];
 }
-

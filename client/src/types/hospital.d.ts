@@ -14,6 +14,7 @@ export interface HospitalEntity {
   locationHint?: string;
   hasEmergency?: boolean;
   is24Hours?: boolean;
+  distanceKm?: number;
 }
 
 export interface HospitalFormData {

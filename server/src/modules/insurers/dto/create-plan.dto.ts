@@ -6,6 +6,7 @@ import {
   IsNumber,
   IsObject,
 } from 'class-validator';
+import { Type } from 'class-transformer';
 
 export class CreatePlanDto {
   @IsString()
@@ -16,6 +17,7 @@ export class CreatePlanDto {
   @IsNotEmpty()
   planCode: string;
 
+  @Type(() => Number)
   @IsNumber()
   sumInsured: number;
 
@@ -36,6 +38,7 @@ export class UpdatePlanDto {
   planName?: string;
 
   @IsOptional()
+  @Type(() => Number)
   @IsNumber()
   sumInsured?: number;
 

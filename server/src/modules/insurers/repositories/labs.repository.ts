@@ -52,12 +52,18 @@ export class LabsRepository {
     return this.prisma.lab.update({
       where: { id },
       data: {
-        ...(data.labName && { labName: data.labName }),
-        ...(data.city && { city: data.city }),
-        ...(data.address && { address: data.address }),
-        ...(data.contactPhone && { contactPhone: data.contactPhone }),
-        ...(data.contactEmail && { contactEmail: data.contactEmail }),
-        ...(data.testCategories && { testCategories: data.testCategories }),
+        ...(data.labName !== undefined && { labName: data.labName }),
+        ...(data.city !== undefined && { city: data.city }),
+        ...(data.address !== undefined && { address: data.address }),
+        ...(data.contactPhone !== undefined && {
+          contactPhone: data.contactPhone,
+        }),
+        ...(data.contactEmail !== undefined && {
+          contactEmail: data.contactEmail,
+        }),
+        ...(data.testCategories !== undefined && {
+          testCategories: data.testCategories,
+        }),
         ...(typeof data.isActive !== 'undefined' && {
           isActive: data.isActive,
         }),

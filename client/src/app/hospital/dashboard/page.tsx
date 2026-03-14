@@ -73,7 +73,7 @@ export default function HospitalDashboardPage() {
 
   // Filter claims by hospital ID
   const defaultClaims = (claims as Claim[]).filter(
-    (claim) => claim.hospitalId === currentHospitalId
+    (claim) => claim.hospitalId === currentHospitalId,
   );
 
   // Combine default claims with locally saved claims
@@ -81,7 +81,7 @@ export default function HospitalDashboardPage() {
 
   // Remove duplicates by ID
   const uniqueClaims = Array.from(
-    new Map(allClaims.map((claim) => [claim.id, claim])).values()
+    new Map(allClaims.map((claim) => [claim.id, claim])).values(),
   );
 
   // Calculate hospital-specific statistics from filtered claims
@@ -384,7 +384,7 @@ export default function HospitalDashboardPage() {
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {recentClaims.map((claim) => {
-                const hasAlert = hasUnreadAlert(claim.id, "hospital");
+                const hasAlert = hasUnreadAlert(claim.id);
                 return (
                   <tr
                     key={claim.id}
@@ -413,8 +413,8 @@ export default function HospitalDashboardPage() {
                           claim.status === "Approved"
                             ? "Approved"
                             : claim.status === "Rejected"
-                            ? "Rejected"
-                            : "Pending"
+                              ? "Rejected"
+                              : "Pending"
                         }
                       />
                     </td>

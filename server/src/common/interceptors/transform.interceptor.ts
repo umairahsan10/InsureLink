@@ -33,9 +33,19 @@ export class TransformInterceptor<T>
       typeof obj === 'object' &&
       typeof obj.s === 'number' &&
       typeof obj.e === 'number' &&
-      Array.isArray(obj.d)
+      Array.isArray(obj.d) &&
+      obj.d.length > 0
     ) {
-      return parseFloat(obj.toString ? obj.toString() : obj.d[0]);
+      // For actual Decimal class instances, toString() gives the correct number string
+      if (obj.constructor && obj.constructor.name === 'Decimal') {
+        return parseFloat(obj.toString());
+      }
+      // Fallback for plain { s, e, d } objects (e.g. after ClassSerializerInterceptor):
+      // Decimal.js uses base 1e7 per coefficient; reconstruct as s * d[0] * 10^(e - (len-1))
+      const sign = obj.s < 0 ? -1 : 1;
+      const coeff = obj.d[0];
+      const coeffLen = String(coeff).length;
+      return sign * coeff * Math.pow(10, obj.e - (coeffLen - 1));
     }
 
     // Handle Date objects

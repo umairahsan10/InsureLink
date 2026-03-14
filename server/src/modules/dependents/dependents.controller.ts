@@ -19,9 +19,16 @@ import { ListDependentsQueryDto } from './dto/list-dependents-query.dto';
 import { RejectDependentDto, UpdateDependentStatusDto } from './dto/review-dependent.dto';
 import { UpdateDependentDto } from './dto/update-dependent.dto';
 
-@Controller('dependents')
+@Controller({ path: 'dependents', version: '1' })
 export class DependentsController {
   constructor(private readonly dependentsService: DependentsService) {}
+
+  @Get('by-employee/:employeeNumber')
+  async getDependentsByEmployeeNumber(
+    @Param('employeeNumber') employeeNumber: string,
+  ) {
+    return this.dependentsService.getDependentsByEmployeeNumber(employeeNumber);
+  }
 
   @Auth()
   @Roles('patient', 'corporate', 'admin')

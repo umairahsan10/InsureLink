@@ -1,8 +1,11 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
-import { SenderRole, Attachment } from '@/types/messaging';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { SenderRole, Attachment, ClaimMessage } from '@/types/messaging';
 import { useClaimsMessaging } from '@/contexts/ClaimsMessagingContext';
+import { useClaimSocket } from '@/hooks/useClaimSocket';
+import { messagingApi } from '@/lib/api/messaging';
+import { useAuth } from '@/hooks/useAuth';
 
 interface ClaimChatModalProps {
   isOpen: boolean;
@@ -18,20 +21,57 @@ export default function ClaimChatModal({
   userRole,
 }: ClaimChatModalProps) {
   const [messageText, setMessageText] = useState('');
-  const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const [isMinimized, setIsMinimized] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const hasFetchedRef = useRef(false);
 
-  const { getMessages, sendMessage, markAsRead } = useClaimsMessaging();
+  const { user } = useAuth();
+  const { getMessages, sendMessage, fetchMessages, markAsRead, addRealtimeMessage, markMessagesReadLocally } = useClaimsMessaging();
   const messages = getMessages(claimId);
 
-  // Mark messages as read when chat opens
-  useEffect(() => {
-    if (isOpen && !isMinimized) {
-      markAsRead(claimId, userRole);
+  // Socket.IO real-time connection
+  const handleNewMessage = useCallback((message: ClaimMessage) => {
+    addRealtimeMessage(claimId, message);
+  }, [claimId, addRealtimeMessage]);
+
+  const handleMessageRead = useCallback((data: { claimId: string; readBy: string }) => {
+    if (data.readBy !== user?.id) {
+      markMessagesReadLocally(data.claimId);
     }
-  }, [isOpen, isMinimized, claimId, userRole, markAsRead]);
+  }, [user?.id, markMessagesReadLocally]);
+
+  useClaimSocket({
+    claimId: isOpen ? claimId : null,
+    onNewMessage: handleNewMessage,
+    onMessageRead: handleMessageRead,
+  });
+
+  // Fetch messages when chat opens
+  useEffect(() => {
+    if (isOpen && !isMinimized && claimId) {
+      if (!hasFetchedRef.current) {
+        // Only show the spinner when there are no cached messages to display yet
+        const hasCached = messages.length > 0;
+        if (!hasCached) setIsLoading(true);
+        fetchMessages(claimId).finally(() => {
+          setIsLoading(false);
+          hasFetchedRef.current = true;
+        });
+      } else {
+        // Just mark as read on re-open
+        markAsRead(claimId);
+      }
+    }
+  }, [isOpen, isMinimized, claimId, fetchMessages, markAsRead]);
+
+  // Reset fetch flag when claimId changes
+  useEffect(() => {
+    hasFetchedRef.current = false;
+  }, [claimId]);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -40,18 +80,45 @@ export default function ClaimChatModal({
     }
   }, [messages, isMinimized]);
 
-  const handleSendMessage = () => {
-    if (!messageText.trim() && attachments.length === 0) return;
+  const handleSendMessage = async () => {
+    if (!messageText.trim() && pendingFiles.length === 0) return;
 
-    const receiver: SenderRole = userRole === 'hospital' ? 'insurer' : 'hospital';
+    const text = messageText.trim();
+    const filesToUpload = [...pendingFiles];
 
-    sendMessage(claimId, messageText.trim(), attachments, userRole, receiver);
-
+    // Clear input immediately — optimistic message appears at once
     setMessageText('');
-    setAttachments([]);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+    setPendingFiles([]);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+
+    // Upload any pending files in parallel before sending
+    let uploadedAttachments: { filename: string; filePath: string; fileUrl: string; fileSizeBytes: number }[] = [];
+    if (filesToUpload.length > 0) {
+      setIsUploading(true);
+      try {
+        const results = await Promise.all(filesToUpload.map((f) => messagingApi.uploadAttachment(f)));
+        uploadedAttachments = results.map((r, i) => ({
+          filename: filesToUpload[i].name,
+          filePath: r.filePath,
+          fileUrl: r.fileUrl,
+          fileSizeBytes: r.fileSizeBytes,
+        }));
+      } catch (err) {
+        console.error('Attachment upload failed:', err);
+      } finally {
+        setIsUploading(false);
+      }
     }
+
+    sendMessage(
+      claimId,
+      {
+        messageText: text || '(attachment)',
+        attachments: uploadedAttachments.length > 0 ? uploadedAttachments : undefined,
+      },
+      user ? { id: user.id, email: user.email, userRole: user.role } : undefined,
+      uploadedAttachments.length > 0 ? uploadedAttachments : undefined,
+    );
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -59,52 +126,23 @@ export default function ClaimChatModal({
     if (!files) return;
 
     Array.from(files).forEach((file) => {
-      // Check file size (5MB limit)
-      if (file.size > 5 * 1024 * 1024) {
-        alert(`File ${file.name} is too large. Maximum size is 5MB.`);
+      if (file.size > 10 * 1024 * 1024) {
+        alert(`File ${file.name} is too large. Maximum size is 10MB.`);
         return;
       }
-
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const base64 = event.target?.result as string;
-        const attachment: Attachment = {
-          id: `att-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-          name: file.name,
-          type: file.type,
-          data: base64.split(',')[1], // Remove data:type;base64, prefix
-          size: file.size,
-        };
-        setAttachments((prev) => [...prev, attachment]);
-      };
-      reader.readAsDataURL(file);
+      setPendingFiles((prev) => [...prev, file]);
     });
   };
 
-  const handleRemoveAttachment = (id: string) => {
-    setAttachments((prev) => prev.filter((att) => att.id !== id));
+  const handleRemoveFile = (index: number) => {
+    setPendingFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleDownloadAttachment = (attachment: Attachment) => {
-    const byteCharacters = atob(attachment.data);
-    const byteNumbers = new Array(byteCharacters.length);
-    for (let i = 0; i < byteCharacters.length; i++) {
-      byteNumbers[i] = byteCharacters.charCodeAt(i);
-    }
-    const byteArray = new Uint8Array(byteNumbers);
-    const blob = new Blob([byteArray], { type: attachment.type });
-
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = attachment.name;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    window.open(attachment.fileUrl, '_blank');
   };
 
-  const formatTime = (timestamp: number) => {
+  const formatTime = (timestamp: string) => {
     const date = new Date(timestamp);
     const now = new Date();
     const diff = now.getTime() - date.getTime();
@@ -118,8 +156,9 @@ export default function ClaimChatModal({
     return 'Just now';
   };
 
-  const getFileIcon = (type: string) => {
-    if (type.startsWith('image/')) {
+  const getFileIcon = (filename: string) => {
+    const ext = filename.split('.').pop()?.toLowerCase() || '';
+    if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) {
       return (
         <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -140,6 +179,8 @@ export default function ClaimChatModal({
   };
 
   if (!isOpen) return null;
+
+  const currentUserId = user?.id;
 
   // Minimized view - just header bar
   if (isMinimized) {
@@ -218,14 +259,18 @@ export default function ClaimChatModal({
 
       {/* Messages Area */}
       <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50">
-        {messages.length === 0 ? (
+        {isLoading ? (
+          <div className="text-center text-gray-500 py-8">
+            <p className="text-sm">Loading messages...</p>
+          </div>
+        ) : messages.length === 0 ? (
           <div className="text-center text-gray-500 py-8">
             <p className="text-sm">No messages yet.</p>
             <p className="text-xs mt-1">Start the conversation!</p>
           </div>
         ) : (
           messages.map((message) => {
-            const isSender = message.sender === userRole;
+            const isSender = message.senderId === currentUserId;
             return (
               <div
                 key={message.id}
@@ -238,7 +283,7 @@ export default function ClaimChatModal({
                       : 'bg-white text-gray-900 border border-gray-200'
                   }`}
                 >
-                  {message.text && <div className="text-sm mb-1">{message.text}</div>}
+                  {message.messageText && <div className="text-sm mb-1">{message.messageText}</div>}
                   {message.attachments.length > 0 && (
                     <div className="space-y-2 mt-2">
                       {message.attachments.map((att) => (
@@ -248,11 +293,11 @@ export default function ClaimChatModal({
                             isSender ? 'bg-blue-700' : 'bg-gray-50'
                           }`}
                         >
-                          {getFileIcon(att.type)}
+                          {getFileIcon(att.filename)}
                           <div className="flex-1 min-w-0">
-                            <div className="text-xs truncate font-medium">{att.name}</div>
+                            <div className="text-xs truncate font-medium">{att.filename}</div>
                             <div className={`text-xs ${isSender ? 'text-blue-200' : 'text-gray-500'}`}>
-                              {formatFileSize(att.size)}
+                              {formatFileSize(att.fileSizeBytes)}
                             </div>
                           </div>
                           <button
@@ -281,19 +326,19 @@ export default function ClaimChatModal({
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Attachments Preview */}
-      {attachments.length > 0 && (
+      {/* Pending Files Preview */}
+      {pendingFiles.length > 0 && (
         <div className="px-4 py-2 border-t border-gray-200 bg-white">
           <div className="flex flex-wrap gap-2">
-            {attachments.map((att) => (
+            {pendingFiles.map((file, index) => (
               <div
-                key={att.id}
+                key={`${file.name}-${index}`}
                 className="flex items-center gap-2 bg-gray-100 rounded-lg p-2 text-xs"
               >
-                {getFileIcon(att.type)}
-                <span className="max-w-[120px] truncate text-gray-900 font-medium">{att.name}</span>
+                {getFileIcon(file.name)}
+                <span className="max-w-[120px] truncate text-gray-900 font-medium">{file.name}</span>
                 <button
-                  onClick={() => handleRemoveAttachment(att.id)}
+                  onClick={() => handleRemoveFile(index)}
                   className="text-red-500 hover:text-red-700"
                 >
                   <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -341,10 +386,10 @@ export default function ClaimChatModal({
           />
           <button
             onClick={handleSendMessage}
-            disabled={!messageText.trim() && attachments.length === 0}
+            disabled={(!messageText.trim() && pendingFiles.length === 0) || isUploading}
             className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
           >
-            Send
+            {isUploading ? 'Uploading...' : 'Send'}
           </button>
         </div>
       </div>

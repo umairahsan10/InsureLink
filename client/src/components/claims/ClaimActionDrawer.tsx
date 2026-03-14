@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { formatPKR } from "@/lib/format";
+import ClaimDocumentsSection from "./ClaimDocumentsSection";
 
 export interface ClaimRecord {
   id: string;
@@ -24,7 +25,7 @@ interface ClaimActionDrawerProps {
   onDecision?: (
     claimId: string,
     action: "approve" | "reject",
-    notes?: string
+    notes?: string,
   ) => void;
   onSaveNotes?: (claimId: string, notes: string) => void;
 }
@@ -342,6 +343,14 @@ export default function ClaimActionDrawer({
                 </li>
               ))}
             </ol>
+          </div>
+
+          {/* Documents Section */}
+          <div className="rounded-2xl border border-gray-100 bg-white/80 p-4 shadow-sm">
+            <ClaimDocumentsSection
+              claimId={claim.id}
+              claimStatus={claim.status}
+            />
           </div>
 
           {mode === "view" ? (

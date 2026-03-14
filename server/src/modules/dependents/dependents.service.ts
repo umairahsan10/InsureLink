@@ -17,6 +17,37 @@ import { UpdateDependentDto } from './dto/update-dependent.dto';
 export class DependentsService {
   constructor(private readonly prisma: PrismaService) {}
 
+  async getDependentsByEmployeeNumber(employeeNumber: string) {
+    // Find employee by employee number
+    const employee = await this.prisma.employee.findUnique({
+      where: { employeeNumber },
+    });
+
+    if (!employee) {
+      throw new NotFoundException(
+        `Employee with number ${employeeNumber} not found`,
+      );
+    }
+
+    // Fetch approved/active dependents for this employee
+    const dependents = await this.prisma.dependent.findMany({
+      where: {
+        employeeId: employee.id,
+        status: {
+          in: ['Active', 'Approved'],
+        },
+      },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        relationship: true,
+      },
+    });
+
+    return dependents;
+  }
+
   async createDependent(dto: CreateDependentDto, actor: CurrentUserDto): Promise<DependentResponseDto> {
     const employee = await this.prisma.employee.findUnique({
       where: { id: dto.employeeId },

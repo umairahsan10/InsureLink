@@ -11,6 +11,7 @@ import {
   ClassSerializerInterceptor,
   HttpCode,
   HttpStatus,
+  BadRequestException,
 } from '@nestjs/common';
 import { HospitalsService } from './hospitals.service';
 import { HospitalFinderService } from './services/hospital-finder.service';
@@ -45,8 +46,14 @@ export class HospitalsController {
     return this.hospitalsService.create(user.id, data);
   }
 
+  @Get('all')
+  @Public()
+  async findAllPublic() {
+    return this.hospitalsService.findAllPublic();
+  }
+
   @Get('search/nearby')
-  @Public() // Public so patients/employees can find hospitals without logging in
+  @Public()
   async findNearby(
     @Query('latitude') latitude: string,
     @Query('longitude') longitude: string,
@@ -56,6 +63,18 @@ export class HospitalsController {
       parseFloat(latitude),
       parseFloat(longitude),
       radiusKm ? parseFloat(radiusKm) : 50,
+    );
+  }
+
+  @Get('search/sorted')
+  @Public()
+  async findSortedByDistance(
+    @Query('latitude') latitude: string,
+    @Query('longitude') longitude: string,
+  ) {
+    return this.hospitalFinderService.findAllSortedByDistance(
+      parseFloat(latitude),
+      parseFloat(longitude),
     );
   }
 
@@ -152,5 +171,24 @@ export class HospitalsController {
       ...data,
       hospitalId: id,
     });
+  }
+
+  /**
+   * Get unclaimed visits for an employee at my hospital
+   * Used when creating a claim - hospital staff enters employee number and gets list of visits to select
+   */
+  @Get('visits/unclaimed')
+  @Roles('hospital')
+  async getUnclaimedVisits(
+    @Query('employeeNumber') employeeNumber: string,
+    @CurrentUser() user: CurrentUserDto,
+  ) {
+    if (!employeeNumber) {
+      throw new BadRequestException('employeeNumber query param is required');
+    }
+    return this.hospitalsService.getUnclaimedVisitsByEmployeeNumber(
+      employeeNumber,
+      user.id,
+    );
   }
 }

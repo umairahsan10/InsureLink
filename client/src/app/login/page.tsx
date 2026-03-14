@@ -1,15 +1,8 @@
 'use client';
-import { useState, Suspense } from 'react';
+import { useState, useContext, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { useAuth } from '@/hooks/useAuth';
-
-const ROLE_MAP = {
-  Insurer: 'insurer',
-  Corporate: 'corporate',
-  Hospital: 'hospital',
-  Patient: 'patient',
-} as const;
+import { AuthContext } from '@/contexts/AuthContext';
 
 const userTypes = ['Insurer', 'Corporate', 'Hospital', 'Patient'];
 
@@ -17,28 +10,42 @@ function LoginForm() {
   const [selectedUserType, setSelectedUserType] = useState('Patient');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { signIn } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const nextUrl = searchParams.get('next');
+  const auth = useContext(AuthContext);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');
+    setIsSubmitting(true);
 
     try {
-      setIsSubmitting(true);
-      setError(null);
+      const user = await auth!.signIn(email, password);
+      const rolePath = user.role.toLowerCase();
 
-      const role = ROLE_MAP[selectedUserType as keyof typeof ROLE_MAP];
-      await signIn(email, password, role);
+      // Check if the user needs onboarding (no entity linked)
+      if (rolePath === 'hospital' && !user.hospitalId) {
+        router.push('/onboard-hospital');
+        return;
+      }
+      if (rolePath === 'insurer' && !user.insurerId) {
+        router.push('/onboard-insurer');
+        return;
+      }
 
-      // Redirect to the intended page or default dashboard
-      const redirectPath = nextUrl || `/${role}/dashboard`;
+      const redirectPath = nextUrl || `/${rolePath}/dashboard`;
       router.push(redirectPath);
-    } catch {
-      setError('Sign-in failed. Please try again.');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Login failed';
+      try {
+        const parsed = JSON.parse(message);
+        setError(parsed.message || 'Invalid credentials');
+      } catch {
+        setError(message || 'Invalid credentials');
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -79,8 +86,8 @@ function LoginForm() {
           )}
 
           {error && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
-              {error}
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-sm text-red-800">{error}</p>
             </div>
           )}
 
@@ -126,9 +133,9 @@ function LoginForm() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors font-semibold text-base"
+              className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors font-semibold text-base disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isSubmitting ? 'Signing In...' : 'Sign In'}
+              {isSubmitting ? 'Signing in...' : 'Sign In'}
             </button>
           </form>
 

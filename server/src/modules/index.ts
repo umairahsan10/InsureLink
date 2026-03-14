@@ -1,4 +1,5 @@
 // Feature modules exports
+export * from './admin/admin.module';
 export * from './auth/auth.module';
 export * from './users/users.module';
 export * from './corporates/corporates.module';

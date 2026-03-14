@@ -68,7 +68,7 @@ export default function SubmitClaimForm({
       (patient) =>
         patient.name.toLowerCase().includes(lowerSearch) ||
         (patient.corporateName?.toLowerCase().includes(lowerSearch) ?? false) ||
-        patient.id.toLowerCase().includes(lowerSearch)
+        patient.id.toLowerCase().includes(lowerSearch),
     );
   }, [patientSearchInput, insuredPatients]);
 
@@ -131,7 +131,7 @@ export default function SubmitClaimForm({
     amountClaimed: number,
     admissionDate: string,
     treatmentCategory?: string,
-    notes?: string
+    notes?: string,
   ) => {
     if (typeof window === "undefined") {
       return;
@@ -165,7 +165,7 @@ export default function SubmitClaimForm({
   const handleInputChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >
+    >,
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
@@ -182,7 +182,7 @@ export default function SubmitClaimForm({
   };
 
   const handleCustomTreatmentChange = (
-    e: React.ChangeEvent<HTMLInputElement>
+    e: React.ChangeEvent<HTMLInputElement>,
   ) => {
     setCustomTreatmentCategory(e.target.value);
     if (errors.customTreatmentCategory) {
@@ -194,7 +194,7 @@ export default function SubmitClaimForm({
   };
 
   const handlePatientChange = (
-    selectedPatient: (typeof insuredPatients)[0]
+    selectedPatient: (typeof insuredPatients)[0],
   ) => {
     setFormData((prev) => ({
       ...prev,
@@ -213,7 +213,7 @@ export default function SubmitClaimForm({
   };
 
   const handlePatientSearchChange = (
-    e: React.ChangeEvent<HTMLInputElement>
+    e: React.ChangeEvent<HTMLInputElement>,
   ) => {
     setPatientSearchInput(e.target.value);
     setShowPatientDropdown(true);
@@ -241,7 +241,7 @@ export default function SubmitClaimForm({
       const randomNum = Math.floor(Math.random() * 900) + 100; // 100-999
       const newClaimId = `clm-${randomNum}`;
       const claimNumber = `CLM-${new Date().getFullYear()}-${String(
-        Math.floor(Math.random() * 9999) + 1
+        Math.floor(Math.random() * 9999) + 1,
       ).padStart(4, "0")}`;
 
       const finalTreatmentCategory =
@@ -270,7 +270,7 @@ export default function SubmitClaimForm({
       console.log("New claim submitted:", newClaim);
 
       setSuccessMessage(
-        `Claim ${claimNumber} submitted successfully! Claim ID: ${newClaimId}`
+        `Claim ${claimNumber} submitted successfully! Claim ID: ${newClaimId}`,
       );
 
       // Save claim to hospital's local storage
@@ -286,7 +286,7 @@ export default function SubmitClaimForm({
         Number(formData.amountClaimed),
         formData.admissionDate,
         finalTreatmentCategory,
-        formData.notes
+        formData.notes,
       );
 
       // Reset form
@@ -411,7 +411,7 @@ export default function SubmitClaimForm({
               onChange={handleInputChange}
               placeholder="e.g., 50000"
               min="0"
-              step="100"
+              step="any"
               className={`w-full px-4 py-2 border rounded-lg text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                 errors.amountClaimed ? "border-red-500" : "border-gray-300"
               }`}

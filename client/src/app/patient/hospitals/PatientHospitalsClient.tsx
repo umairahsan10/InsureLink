@@ -1,11 +1,49 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import hospitalsData from '@/data/hospitals.json';
 import { HospitalFinderPanel } from '@/components/hospitals/HospitalFinderPanel';
+import { useGeolocation } from '@/hooks/useGeolocation';
+import { apiClient } from '@/lib/apiClient';
 import type { HospitalEntity, HospitalType } from '@/types';
 
+// Karachi coordinates as default
+const DEFAULT_LATITUDE = 24.8607;
+const DEFAULT_LONGITUDE = 67.0011;
+
 type TabKey = 'finder' | 'directory';
+
+// Backend response shape from the DB
+interface BackendHospital {
+  id: string;
+  hospitalName: string;
+  city: string;
+  address: string;
+  emergencyPhone: string;
+  hospitalType: string;
+  hasEmergencyUnit: boolean;
+  latitude?: number | null;
+  longitude?: number | null;
+  isActive: boolean;
+  distance_km?: number;
+  [key: string]: unknown;
+}
+
+function mapBackendToEntity(h: BackendHospital): HospitalEntity {
+  return {
+    id: h.id,
+    name: h.hospitalName || h.city || 'Unknown Hospital',
+    city: h.city,
+    address: h.address,
+    contact: h.emergencyPhone,
+    type: (h.hospitalType === 'non-reimbursable' ? 'non-reimbursable' : 'reimbursable') as HospitalType,
+    specialties: [],
+    acceptedPlans: [],
+    lat: h.latitude ?? undefined,
+    lng: h.longitude ?? undefined,
+    hasEmergency: h.hasEmergencyUnit,
+    distanceKm: h.distance_km,
+  };
+}
 
 export default function PatientHospitalsClient() {
   const [isClient, setIsClient] = useState(false);
@@ -14,31 +52,77 @@ export default function PatientHospitalsClient() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCity, setSelectedCity] = useState('All Cities');
 
+  // Separate state for the two tabs
+  const [nearbyHospitals, setNearbyHospitals] = useState<HospitalEntity[]>([]);
+  const [allHospitals, setAllHospitals] = useState<HospitalEntity[]>([]);
+  const [loadingNearby, setLoadingNearby] = useState(true);
+  const [loadingAll, setLoadingAll] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const { position } = useGeolocation();
+
   useEffect(() => {
     setIsClient(true);
   }, []);
 
-  const typedHospitals = useMemo<HospitalEntity[]>(
-    () =>
-      (hospitalsData as Array<HospitalEntity & { type: string }>).map((hospital) => ({
-        ...hospital,
-        type: hospital.type as HospitalType,
-      })),
-    []
-  );
+  // Fetch all hospitals sorted by distance for the Smart Finder tab
+  useEffect(() => {
+    const fetchNearbyHospitals = async () => {
+      try {
+        setLoadingNearby(true);
+        const latitude = position?.lat ?? DEFAULT_LATITUDE;
+        const longitude = position?.lng ?? DEFAULT_LONGITUDE;
+        const response = await apiClient.get<{ data: BackendHospital[] }>(
+          `/v1/hospitals/search/sorted?latitude=${latitude}&longitude=${longitude}`
+        );
+        const data = Array.isArray(response?.data) ? response.data : [];
+        setNearbyHospitals(data.map(mapBackendToEntity));
+      } catch (err) {
+        console.error('Failed to fetch nearby hospitals:', err);
+        setNearbyHospitals([]);
+      } finally {
+        setLoadingNearby(false);
+      }
+    };
 
-  const karachiHospitals = useMemo(
-    () => typedHospitals.filter((hospital) => hospital.city.toLowerCase() === 'karachi'),
-    [typedHospitals]
-  );
+    if (isClient) {
+      fetchNearbyHospitals();
+    }
+  }, [isClient, position]);
+
+  // Fetch all hospitals for the Directory tab
+  useEffect(() => {
+    const fetchAllHospitals = async () => {
+      try {
+        setLoadingAll(true);
+        setError(null);
+        const response = await apiClient.get<{ data: BackendHospital[] }>('/v1/hospitals/all');
+        const data = Array.isArray(response?.data) ? response.data : [];
+        setAllHospitals(data.map(mapBackendToEntity));
+      } catch (err) {
+        console.error('Failed to fetch all hospitals:', err);
+        setError('Failed to load hospital directory. Please try again.');
+        setAllHospitals([]);
+      } finally {
+        setLoadingAll(false);
+      }
+    };
+
+    if (isClient) {
+      fetchAllHospitals();
+    }
+  }, [isClient]);
+
+  const typedNearbyHospitals = nearbyHospitals;
+  const typedAllHospitals = allHospitals;
 
   const cities = useMemo(() => {
-    const citySet = new Set(typedHospitals.map((h) => h.city));
+    const citySet = new Set(typedAllHospitals.map((h) => h.city));
     return Array.from(citySet).sort();
-  }, [typedHospitals]);
+  }, [typedAllHospitals]);
 
   const filteredHospitals = useMemo(() => {
-    let filtered = typedHospitals;
+    let filtered = typedAllHospitals;
 
     if (selectedCategory !== 'all') {
       filtered = filtered.filter((hospital) =>
@@ -50,9 +134,9 @@ export default function PatientHospitalsClient() {
       const query = searchTerm.toLowerCase();
       filtered = filtered.filter(
         (hospital) =>
-          hospital.name.toLowerCase().includes(query) ||
+          hospital.name?.toLowerCase().includes(query) ||
           hospital.city.toLowerCase().includes(query) ||
-          hospital.specialties.some((specialty) => specialty.toLowerCase().includes(query))
+          hospital.specialties?.some((specialty) => specialty.toLowerCase().includes(query))
       );
     }
 
@@ -61,7 +145,7 @@ export default function PatientHospitalsClient() {
     }
 
     return filtered;
-  }, [selectedCategory, searchTerm, selectedCity, typedHospitals]);
+  }, [selectedCategory, searchTerm, selectedCity, typedAllHospitals]);
 
   const reimbursableHospitals = filteredHospitals.filter((hospital) => hospital.type === 'reimbursable');
   const nonReimbursableHospitals = filteredHospitals.filter((hospital) => hospital.type === 'non-reimbursable');
@@ -72,6 +156,7 @@ export default function PatientHospitalsClient() {
         <div className="mx-auto max-w-7xl space-y-4">
           <div className="h-6 w-48 animate-pulse rounded bg-gray-200" />
           <div className="h-32 animate-pulse rounded-xl bg-white shadow-sm" />
+          <div className="h-64 animate-pulse rounded-xl bg-white shadow-sm" />
         </div>
       </div>
     );
@@ -83,8 +168,14 @@ export default function PatientHospitalsClient() {
         <header>
           <h1 className="mb-2 text-2xl font-bold text-gray-900 sm:text-3xl">Hospitals Directory</h1>
           <p className="text-gray-600">
-            Explore the Pak-Qatar panel hospitals in Karachi, discover emergency-ready facilities, and review the full national directory.
+            Explore nearby hospitals, discover emergency-ready facilities, and review the full directory.
+            {position && ` (Showing hospitals near your location)`}
           </p>
+          {error && (
+            <div className="mt-4 rounded-lg border border-red-200 bg-red-50 p-4">
+              <p className="text-sm text-red-800">{error}</p>
+            </div>
+          )}
         </header>
 
         <div className="rounded-xl border border-gray-200 bg-white shadow-sm">
@@ -110,7 +201,14 @@ export default function PatientHospitalsClient() {
 
           <div className="border-t border-gray-200 p-4 sm:p-6">
             {activeTab === 'finder' ? (
-              <HospitalFinderPanel hospitals={karachiHospitals} />
+              loadingNearby ? (
+                <div className="space-y-3">
+                  <div className="h-10 animate-pulse rounded bg-gray-100" />
+                  <div className="h-64 animate-pulse rounded bg-gray-100" />
+                </div>
+              ) : (
+                <HospitalFinderPanel hospitals={typedNearbyHospitals} />
+              )
             ) : (
               <div className="space-y-6">
                 <section className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
@@ -123,7 +221,7 @@ export default function PatientHospitalsClient() {
                           : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                       }`}
                     >
-                      All Hospitals ({typedHospitals.length})
+                      All Hospitals ({typedAllHospitals.length})
                     </button>
                     <button
                       onClick={() => setSelectedCategory('reimbursable')}
@@ -133,7 +231,7 @@ export default function PatientHospitalsClient() {
                           : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                       }`}
                     >
-                      Reimbursable ({typedHospitals.filter((h) => h.type === 'reimbursable').length})
+                      Reimbursable ({typedAllHospitals.filter((h) => h.type === 'reimbursable').length})
                     </button>
                     <button
                       onClick={() => setSelectedCategory('non-reimbursable')}
@@ -143,7 +241,7 @@ export default function PatientHospitalsClient() {
                           : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                       }`}
                     >
-                      Non-Reimbursable ({typedHospitals.filter((h) => h.type === 'non-reimbursable').length})
+                      Non-Reimbursable ({typedAllHospitals.filter((h) => h.type === 'non-reimbursable').length})
                     </button>
                   </div>
                   <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">

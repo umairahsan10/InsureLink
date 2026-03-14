@@ -31,20 +31,23 @@ export function HospitalFinderPanel({ hospitals }: HospitalFinderPanelProps) {
   const { status, position, requestPermission, error, isLoading } = useGeolocation();
 
   const hospitalsWithDistance = useMemo(() => {
-    const poised: Array<HospitalEntity & { distanceKm?: number; coords?: Coordinates }> = [];
+    return hospitals.map((hospital) => {
+      const coords =
+        typeof hospital.lat === "number" && typeof hospital.lng === "number"
+          ? { lat: hospital.lat, lng: hospital.lng }
+          : undefined;
 
-    hospitals.forEach((hospital) => {
-      if (typeof hospital.lat === "number" && typeof hospital.lng === "number") {
-        const coords = { lat: hospital.lat, lng: hospital.lng };
-        poised.push({
-          ...hospital,
-          coords,
-          distanceKm: haversineDistance(position, coords),
-        });
-      }
+      // If user position is available and hospital has coords, compute live distance
+      // Otherwise fall back to the backend-computed distanceKm
+      const computedDistance =
+        position && coords ? haversineDistance(position, coords) : undefined;
+
+      return {
+        ...hospital,
+        coords,
+        distanceKm: computedDistance ?? hospital.distanceKm,
+      };
     });
-
-    return poised;
   }, [hospitals, position]);
 
   const filteredHospitals = useMemo(() => {
@@ -64,14 +67,19 @@ export function HospitalFinderPanel({ hospitals }: HospitalFinderPanelProps) {
 
         if (filters.search.trim().length > 0) {
           const query = filters.search.trim().toLowerCase();
-          const matchName = hospital.name.toLowerCase().includes(query);
-          const matchSpecialty = hospital.specialties.some((specialty) => specialty.toLowerCase().includes(query));
+          const matchName = hospital.name?.toLowerCase().includes(query) ?? false;
+          const matchSpecialty = hospital.specialties?.some((specialty) => specialty.toLowerCase().includes(query)) ?? false;
           return matchName || matchSpecialty;
         }
 
         return true;
       })
-      .sort((a, b) => (a.distanceKm ?? Infinity) - (b.distanceKm ?? Infinity));
+      .sort((a, b) => {
+        const da = a.distanceKm ?? Infinity;
+        const db = b.distanceKm ?? Infinity;
+        // Keep backend order for equal distances (no position case), otherwise sort ascending
+        return da - db;
+      });
   }, [filters, hospitalsWithDistance]);
 
   const nearestHospital = filteredHospitals[0];
@@ -245,8 +253,8 @@ export function HospitalFinderPanel({ hospitals }: HospitalFinderPanelProps) {
                 >
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                     <div>
-                      <h4 className="text-base font-semibold text-slate-900">{hospital.name}</h4>
-                      <p className="text-sm text-slate-600">{hospital.address}</p>
+                      <h4 className="text-base font-semibold text-slate-900">{hospital.name ?? 'Unknown Hospital'}</h4>
+                      {hospital.address && <p className="text-sm text-slate-600">{hospital.address}</p>}
                       <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-slate-500">
                         {hospital.distanceKm && (
                           <span className="flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-slate-700">
@@ -264,10 +272,12 @@ export function HospitalFinderPanel({ hospitals }: HospitalFinderPanelProps) {
                           className={`flex items-center gap-1 rounded-full px-2 py-0.5 font-medium ${
                             hospital.type === "reimbursable"
                               ? "bg-green-100 text-green-700"
-                              : "bg-rose-100 text-rose-700"
+                              : hospital.type === "non-reimbursable"
+                              ? "bg-rose-100 text-rose-700"
+                              : "bg-slate-100 text-slate-700"
                           }`}
                         >
-                          {hospital.type === "reimbursable" ? "Reimbursable" : "Non-reimbursable"}
+                          {hospital.type === "reimbursable" ? "Reimbursable" : hospital.type === "non-reimbursable" ? "Non-reimbursable" : "Unknown"}
                         </span>
                         {hospital.hasEmergency && (
                           <span className="rounded-full bg-red-100 px-2 py-0.5 font-medium text-red-700">Emergency</span>
@@ -289,14 +299,16 @@ export function HospitalFinderPanel({ hospitals }: HospitalFinderPanelProps) {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 6H4.5A1.5 1.5 0 0 0 3 7.5v12A1.5 1.5 0 0 0 4.5 21h12a1.5 1.5 0 0 0 1.5-1.5V18" />
                         </svg>
                       </button>
-                      <a
-                        href={`https://www.google.com/maps/dir/?api=1&destination=${hospital.lat},${hospital.lng}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-700"
-                      >
-                        Open in Google Maps
-                      </a>
+                      {hospital.lat && hospital.lng && (
+                        <a
+                          href={`https://www.google.com/maps/dir/?api=1&destination=${hospital.lat},${hospital.lng}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-700"
+                        >
+                          Open in Google Maps
+                        </a>
+                      )}
                     </div>
                   </div>
                   <div className="mt-3 flex flex-wrap gap-1">
