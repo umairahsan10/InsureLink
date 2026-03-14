@@ -1,3 +1,5 @@
+import { getAccessToken } from '@/lib/auth/session';
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
 interface RequestOptions extends RequestInit {
