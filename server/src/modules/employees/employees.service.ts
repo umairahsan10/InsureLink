@@ -40,6 +40,7 @@ export class EmployeesService {
   async createEmployee(dto: CreateEmployeeDto, actor: CurrentUserDto): Promise<EmployeeResponseDto> {
     const corporate = await this.ensureCorporateAccess(dto.corporateId, actor);
     const plan = await this.ensureValidPlan(dto.planId, corporate.insurerId);
+    await this.assertCreateUniqueFields(dto);
 
     const startDate = new Date(dto.coverageStartDate);
     const endDate = new Date(dto.coverageEndDate);
@@ -87,7 +88,14 @@ export class EmployeesService {
 
       return this.toEmployeeResponse(created);
     } catch (error: unknown) {
-      this.handleConflictErrors(error);
+      this.handleConflictErrors(error, {
+        action: 'createEmployee',
+        fields: {
+          email: dto.email,
+          employeeNumber: dto.employeeNumber,
+          cnic: dto.cnic,
+        },
+      });
       throw error;
     }
   }
@@ -125,6 +133,8 @@ export class EmployeesService {
     if (!corporate) {
       throw new NotFoundException({ code: 'NOT_FOUND', message: 'Corporate not found' });
     }
+
+    await this.assertUpdateUniqueFields(id, existing.userId, dto);
 
     const startDate = dto.coverageStartDate ? new Date(dto.coverageStartDate) : existing.coverageStartDate;
     const endDate = dto.coverageEndDate ? new Date(dto.coverageEndDate) : existing.coverageEndDate;
@@ -177,7 +187,14 @@ export class EmployeesService {
 
       return this.toEmployeeResponse(updated);
     } catch (error: unknown) {
-      this.handleConflictErrors(error);
+      this.handleConflictErrors(error, {
+        action: 'updateEmployee',
+        fields: {
+          email: dto.email,
+          employeeNumber: dto.employeeNumber,
+          cnic: dto.cnic,
+        },
+      });
       throw error;
     }
   }
@@ -543,11 +560,191 @@ export class EmployeesService {
     };
   }
 
-  private handleConflictErrors(error: unknown): never {
+  private handleConflictErrors(
+    error: unknown,
+    context?: {
+      action: string;
+      fields?: Partial<Record<'email' | 'employeeNumber' | 'cnic', string | undefined>>;
+    },
+  ): never {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
-      const target = Array.isArray(error.meta?.target) ? error.meta.target.join(', ') : 'unique field';
-      throw new ConflictException({ code: 'CONFLICT', message: `Duplicate value for ${target}` });
+      const rawTargets = Array.isArray(error.meta?.target)
+        ? error.meta.target.map((item) => String(item))
+        : [];
+      const targets = this.normalizeUniqueTargets(rawTargets);
+
+      const duplicateFields = targets.map((field) => {
+        const value = context?.fields?.[field];
+        return {
+          field,
+          ...(value !== undefined ? { value } : {}),
+        };
+      });
+
+      const message = duplicateFields.length
+        ? `Duplicate value for ${duplicateFields
+            .map((item) => (item.value !== undefined ? `${item.field} (${item.value})` : item.field))
+            .join(', ')}`
+        : 'Duplicate value for unique field';
+
+      this.logger.warn(
+        `${context?.action ?? 'employeeOperation'} conflict: ${JSON.stringify({
+          code: error.code,
+          rawTargets,
+          duplicateFields,
+        })}`,
+      );
+
+      throw new ConflictException({
+        code: 'CONFLICT',
+        message,
+        ...(duplicateFields.length ? { duplicateFields } : {}),
+      });
     }
     throw error;
+  }
+
+  private async assertCreateUniqueFields(dto: CreateEmployeeDto): Promise<void> {
+    const [emailExists, employeeNumberExists, cnicExists] = await Promise.all([
+      this.prisma.user.findUnique({
+        where: { email: dto.email },
+        select: { id: true },
+      }),
+      this.prisma.employee.findUnique({
+        where: { employeeNumber: dto.employeeNumber },
+        select: { id: true },
+      }),
+      dto.cnic
+        ? this.prisma.user.findUnique({
+            where: { cnic: dto.cnic },
+            select: { id: true },
+          })
+        : Promise.resolve(null),
+    ]);
+
+    const duplicates: Array<{ field: 'email' | 'employeeNumber' | 'cnic'; value?: string }> = [];
+
+    if (emailExists) {
+      duplicates.push({ field: 'email', value: dto.email });
+    }
+
+    if (employeeNumberExists) {
+      duplicates.push({ field: 'employeeNumber', value: dto.employeeNumber });
+    }
+
+    if (cnicExists && dto.cnic) {
+      duplicates.push({ field: 'cnic', value: dto.cnic });
+    }
+
+    if (duplicates.length > 0) {
+      this.throwDuplicateConflict('createEmployee', duplicates);
+    }
+  }
+
+  private async assertUpdateUniqueFields(
+    employeeId: string,
+    userId: string,
+    dto: UpdateEmployeeDto,
+  ): Promise<void> {
+    const checks: Promise<{ field: 'email' | 'employeeNumber' | 'cnic'; conflict: boolean; value?: string }>[] = [];
+
+    if (dto.email !== undefined) {
+      checks.push(
+        this.prisma.user
+          .findFirst({
+            where: {
+              email: dto.email,
+              id: { not: userId },
+            },
+            select: { id: true },
+          })
+          .then((row) => ({ field: 'email' as const, conflict: !!row, value: dto.email })),
+      );
+    }
+
+    if (dto.employeeNumber !== undefined) {
+      checks.push(
+        this.prisma.employee
+          .findFirst({
+            where: {
+              employeeNumber: dto.employeeNumber,
+              id: { not: employeeId },
+            },
+            select: { id: true },
+          })
+          .then((row) => ({
+            field: 'employeeNumber' as const,
+            conflict: !!row,
+            value: dto.employeeNumber,
+          })),
+      );
+    }
+
+    if (dto.cnic !== undefined) {
+      checks.push(
+        this.prisma.user
+          .findFirst({
+            where: {
+              cnic: dto.cnic,
+              id: { not: userId },
+            },
+            select: { id: true },
+          })
+          .then((row) => ({ field: 'cnic' as const, conflict: !!row, value: dto.cnic })),
+      );
+    }
+
+    if (checks.length === 0) {
+      return;
+    }
+
+    const results = await Promise.all(checks);
+    const duplicates = results
+      .filter((item) => item.conflict)
+      .map((item) => ({ field: item.field, ...(item.value !== undefined ? { value: item.value } : {}) }));
+
+    if (duplicates.length > 0) {
+      this.throwDuplicateConflict('updateEmployee', duplicates);
+    }
+  }
+
+  private throwDuplicateConflict(
+    action: string,
+    duplicateFields: Array<{ field: 'email' | 'employeeNumber' | 'cnic'; value?: string }>,
+  ): never {
+    this.logger.warn(
+      `${action} conflict (pre-check): ${JSON.stringify({
+        duplicateFields,
+      })}`,
+    );
+
+    const message = `Duplicate value for ${duplicateFields
+      .map((item) => (item.value !== undefined ? `${item.field} (${item.value})` : item.field))
+      .join(', ')}`;
+
+    throw new ConflictException({
+      code: 'CONFLICT',
+      message,
+      duplicateFields,
+    });
+  }
+
+  private normalizeUniqueTargets(rawTargets: string[]): Array<'email' | 'employeeNumber' | 'cnic'> {
+    const normalized = new Set<'email' | 'employeeNumber' | 'cnic'>();
+
+    for (const target of rawTargets) {
+      const lower = target.toLowerCase();
+      if (lower.includes('email')) {
+        normalized.add('email');
+      }
+      if (lower.includes('employee') && lower.includes('number')) {
+        normalized.add('employeeNumber');
+      }
+      if (lower.includes('cnic')) {
+        normalized.add('cnic');
+      }
+    }
+
+    return Array.from(normalized);
   }
 }
