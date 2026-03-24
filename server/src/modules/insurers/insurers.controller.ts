@@ -16,6 +16,8 @@ import { InsurersService } from './insurers.service';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { CurrentUserDto } from '../auth/dto/current-user.dto';
+import { Auditable } from '../audit/decorators/auditable.decorator';
+import { AuditLogInterceptor } from '../audit/interceptors/audit-log.interceptor';
 import { CreateInsurerDto } from './dto/create-insurer.dto';
 import { UpdateInsurerDto } from './dto/update-insurer.dto';
 import { CreatePlanDto, UpdatePlanDto } from './dto/create-plan.dto';
@@ -32,6 +34,8 @@ export class InsurersController {
   @Post()
   @Roles('insurer')
   @HttpCode(HttpStatus.CREATED)
+  @Auditable('Insurer')
+  @UseInterceptors(AuditLogInterceptor)
   async create(
     @Body() data: CreateInsurerDto,
     @CurrentUser() user: CurrentUserDto,
@@ -55,6 +59,8 @@ export class InsurersController {
 
   @Patch('plans/:planId')
   @Roles('insurer')
+  @Auditable('Plan')
+  @UseInterceptors(AuditLogInterceptor)
   async updatePlan(
     @Param('planId') planId: string,
     @Body() data: UpdatePlanDto,
@@ -64,6 +70,8 @@ export class InsurersController {
 
   @Delete('plans/:planId')
   @Roles('insurer')
+  @Auditable('Plan')
+  @UseInterceptors(AuditLogInterceptor)
   async deletePlan(@Param('planId') planId: string) {
     return this.insurersService.deletePlan(planId);
   }
@@ -96,6 +104,8 @@ export class InsurersController {
 
   @Patch(':id')
   @Roles('insurer')
+  @Auditable('Insurer')
+  @UseInterceptors(AuditLogInterceptor)
   async update(@Param('id') id: string, @Body() data: UpdateInsurerDto) {
     return this.insurersService.update(id, data);
   }
@@ -103,6 +113,8 @@ export class InsurersController {
   @Post(':id/plans')
   @Roles('insurer')
   @HttpCode(HttpStatus.CREATED)
+  @Auditable('Plan')
+  @UseInterceptors(AuditLogInterceptor)
   async createPlan(
     @Param('id') insurerId: string,
     @Body() data: CreatePlanDto,

@@ -17,6 +17,8 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { ClaimsService } from './claims.service';
+import { Auditable } from '../audit/decorators/auditable.decorator';
+import { AuditLogInterceptor } from '../audit/interceptors/audit-log.interceptor';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { CurrentUserDto } from '../auth/dto/current-user.dto';
@@ -61,6 +63,8 @@ export class ClaimsController {
   @Post()
   @Roles('hospital')
   @HttpCode(HttpStatus.CREATED)
+  @Auditable('Claim')
+  @UseInterceptors(AuditLogInterceptor)
   async create(
     @Body() data: CreateClaimDto,
     @CurrentUser() user: CurrentUserDto,
@@ -133,6 +137,8 @@ export class ClaimsController {
    */
   @Patch(':id/approve')
   @Roles('insurer')
+  @Auditable('Claim')
+  @UseInterceptors(AuditLogInterceptor)
   async approve(
     @Param('id') id: string,
     @Body() data: ApproveClaimDto,
@@ -146,6 +152,8 @@ export class ClaimsController {
    */
   @Patch(':id/reject')
   @Roles('insurer')
+  @Auditable('Claim')
+  @UseInterceptors(AuditLogInterceptor)
   async reject(
     @Param('id') id: string,
     @Body() data: RejectClaimDto,
@@ -159,6 +167,8 @@ export class ClaimsController {
    */
   @Patch(':id/on-hold')
   @Roles('insurer')
+  @Auditable('Claim')
+  @UseInterceptors(AuditLogInterceptor)
   async onHold(
     @Param('id') id: string,
     @Body() data: OnHoldClaimDto,
@@ -172,6 +182,8 @@ export class ClaimsController {
    */
   @Patch(':id/paid')
   @Roles('insurer')
+  @Auditable('Claim')
+  @UseInterceptors(AuditLogInterceptor)
   async markPaid(
     @Param('id') id: string,
     @Body() data: PaidClaimDto,
