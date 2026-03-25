@@ -37,11 +37,23 @@ export function useAuth() {
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [session, setSession] = useState<Session>(getInitialSession());
-  const [isLoading, setIsLoading] = useState(false);
+  // Start with null to match server-side rendering (avoid hydration mismatch)
+  const [session, setSession] = useState<Session>({ user: null });
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Initialize from storage only on client mount
+  useEffect(() => {
+    const initial = getInitialSession();
+    if (initial.user) {
+      setSession(initial);
+    }
+    setIsLoading(false);
+  }, []);
 
   // Rehydrate session on mount — verify token is still valid
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+
     const token = getAccessToken();
     if (token && !session.user) {
       setIsLoading(true);

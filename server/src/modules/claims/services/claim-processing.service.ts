@@ -1,4 +1,5 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { ClaimStatus, ClaimEventStatus } from '@prisma/client';
 import { ClaimsRepository } from '../repositories/claims.repository';
 import { ClaimEventsRepository } from '../repositories/claim-events.repository';
@@ -14,6 +15,7 @@ export class ClaimProcessingService {
   constructor(
     private readonly claimsRepository: ClaimsRepository,
     private readonly claimEventsRepository: ClaimEventsRepository,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   /**
@@ -91,6 +93,12 @@ export class ClaimProcessingService {
       })
       .catch((err) => console.error('Failed to create claim event:', err));
 
+    // Emit event for notification
+    this.eventEmitter.emit('claim.status.changed', {
+      claim: updatedClaim,
+      previousStatus: claim.claimStatus,
+    });
+
     return updatedClaim;
   }
 
@@ -126,6 +134,12 @@ export class ClaimProcessingService {
         eventNote,
       })
       .catch((err) => console.error('Failed to create claim event:', err));
+
+    // Emit event
+    this.eventEmitter.emit('claim.status.changed', {
+        claim: updatedClaim,
+        previousStatus: claim.claimStatus,
+    });
 
     return updatedClaim;
   }
@@ -170,6 +184,12 @@ export class ClaimProcessingService {
             : eventNote,
       })
       .catch((err) => console.error('Failed to create claim event:', err));
+
+    // Emit event
+    this.eventEmitter.emit('claim.status.changed', {
+        claim: updatedClaim,
+        previousStatus: claim.claimStatus,
+    });
 
     return updatedClaim;
   }
@@ -225,6 +245,12 @@ export class ClaimProcessingService {
         eventNote: note,
       })
       .catch((err) => console.error('Failed to create claim event:', err));
+
+    // Emit event
+    this.eventEmitter.emit('claim.status.changed', {
+        claim: updatedClaim,
+        previousStatus: claim.claimStatus,
+    });
 
     return updatedClaim;
   }

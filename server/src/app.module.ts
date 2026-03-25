@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 import { APP_GUARD } from '@nestjs/core';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -30,6 +31,9 @@ import { VerificationModule } from './modules/verification/verification.module';
     ConfigModule.forRoot({
       isGlobal: true,
     }),
+
+    // Event Emitter
+    EventEmitterModule.forRoot(),
 
     // Database
     PrismaModule,

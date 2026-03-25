@@ -2,5 +2,7 @@ import { Injectable } from '@nestjs/common';
 
 @Injectable()
 export class ReportGeneratorService {
-  constructor() {}
+  async generateReport(data: any) {
+    return 'Report Generated';
+  }
 }
