@@ -51,6 +51,7 @@ model User {
     employee             Employee?
     hospital             Hospital?
     insurer              Insurer?
+    employeeUploads      EmployeeUpload[]
     chatMessagesSent     ChatMessage[]  @relation("SentMessages")
     chatMessagesReceived ChatMessage[]  @relation("ReceivedMessages")
     notifications        Notification[]
@@ -95,10 +96,12 @@ model Corporate {
     updatedAt         DateTime        @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 
     // Relations
-    user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-    insurer   Insurer    @relation(fields: [insurerId], references: [id], onDelete: Restrict)
-    employees Employee[]
-    claims    Claim[]
+    user                   User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+    insurer                Insurer                @relation(fields: [insurerId], references: [id], onDelete: Restrict)
+    employees              Employee[]
+    employeeUploads        EmployeeUpload[]
+    invalidEmployeeUploads InvalidEmployeeUpload[]
+    claims                 Claim[]
 
     @@index([insurerId])
     @@index([status])
@@ -683,4 +686,80 @@ model AuditLog {
     @@index([entityType, entityId, timestamp(sort: Desc)])
     @@index([action, timestamp(sort: Desc)])
     @@map("audit_logs")
+}
+
+// ============================================================================
+// 17. EMPLOYEE_UPLOAD ENTITY
+// ============================================================================
+
+enum UploadStatus {
+    pending
+    processed
+    failed
+}
+
+model EmployeeUpload {
+    id                String       @id @default(uuid()) @db.Uuid
+    corporateId       String       @map("corporate_id") @db.Uuid
+    uploadedByUserId  String       @map("uploaded_by_user_id") @db.Uuid
+    filePath          String       @db.VarChar(500)
+    originalFileName  String       @map("original_file_name") @db.VarChar(255)
+    uploadedAt        DateTime     @default(now()) @map("uploaded_at") @db.Timestamptz(6)
+    status            UploadStatus @default(pending)
+
+    // Relations
+    corporate         Corporate              @relation(fields: [corporateId], references: [id], onDelete: Cascade)
+    uploadedBy        User                   @relation(fields: [uploadedByUserId], references: [id], onDelete: Cascade)
+    invalidUploads    InvalidEmployeeUpload[]
+
+    @@index([corporateId])
+    @@index([uploadedByUserId])
+    @@index([status])
+    @@index([uploadedAt])
+    @@map("employee_uploads")
+}
+
+// ============================================================================
+// 18. INVALID_EMPLOYEE_UPLOAD ENTITY
+// ============================================================================
+
+model InvalidEmployeeUpload {
+    id                String         @id @default(uuid()) @db.Uuid
+    employeeUploadId  String         @map("employee_upload_id") @db.Uuid
+    corporateId       String         @map("corporate_id") @db.Uuid
+    errorMessages     String[]       @map("error_messages")
+
+    // User fields
+    email             String         @db.VarChar(255)
+    firstName         String         @map("first_name") @db.VarChar(100)
+    lastName          String?        @map("last_name") @db.VarChar(100)
+    phone             String         @db.VarChar(20)
+    userRole          UserRole       @map("user_role")
+    dob               DateTime?      @db.Date
+    gender            Gender?
+    cnic              String?        @db.VarChar(15)
+    address           String?        @db.VarChar(500)
+
+    // Employee fields
+    employeeNumber    String         @map("employee_number") @db.VarChar(50)
+    planId            String         @map("plan_id") @db.Uuid
+    designation       String         @db.VarChar(100)
+    department        String         @db.VarChar(100)
+    coverageStartDate DateTime       @map("coverage_start_date") @db.Date
+    coverageEndDate   DateTime       @map("coverage_end_date") @db.Date
+    coverageAmount    Decimal        @map("coverage_amount") @db.Decimal(12, 2)
+    usedAmount        Decimal        @default(0) @map("used_amount") @db.Decimal(12, 2)
+    status            EmployeeStatus @default(Active)
+
+    createdAt         DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+    updatedAt         DateTime       @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+    // Relations
+    employeeUpload    EmployeeUpload @relation(fields: [employeeUploadId], references: [id], onDelete: Cascade)
+    corporate         Corporate       @relation(fields: [corporateId], references: [id], onDelete: Cascade)
+
+    @@index([employeeUploadId])
+    @@index([corporateId])
+    @@index([createdAt])
+    @@map("invalid_employee_uploads")
 }

@@ -85,3 +85,21 @@ export class BulkImportValidationResponseDto {
   invalidCount: number;
   results: BulkImportValidationRowResultDto[];
 }
+
+export class UploadCsvDto {
+  @IsString()
+  @IsNotEmpty()
+  corporateId: string;
+}
+
+export class GetInvalidUploadsDto {
+  @IsString()
+  @IsNotEmpty()
+  corporateId: string;
+}
+
+export class ResubmitInvalidUploadDto {
+  @IsString()
+  @IsNotEmpty()
+  invalidUploadId: string;
+}

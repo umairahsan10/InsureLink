@@ -126,6 +126,34 @@ export class CorporatesService {
       });
     }
 
+    // Reject contract updates that would invalidate existing employee coverage windows.
+    if (dto.contractStartDate !== undefined || dto.contractEndDate !== undefined) {
+      const invalidEmployee = await this.prisma.employee.findFirst({
+        where: {
+          corporateId: id,
+          OR: [
+            { coverageStartDate: { lt: nextStart } },
+            { coverageEndDate: { gt: nextEnd } },
+          ],
+        },
+        select: {
+          employeeNumber: true,
+          coverageStartDate: true,
+          coverageEndDate: true,
+        },
+      });
+
+      if (invalidEmployee) {
+        throw new BadRequestException({
+          code: 'VALIDATION_FAILED',
+          message:
+            `Cannot update corporate contract dates. Employee ${invalidEmployee.employeeNumber} has coverage ` +
+            `${invalidEmployee.coverageStartDate.toISOString().slice(0, 10)} to ` +
+            `${invalidEmployee.coverageEndDate.toISOString().slice(0, 10)} which is outside the new contract window.`,
+        });
+      }
+    }
+
     try {
       const updated = await this.prisma.corporate.update({
         where: { id },

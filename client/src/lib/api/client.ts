@@ -64,8 +64,11 @@ export async function apiFetch<T>(
     process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3001";
   const url = `${baseUrl}${path}`;
   let token = getAccessToken();
+  
+  // Only set Content-Type to application/json if body is not FormData
+  const isFormData = options.body instanceof FormData;
   const headers: Record<string, string> = {
-    "Content-Type": "application/json",
+    ...(isFormData ? {} : { "Content-Type": "application/json" }),
     ...((options.headers as Record<string, string>) || {}),
   };
   if (token) {

@@ -29,6 +29,9 @@ export class SupabaseStorageProvider {
       throw new Error('Supabase configuration missing');
     }
 
+    // Normalize bucket value to allow quoted names in .env
+    this.bucketName = this.bucketName?.replace(/^['"]|['"]$/g, '') || 'claim-documents';
+
     this.supabase = createClient(supabaseUrl, supabaseKey);
     this.logger.log(
       `Supabase Storage initialized with bucket: ${this.bucketName}`,

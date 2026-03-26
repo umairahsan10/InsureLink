@@ -3,19 +3,25 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
+  InternalServerErrorException,
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { EmployeeStatus, Prisma, UserRole } from '@prisma/client';
+import { EmployeeStatus, Prisma, UserRole, UploadStatus } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
+import * as XLSX from 'xlsx';
 import { randomUUID } from 'crypto';
 import { PrismaService } from '../../common/prisma/prisma.service';
+import { FileUploadService } from '../file-upload/file-upload.service';
 import { CurrentUserDto } from '../auth/dto/current-user.dto';
 import {
   BulkImportEmployeeRowDto,
   BulkImportValidationResponseDto,
   CommitBulkImportDto,
   ValidateBulkImportDto,
+  UploadCsvDto,
+  GetInvalidUploadsDto,
+  ResubmitInvalidUploadDto,
 } from './dto/bulk-import.dto';
 import { CreateEmployeeDto } from './dto/create-employee.dto';
 import { EmployeeCoverageDto } from './dto/employee-coverage.dto';
@@ -35,7 +41,10 @@ export class EmployeesService {
   private readonly logger = new Logger(EmployeesService.name);
   private readonly pendingImports = new Map<string, PendingImport>();
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly fileUploadService: FileUploadService,
+  ) {}
 
   async createEmployee(dto: CreateEmployeeDto, actor: CurrentUserDto): Promise<EmployeeResponseDto> {
     const corporate = await this.ensureCorporateAccess(dto.corporateId, actor);
@@ -103,6 +112,30 @@ export class EmployeesService {
   async getEmployeeById(id: string, actor: CurrentUserDto): Promise<EmployeeResponseDto> {
     const employee = await this.prisma.employee.findUnique({
       where: { id },
+      include: { user: true, dependents: { select: { id: true } } },
+    });
+
+    if (!employee) {
+      throw new NotFoundException({ code: 'NOT_FOUND', message: 'Employee not found' });
+    }
+
+    this.ensureEmployeeAccess(employee, actor);
+    return this.toEmployeeResponse(employee);
+  }
+
+  async getEmployeeByNumber(corporateId: string, employeeNumber: string, actor: CurrentUserDto): Promise<EmployeeResponseDto> {
+    if (!corporateId || !employeeNumber) {
+      throw new BadRequestException({ code: 'VALIDATION_FAILED', message: 'corporateId and employeeNumber are required' });
+    }
+
+    const employee = await this.prisma.employee.findFirst({
+      where: {
+        corporateId,
+        employeeNumber: {
+          equals: employeeNumber.trim(),
+          mode: 'insensitive',
+        },
+      },
       include: { user: true, dependents: { select: { id: true } } },
     });
 
@@ -360,6 +393,381 @@ export class EmployeesService {
     return { importedCount, skippedCount: pending.invalidRowsCount };
   }
 
+  async uploadCsv(
+    file: Express.Multer.File,
+    dto: UploadCsvDto,
+    actor: CurrentUserDto,
+  ): Promise<{ uploadId: string; validCount: number; invalidCount: number }> {
+    this.logger.log(`Bulk import started by user=${actor.id}, corporate=${dto.corporateId}, file=${file?.originalname}`);
+
+    await this.ensureCorporateAccess(dto.corporateId, actor);
+
+    if (!file || !file.buffer || file.size === 0) {
+      this.logger.warn(`Bulk import failed: no file provided. actor=${actor.id}`);
+      throw new BadRequestException({ code: 'NO_FILE', message: 'No file provided' });
+    }
+
+    const fileExtension = file.originalname.toLowerCase().split('.').pop();
+    this.logger.log(`Bulk import file info: extension=${fileExtension}, size=${file.size}`);
+
+    let rows: BulkImportEmployeeRowDto[];
+    try {
+      if (fileExtension === 'csv') {
+        const csvContent = file.buffer.toString('utf-8');
+        rows = this.parseCsv(csvContent);
+      } else if (['xlsx', 'xls'].includes(fileExtension || '')) {
+        rows = this.parseExcel(file.buffer);
+      } else {
+        this.logger.warn(`Bulk import unsupported file type: ${fileExtension}`);
+        throw new BadRequestException({ code: 'INVALID_FILE_TYPE', message: 'Only CSV and Excel files are supported' });
+      }
+
+      this.logger.log(`Parsed ${rows.length} rows from uploaded file`);
+    } catch (error) {
+      this.logger.error('Bulk import parse error', error);
+      throw new BadRequestException({ code: 'INVALID_FILE', message: 'Failed to parse upload file', details: error instanceof Error ? error.message : String(error) });
+    }
+
+    let uploadResult;
+    try {
+      uploadResult = await this.fileUploadService.uploadFile(file, 'csv-uploads');
+    } catch (error) {
+      this.logger.error('Supabase upload error inside bulk import', error);
+      throw new InternalServerErrorException({
+        code: 'SUPABASE_UPLOAD_FAILED',
+        message: 'Failed to store uploaded file. Please try again.',
+        details: error instanceof Error ? error.message : String(error),
+      });
+    }
+
+    // Create employee upload record
+    const employeeUpload = await this.prisma.employeeUpload.create({
+      data: {
+        corporateId: dto.corporateId,
+        uploadedByUserId: actor.id,
+        filePath: uploadResult.filePath,
+        originalFileName: file.originalname,
+        status: UploadStatus.pending,
+      },
+    });
+
+    // Validate rows
+    const validationResults = await Promise.all(
+      rows.map(async (row, index) => this.validateImportRow(row, index + 2, dto.corporateId)),
+    );
+
+    const validRows = validationResults.filter((item) => item.valid && item.normalized).map((item) => item.normalized as BulkImportEmployeeRowDto);
+    const invalidRows = validationResults.filter((item) => !item.valid);
+
+    // Store invalid rows
+    for (const invalid of invalidRows) {
+      const rowData = invalid.normalized ?? invalid as unknown as BulkImportEmployeeRowDto;
+      const rowPlanId = rowData.planId || '00000000-0000-0000-0000-000000000000';
+
+      try {
+        await this.prisma.invalidEmployeeUpload.create({
+          data: {
+            employeeUploadId: employeeUpload.id,
+            corporateId: dto.corporateId,
+            errorMessages: invalid.errors,
+            // User fields
+            email: rowData.email,
+            firstName: rowData.firstName,
+            lastName: rowData.lastName ?? null,
+            phone: rowData.phone,
+            userRole: UserRole.patient, // Default for employees
+            dob: rowData.dob ? new Date(rowData.dob) : null,
+            gender: null, // Not in CSV
+            cnic: rowData.cnic ?? null,
+            address: null, // Not in CSV
+            // Employee fields
+            employeeNumber: rowData.employeeNumber,
+            planId: rowPlanId,
+            designation: rowData.designation,
+            department: rowData.department,
+            coverageStartDate: new Date(rowData.coverageStartDate),
+            coverageEndDate: new Date(rowData.coverageEndDate),
+            coverageAmount: new Prisma.Decimal(0), // Will be set from plan
+            usedAmount: new Prisma.Decimal(0),
+            status: EmployeeStatus.Active,
+          },
+        });
+      } catch (createInvalidErr) {
+        this.logger.error(`Failed to persist invalid row for employeeNumber=${rowData.employeeNumber}`, createInvalidErr);
+      }
+    }
+
+    // Create valid employees
+    let validCount = 0;
+    if (validRows.length > 0) {
+      this.logger.log(`Attempting to create ${validRows.length} valid employee(s)
+`);
+    }
+    for (const row of validRows) {
+      try {
+        await this.createEmployee(
+          {
+            corporateId: dto.corporateId,
+            planId: row.planId,
+            employeeNumber: row.employeeNumber,
+            email: row.email,
+            password: row.password,
+            firstName: row.firstName,
+            ...(row.lastName ? { lastName: row.lastName } : {}),
+            phone: row.phone,
+            designation: row.designation,
+            department: row.department,
+            coverageStartDate: row.coverageStartDate,
+            coverageEndDate: row.coverageEndDate,
+            ...(row.dob ? { dob: row.dob } : {}),
+            ...(row.cnic ? { cnic: row.cnic } : {}),
+          },
+          actor,
+        );
+        validCount += 1;
+        this.logger.log(`Created employee: ${row.email} (${row.employeeNumber})`);
+      } catch (error) {
+        this.logger.error(`Failed to create employee ${row.email}`, error);
+
+        // Persist the row into invalid uploads so user can correct it
+        try {
+          await this.prisma.invalidEmployeeUpload.create({
+            data: {
+              employeeUploadId: employeeUpload.id,
+              corporateId: dto.corporateId,
+              errorMessages: [
+                `Failed to create employee: ${error instanceof Error ? error.message : String(error)}`,
+              ],
+              email: row.email,
+              firstName: row.firstName,
+              lastName: row.lastName ?? null,
+              phone: row.phone,
+              userRole: UserRole.patient,
+              dob: row.dob ? new Date(row.dob) : null,
+              gender: null,
+              cnic: row.cnic ?? null,
+              address: null,
+              employeeNumber: row.employeeNumber,
+              planId: row.planId,
+              designation: row.designation,
+              department: row.department,
+              coverageStartDate: new Date(row.coverageStartDate),
+              coverageEndDate: new Date(row.coverageEndDate),
+              coverageAmount: new Prisma.Decimal(0),
+              usedAmount: new Prisma.Decimal(0),
+              status: EmployeeStatus.Active,
+            },
+          });
+        } catch (invalidPersistErr) {
+          this.logger.error(`Failed to persist failed valid row for ${row.email}`, invalidPersistErr);
+        }
+      }
+    }
+
+    // Update upload status
+    await this.prisma.employeeUpload.update({
+      where: { id: employeeUpload.id },
+      data: { status: UploadStatus.processed },
+    });
+
+    return {
+      uploadId: employeeUpload.id,
+      validCount,
+      invalidCount: invalidRows.length,
+    };
+  }
+
+  private parseCsv(content: string): BulkImportEmployeeRowDto[] {
+    const lines = content.split('\n').filter(line => line.trim());
+    if (lines.length < 2) {
+      throw new BadRequestException({ code: 'INVALID_CSV', message: 'CSV must have at least a header row and one data row' });
+    }
+
+    const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+    const requiredHeaders = ['employeeNumber', 'firstName', 'email', 'phone', 'password', 'designation', 'department', 'planId', 'coverageStartDate', 'coverageEndDate'];
+
+    for (const required of requiredHeaders) {
+      if (!headers.includes(required)) {
+        throw new BadRequestException({ code: 'INVALID_CSV', message: `Missing required header: ${required}` });
+      }
+    }
+
+    const rows: BulkImportEmployeeRowDto[] = [];
+    for (let i = 1; i < lines.length; i++) {
+      const values = lines[i].split(',').map(v => v.trim().replace(/"/g, ''));
+      if (values.length !== headers.length) continue; // Skip malformed rows
+
+      const row: any = {};
+      headers.forEach((header, index) => {
+        row[header] = values[index] || undefined;
+      });
+
+      rows.push(row as BulkImportEmployeeRowDto);
+    }
+
+    return rows;
+  }
+
+  private parseExcel(buffer: Buffer): BulkImportEmployeeRowDto[] {
+    const workbook = XLSX.read(buffer, { type: 'buffer' });
+    const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+    
+    if (!worksheet) {
+      throw new BadRequestException({ code: 'INVALID_EXCEL', message: 'Excel file has no sheets' });
+    }
+
+    const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
+    
+    if (jsonData.length < 1) {
+      throw new BadRequestException({ code: 'INVALID_EXCEL', message: 'Excel sheet must have at least one data row' });
+    }
+
+    const requiredHeaders = ['employeeNumber', 'firstName', 'email', 'phone', 'password', 'designation', 'department', 'planId', 'coverageStartDate', 'coverageEndDate'];
+    const headers = Object.keys(jsonData[0] || {});
+
+    for (const required of requiredHeaders) {
+      if (!headers.some(h => h.toLowerCase() === required.toLowerCase())) {
+        throw new BadRequestException({ code: 'INVALID_EXCEL', message: `Missing required header: ${required}` });
+      }
+    }
+
+    // Convert Excel data to BulkImportEmployeeRowDto format, handling case-insensitive headers
+    const rows: BulkImportEmployeeRowDto[] = jsonData.map((row: any) => {
+      const normalizedRow: any = {};
+      const headerMap: { [key: string]: string } = {};
+
+      // Create a case-insensitive header map
+      Object.keys(row).forEach(key => {
+        headerMap[key.toLowerCase()] = key;
+      });
+
+      // Map data using case-insensitive headers
+      requiredHeaders.forEach(field => {
+        const mappedKey = headerMap[field.toLowerCase()];
+        if (mappedKey) {
+          normalizedRow[field] = row[mappedKey];
+        }
+      });
+
+      // Also include optional fields if present
+      Object.keys(row).forEach(key => {
+        const lowerKey = key.toLowerCase();
+        if (!Object.values(headerMap).some(v => v.toLowerCase() === lowerKey)) {
+          normalizedRow[key] = row[key];
+        }
+      });
+
+      return normalizedRow as BulkImportEmployeeRowDto;
+    });
+
+    return rows;
+  }
+
+  async getInvalidUploads(dto: GetInvalidUploadsDto, actor: CurrentUserDto): Promise<any[]> {
+    await this.ensureCorporateAccess(dto.corporateId, actor);
+
+    const invalidUploads = await this.prisma.invalidEmployeeUpload.findMany({
+      where: { corporateId: dto.corporateId },
+      include: {
+        employeeUpload: {
+          select: {
+            originalFileName: true,
+            uploadedAt: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return invalidUploads.map(upload => ({
+      id: upload.id,
+      uploadId: upload.employeeUploadId,
+      fileName: upload.employeeUpload.originalFileName,
+      uploadedAt: upload.employeeUpload.uploadedAt,
+      errors: upload.errorMessages,
+      data: {
+        employeeNumber: upload.employeeNumber,
+        firstName: upload.firstName,
+        lastName: upload.lastName,
+        email: upload.email,
+        phone: upload.phone,
+        designation: upload.designation,
+        department: upload.department,
+        planId: upload.planId,
+        coverageStartDate: upload.coverageStartDate.toISOString().split('T')[0],
+        coverageEndDate: upload.coverageEndDate.toISOString().split('T')[0],
+        dob: upload.dob?.toISOString().split('T')[0],
+        cnic: upload.cnic,
+      },
+    }));
+  }
+
+  async resubmitInvalidUpload(dto: ResubmitInvalidUploadDto, actor: CurrentUserDto): Promise<{ success: boolean; message: string }> {
+    const invalidUpload = await this.prisma.invalidEmployeeUpload.findUnique({
+      where: { id: dto.invalidUploadId },
+      include: { employeeUpload: true },
+    });
+
+    if (!invalidUpload) {
+      throw new NotFoundException({ code: 'NOT_FOUND', message: 'Invalid upload record not found' });
+    }
+
+    await this.ensureCorporateAccess(invalidUpload.corporateId, actor);
+
+    // Validate the data again (in case plan or corporate constraints changed)
+    const validation = await this.validateImportRow({
+      employeeNumber: invalidUpload.employeeNumber,
+      firstName: invalidUpload.firstName,
+      lastName: invalidUpload.lastName || undefined,
+      email: invalidUpload.email,
+      phone: invalidUpload.phone,
+      password: 'temp-password', // Will be set by user
+      designation: invalidUpload.designation,
+      department: invalidUpload.department,
+      planId: invalidUpload.planId,
+      coverageStartDate: invalidUpload.coverageStartDate.toISOString().split('T')[0],
+      coverageEndDate: invalidUpload.coverageEndDate.toISOString().split('T')[0],
+      dob: invalidUpload.dob?.toISOString().split('T')[0],
+      cnic: invalidUpload.cnic || undefined,
+    }, 1, invalidUpload.corporateId);
+
+    if (!validation.valid) {
+      throw new BadRequestException({
+        code: 'VALIDATION_FAILED',
+        message: 'Data is still invalid',
+        errors: validation.errors,
+      });
+    }
+
+    // Create the employee
+    await this.createEmployee(
+      {
+        corporateId: invalidUpload.corporateId,
+        planId: invalidUpload.planId,
+        employeeNumber: invalidUpload.employeeNumber,
+        email: invalidUpload.email,
+        password: 'temp-password', // TODO: Generate proper password or require user input
+        firstName: invalidUpload.firstName,
+        ...(invalidUpload.lastName ? { lastName: invalidUpload.lastName } : {}),
+        phone: invalidUpload.phone,
+        designation: invalidUpload.designation,
+        department: invalidUpload.department,
+        coverageStartDate: invalidUpload.coverageStartDate.toISOString().split('T')[0],
+        coverageEndDate: invalidUpload.coverageEndDate.toISOString().split('T')[0],
+        ...(invalidUpload.dob ? { dob: invalidUpload.dob.toISOString().split('T')[0] } : {}),
+        ...(invalidUpload.cnic ? { cnic: invalidUpload.cnic } : {}),
+      },
+      actor,
+    );
+
+    // Delete the invalid upload record
+    await this.prisma.invalidEmployeeUpload.delete({
+      where: { id: dto.invalidUploadId },
+    });
+
+    return { success: true, message: 'Employee created successfully' };
+  }
+
   async updateUsedAmount(employeeId: string, approvedAmount: Prisma.Decimal): Promise<void> {
     const employee = await this.prisma.employee.findUnique({ where: { id: employeeId } });
     if (!employee) {
@@ -384,7 +792,7 @@ export class EmployeesService {
     row: BulkImportEmployeeRowDto,
     rowIndex: number,
     corporateId: string,
-  ): Promise<{ rowIndex: number; valid: boolean; errors: string[]; normalized?: BulkImportEmployeeRowDto }> {
+  ): Promise<{ rowIndex: number; valid: boolean; errors: string[]; normalized: BulkImportEmployeeRowDto }> {
     const errors: string[] = [];
 
     const duplicateEmployeeNumber = await this.prisma.employee.findFirst({
@@ -400,16 +808,43 @@ export class EmployeesService {
       errors.push('Duplicate email already exists');
     }
 
-    const plan = await this.prisma.plan.findUnique({ where: { id: row.planId }, select: { id: true } });
-    if (!plan) {
-      errors.push('Plan does not exist');
+    let planId = row.planId;
+    let plan: { id: string } | null = null;
+    try {
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+      if (uuidRegex.test(row.planId)) {
+        const planLookup = await this.prisma.plan.findUnique({ where: { id: row.planId }, select: { id: true } });
+        plan = planLookup ? { id: planLookup.id } : null;
+      } else {
+        const planLookup = await this.prisma.plan.findUnique({ where: { planCode: row.planId }, select: { id: true } });
+        plan = planLookup ? { id: planLookup.id } : null;
+      }
+
+      if (plan) {
+        planId = plan.id; // rewrite to UUID for downstream createEmployee
+      }
+
+      if (!plan) {
+        errors.push('Plan does not exist');
+        planId = '00000000-0000-0000-0000-000000000000';
+      }
+    } catch (error) {
+      errors.push('Error validating plan');
+      this.logger.error(`Plan validation error for row ${rowIndex}`, error);
+      planId = '00000000-0000-0000-0000-000000000000';
     }
+
+    const normalized: BulkImportEmployeeRowDto = {
+      ...row,
+      planId,
+    };
 
     return {
       rowIndex,
       valid: errors.length === 0,
       errors,
-      ...(errors.length === 0 ? { normalized: row } : {}),
+      normalized,
     };
   }
 

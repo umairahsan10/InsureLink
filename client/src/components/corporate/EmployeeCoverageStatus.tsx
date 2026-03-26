@@ -62,35 +62,43 @@ export default function EmployeeCoverageStatus({
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {employees.map((employee, index) => (
-              <tr key={index} className="hover:bg-gray-50">
-                <td className="px-4 md:px-6 py-4 md:py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                  {employee.name}
-                </td>
-                <td className="px-4 md:px-6 py-4 md:py-4 whitespace-nowrap text-sm text-gray-500">
-                  {employee.cnic}
-                </td>
-                <td className="px-4 md:px-6 py-4 md:py-4 whitespace-nowrap text-sm text-gray-500">
-                  {employee.department}
-                </td>
-                <td className="px-4 md:px-6 py-4 md:py-4 whitespace-nowrap">
-                  <div className="flex items-center">
-                    <div className="w-16 md:w-20 bg-gray-200 rounded-full h-2.5 md:h-2 mr-3">
-                      <div
-                        className="bg-purple-600 h-2.5 md:h-2 rounded-full"
-                        style={{ width: `${employee.coverageUsed}%` }}
-                      ></div>
-                    </div>
-                    <span className="text-sm text-gray-900">
-                      {employee.coverageUsed}%
-                    </span>
-                  </div>
-                </td>
-                <td className="px-4 md:px-6 py-4 md:py-4 whitespace-nowrap text-sm text-gray-500">
-                  {employee.totalCoverage}
+            {employees.length === 0 ? (
+              <tr>
+                <td colSpan={5} className="px-4 md:px-6 py-8 text-center text-sm text-gray-500">
+                  No employees found yet.
                 </td>
               </tr>
-            ))}
+            ) : (
+              employees.map((employee, index) => (
+                <tr key={index} className="hover:bg-gray-50">
+                  <td className="px-4 md:px-6 py-4 md:py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                    {employee.name}
+                  </td>
+                  <td className="px-4 md:px-6 py-4 md:py-4 whitespace-nowrap text-sm text-gray-500">
+                    {employee.cnic}
+                  </td>
+                  <td className="px-4 md:px-6 py-4 md:py-4 whitespace-nowrap text-sm text-gray-500">
+                    {employee.department}
+                  </td>
+                  <td className="px-4 md:px-6 py-4 md:py-4 whitespace-nowrap">
+                    <div className="flex items-center">
+                      <div className="w-16 md:w-20 bg-gray-200 rounded-full h-2.5 md:h-2 mr-3">
+                        <div
+                          className="bg-purple-600 h-2.5 md:h-2 rounded-full"
+                          style={{ width: `${employee.coverageUsed}%` }}
+                        ></div>
+                      </div>
+                      <span className="text-sm text-gray-900">
+                        {employee.coverageUsed}%
+                      </span>
+                    </div>
+                  </td>
+                  <td className="px-4 md:px-6 py-4 md:py-4 whitespace-nowrap text-sm text-gray-500">
+                    {employee.totalCoverage}
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>

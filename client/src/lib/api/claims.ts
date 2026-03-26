@@ -111,6 +111,8 @@ export interface ClaimFilters {
   page?: number;
   limit?: number;
   sortBy?: string;
+  order?: "asc" | "desc";
+  // Backward-compatible alias used by some existing callers
   sortOrder?: "asc" | "desc";
 }
 
@@ -266,7 +268,8 @@ export const claimsApi = {
     if (filters?.page) queryParams.append("page", filters.page.toString());
     if (filters?.limit) queryParams.append("limit", filters.limit.toString());
     if (filters?.sortBy) queryParams.append("sortBy", filters.sortBy);
-    if (filters?.sortOrder) queryParams.append("sortOrder", filters.sortOrder);
+    const order = filters?.order ?? filters?.sortOrder;
+    if (order) queryParams.append("order", order);
 
     const response = await apiFetch<PaginatedResponse<Claim>>(
       `${BASE}?${queryParams.toString()}`,
