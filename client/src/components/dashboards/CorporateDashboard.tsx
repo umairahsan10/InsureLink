@@ -1,23 +1,56 @@
-import claims from "@/data/claims.json";
-import type { Claim } from "@/types/claims";
+"use client";
+
+import { useEffect, useState } from "react";
 import { formatPKRShort } from "@/lib/format";
-import { sortClaimsByDateDesc } from "@/lib/sort";
+import { analyticsApi, type CoverageAnalyticsResponse } from "@/lib/api/analytics";
+import type { Analytics } from "@/types/analytics";
 
 export default function CorporateDashboard() {
-  const allClaims = claims as Claim[];
-  const totalEmployees = 250; // placeholder - corporate metadata not available here
-  const activePolicies = 248; // placeholder
-  const activeClaims = allClaims.filter((c) => c.status === "Pending").length;
-  const monthlyPremium =
-    allClaims.reduce((s, c) => s + (c.amountClaimed || 0), 0) / 12;
+  const [analytics, setAnalytics] = useState<Analytics | null>(null);
+  const [coverage, setCoverage] = useState<CoverageAnalyticsResponse | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const recent = sortClaimsByDateDesc(allClaims)
-    .slice(0, 3)
-    .map((c) => ({
-      employee: c.employeeName || c.claimNumber,
-      amount: formatPKRShort(c.amountClaimed || 0),
-      status: c.status,
-    }));
+  useEffect(() => {
+    Promise.all([
+      analyticsApi.getDashboard(),
+      analyticsApi.getCoverageAnalytics(),
+    ])
+      .then(([analyticsData, coverageData]) => {
+        setAnalytics(analyticsData);
+        setCoverage(coverageData);
+      })
+      .catch((err) => console.error("Failed to load analytics:", err))
+      .finally(() => setIsLoading(false));
+  }, []);
+
+  if (isLoading) {
+    return (
+      <div className="p-8">
+        <h1 className="text-3xl font-bold text-gray-900 mb-6">Corporate Dashboard</h1>
+        <div className="animate-pulse space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="bg-white rounded-lg shadow p-6 h-24" />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!analytics || !coverage) {
+    return (
+      <div className="p-8">
+        <h1 className="text-3xl font-bold text-gray-900 mb-6">Corporate Dashboard</h1>
+        <p className="text-gray-500">Unable to load dashboard data.</p>
+      </div>
+    );
+  }
+
+  const totalEmployees = coverage.totalEmployees;
+  const activeEmployees = coverage.activeEmployees;
+  const activeClaims = analytics.claimsByStatus.Pending;
+  const utilizationPct = (coverage.utilizationRate * 100).toFixed(1);
 
   return (
     <div className="p-8">
@@ -32,49 +65,44 @@ export default function CorporateDashboard() {
         </div>
 
         <div className="bg-white rounded-lg shadow p-6">
-          <p className="text-sm text-gray-500 mb-2">Active Policies</p>
-          <p className="text-3xl font-bold text-green-600">{activePolicies}</p>
+          <p className="text-sm text-gray-500 mb-2">Active Employees</p>
+          <p className="text-3xl font-bold text-green-600">{activeEmployees}</p>
         </div>
 
         <div className="bg-white rounded-lg shadow p-6">
-          <p className="text-sm text-gray-500 mb-2">Active Claims</p>
+          <p className="text-sm text-gray-500 mb-2">Pending Claims</p>
           <p className="text-3xl font-bold text-orange-600">{activeClaims}</p>
         </div>
 
         <div className="bg-white rounded-lg shadow p-6">
-          <p className="text-sm text-gray-500 mb-2">Monthly Premium</p>
-          <p className="text-3xl font-bold text-purple-600">
-            {formatPKRShort(Math.round(monthlyPremium))}
-          </p>
+          <p className="text-sm text-gray-500 mb-2">Coverage Utilization</p>
+          <p className="text-3xl font-bold text-purple-600">{utilizationPct}%</p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white rounded-lg shadow p-6">
           <h2 className="text-xl font-semibold text-gray-900 mb-4">
-            Recent Claims
+            Claims Overview
           </h2>
           <div className="space-y-3">
-            {recent.map((claim, idx) => (
+            {[
+              { label: "Pending", value: analytics.claimsByStatus.Pending, color: "text-yellow-600" },
+              { label: "Approved", value: analytics.claimsByStatus.Approved, color: "text-green-600" },
+              { label: "Rejected", value: analytics.claimsByStatus.Rejected, color: "text-red-600" },
+            ].map((item) => (
               <div
-                key={idx}
+                key={item.label}
                 className="flex justify-between items-center p-3 bg-gray-50 rounded"
               >
-                <p className="font-medium">{claim.employee}</p>
-                <div className="text-right">
-                  <p className="font-semibold">{claim.amount}</p>
-                  <span
-                    className={`text-xs px-2 py-1 rounded-full ${
-                      claim.status === "Approved"
-                        ? "bg-green-100 text-green-800"
-                        : "bg-yellow-100 text-yellow-800"
-                    }`}
-                  >
-                    {claim.status}
-                  </span>
-                </div>
+                <p className="font-medium">{item.label}</p>
+                <p className={`text-xl font-bold ${item.color}`}>{item.value}</p>
               </div>
             ))}
+            <div className="flex justify-between items-center p-3 bg-blue-50 rounded">
+              <p className="font-medium">Total Claims</p>
+              <p className="text-xl font-bold text-blue-600">{analytics.totalClaims}</p>
+            </div>
           </div>
         </div>
 
@@ -83,41 +111,72 @@ export default function CorporateDashboard() {
             Plan Distribution
           </h2>
           <div className="space-y-3">
-            <div className="flex justify-between items-center">
-              <span className="text-gray-700">Basic Plan</span>
-              <span className="font-semibold">50 employees</span>
-            </div>
-            <div className="w-full bg-gray-200 rounded-full h-2">
-              <div
-                className="bg-blue-600 h-2 rounded-full"
-                style={{ width: "20%" }}
-              ></div>
-            </div>
-
-            <div className="flex justify-between items-center">
-              <span className="text-gray-700">Comprehensive</span>
-              <span className="font-semibold">150 employees</span>
-            </div>
-            <div className="w-full bg-gray-200 rounded-full h-2">
-              <div
-                className="bg-green-600 h-2 rounded-full"
-                style={{ width: "60%" }}
-              ></div>
-            </div>
-
-            <div className="flex justify-between items-center">
-              <span className="text-gray-700">Premium Plan</span>
-              <span className="font-semibold">50 employees</span>
-            </div>
-            <div className="w-full bg-gray-200 rounded-full h-2">
-              <div
-                className="bg-purple-600 h-2 rounded-full"
-                style={{ width: "20%" }}
-              ></div>
-            </div>
+            {coverage.planDistribution.length === 0 ? (
+              <p className="text-gray-500 text-sm">No plan data available</p>
+            ) : (
+              coverage.planDistribution.map((plan) => {
+                const pct =
+                  totalEmployees > 0
+                    ? Math.round((plan.employeeCount / totalEmployees) * 100)
+                    : 0;
+                return (
+                  <div key={plan.planId}>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-700">{plan.planName}</span>
+                      <span className="font-semibold">{plan.employeeCount} employees</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2 mt-1">
+                      <div
+                        className="bg-blue-600 h-2 rounded-full"
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                  </div>
+                );
+              })
+            )}
           </div>
         </div>
       </div>
+
+      {/* Coverage by Department */}
+      {coverage.coverageByDepartment.length > 0 && (
+        <div className="bg-white rounded-lg shadow p-6 mt-6">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">
+            Coverage by Department
+          </h2>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-gray-500 border-b">
+                  <th className="pb-2">Department</th>
+                  <th className="pb-2">Employees</th>
+                  <th className="pb-2">Total Coverage</th>
+                  <th className="pb-2">Used</th>
+                  <th className="pb-2">Utilization</th>
+                </tr>
+              </thead>
+              <tbody>
+                {coverage.coverageByDepartment.map((dept) => {
+                  const util =
+                    dept.totalCoverage > 0
+                      ? ((dept.usedAmount / dept.totalCoverage) * 100).toFixed(1)
+                      : "0.0";
+                  return (
+                    <tr key={dept.department} className="border-b last:border-0">
+                      <td className="py-2 font-medium">{dept.department}</td>
+                      <td className="py-2">{dept.employeeCount}</td>
+                      <td className="py-2">{formatPKRShort(dept.totalCoverage)}</td>
+                      <td className="py-2">{formatPKRShort(dept.usedAmount)}</td>
+                      <td className="py-2">{util}%</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

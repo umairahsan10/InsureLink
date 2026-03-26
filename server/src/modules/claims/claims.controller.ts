@@ -30,6 +30,7 @@ import { RejectClaimDto } from './dto/reject-claim.dto';
 import { OnHoldClaimDto } from './dto/on-hold-claim.dto';
 import { PaidClaimDto } from './dto/paid-claim.dto';
 import { BulkApproveClaimDto } from './dto/bulk-approve-claim.dto';
+import { PatientSubmitClaimDto } from './dto/patient-submit-claim.dto';
 
 // Use memory storage for Supabase upload
 const claimDocumentStorage = memoryStorage();
@@ -73,6 +74,31 @@ export class ClaimsController {
   }
 
   /**
+   * Patient self-service claim submission
+   */
+  @Post('patient-submit')
+  @Roles('patient')
+  @HttpCode(HttpStatus.CREATED)
+  async patientSubmit(
+    @Body() data: PatientSubmitClaimDto,
+    @CurrentUser() user: CurrentUserDto,
+  ) {
+    return this.claimsService.patientSubmitClaim(data, user);
+  }
+
+  /**
+   * Patient retrieves their own claims
+   */
+  @Get('my-claims')
+  @Roles('patient')
+  async getMyClaimsAsPatient(
+    @Query() filters: ClaimFilterDto,
+    @CurrentUser() user: CurrentUserDto,
+  ) {
+    return this.claimsService.getPatientClaims(filters, user);
+  }
+
+  /**
    * Get all claims with filters (role-aware)
    */
   @Get()
@@ -88,7 +114,7 @@ export class ClaimsController {
    * Get claim by ID with full details
    */
   @Get(':id')
-  @Roles('hospital', 'insurer', 'corporate', 'admin')
+  @Roles('hospital', 'insurer', 'corporate', 'admin', 'patient')
   async findById(@Param('id') id: string, @CurrentUser() user: CurrentUserDto) {
     return this.claimsService.findById(id, user);
   }
@@ -200,7 +226,7 @@ export class ClaimsController {
    * Get claim events timeline
    */
   @Get(':id/events')
-  @Roles('hospital', 'insurer', 'corporate', 'admin')
+  @Roles('hospital', 'insurer', 'corporate', 'admin', 'patient')
   async getEvents(
     @Param('id') id: string,
     @Query('page') page: string = '1',
@@ -223,7 +249,7 @@ export class ClaimsController {
    * Upload a claim document
    */
   @Post(':id/documents')
-  @Roles('hospital', 'insurer')
+  @Roles('hospital', 'insurer', 'patient')
   @HttpCode(HttpStatus.CREATED)
   @UseInterceptors(
     FileInterceptor('file', {

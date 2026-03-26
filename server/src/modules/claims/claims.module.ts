@@ -10,6 +10,7 @@ import { ClaimValidationService } from './workflows/claim-validation.service';
 import { PaymentQueueService } from './workflows/payment-queue.service';
 import { RulesEngineService } from './workflows/rules-engine.service';
 import { FileUploadModule } from '../file-upload/file-upload.module';
+import { AuditModule } from '../audit/audit.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { FileUploadModule } from '../file-upload/file-upload.module';
       storage: 'memory',
     }),
     FileUploadModule,
+    AuditModule,
   ],
   controllers: [ClaimsController],
   providers: [

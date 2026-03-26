@@ -68,12 +68,20 @@ export default function AdminDashboardPage() {
               </h1>
               <p className="text-gray-600">Manage users and system settings</p>
             </div>
-            <Link
-              href="/admin/create-user"
-              className="bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 transition-colors font-semibold"
-            >
-              + Create User
-            </Link>
+            <div className="flex gap-3">
+              <Link
+                href="/admin/audit-logs"
+                className="bg-white text-indigo-600 border border-indigo-600 px-6 py-3 rounded-lg hover:bg-indigo-50 transition-colors font-semibold"
+              >
+                Audit Logs
+              </Link>
+              <Link
+                href="/admin/create-user"
+                className="bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 transition-colors font-semibold"
+              >
+                + Create User
+              </Link>
+            </div>
           </div>
         </div>
 

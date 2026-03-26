@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import ClaimStatusBadge from "@/components/claims/ClaimStatusBadge";
 import { formatPKR } from "@/lib/format";
@@ -9,12 +9,7 @@ import { useClaimsMessaging } from "@/contexts/ClaimsMessagingContext";
 import { apiFetch } from "@/lib/api/client";
 import ClaimDetailsModal from "@/components/modals/ClaimDetailsModal";
 import ClaimEditModal from "@/components/modals/ClaimEditModal";
-
-// Import data
-import analyticsData from "@/data/analytics.json";
-import claims from "@/data/claims.json";
-import type { Claim } from "@/types/claims";
-import { sortClaimsByDateDesc } from "@/lib/sort";
+import { claimsApi, type Claim as ApiClaim } from "@/lib/api/claims";
 
 export default function HospitalDashboardPage() {
   const [cnicNumber, setCnicNumber] = useState("");
@@ -22,45 +17,52 @@ export default function HospitalDashboardPage() {
   const [selectedClaimId, setSelectedClaimId] = useState<string | null>(null);
   const [isClaimDetailsOpen, setIsClaimDetailsOpen] = useState(false);
   const [isClaimEditOpen, setIsClaimEditOpen] = useState(false);
-  const [localClaims, setLocalClaims] = useState<Claim[]>([]);
-  const [isHydrated, setIsHydrated] = useState(false);
+  const [apiClaims, setApiClaims] = useState<ApiClaim[]>([]);
+  const [isLoadingClaims, setIsLoadingClaims] = useState(true);
+  const [hospitalStats, setHospitalStats] = useState({
+    patientsToday: 0,
+    claimsSubmitted: 0,
+    pendingApproval: 0,
+    approvedToday: 0,
+  });
   const { hasUnreadAlert } = useClaimsMessaging();
   const router = useRouter();
-  const currentHospitalId = "hosp-001"; // City General Hospital
 
-  // Load claims from localStorage on mount
-  useEffect(() => {
-    const CLAIMS_STORAGE_KEY = "hospital_claims_hosp-001";
-    const savedClaims = localStorage.getItem(CLAIMS_STORAGE_KEY);
-    if (savedClaims) {
-      try {
-        setLocalClaims(JSON.parse(savedClaims));
-      } catch (e) {
-        console.error("Failed to parse saved claims", e);
-      }
+  const fetchClaims = useCallback(async () => {
+    setIsLoadingClaims(true);
+    try {
+      const [allRes, pendingRes, approvedRes] = await Promise.all([
+        claimsApi.getClaims({ limit: 10, page: 1, sortBy: "createdAt", order: "desc" }),
+        claimsApi.getClaims({ status: "Pending", limit: 1, page: 1 }),
+        claimsApi.getClaims({ status: "Approved", limit: 1, page: 1 }),
+      ]);
+      setApiClaims((allRes.data as ApiClaim[]) || []);
+      setHospitalStats({
+        patientsToday: allRes.meta.total,
+        claimsSubmitted: allRes.meta.total,
+        pendingApproval: pendingRes.meta.total,
+        approvedToday: approvedRes.meta.total,
+      });
+    } catch (err) {
+      console.error("Failed to fetch claims:", err);
+    } finally {
+      setIsLoadingClaims(false);
     }
-    setIsHydrated(true);
   }, []);
 
-  // Save claims to localStorage whenever they change
   useEffect(() => {
-    if (isHydrated && localClaims.length > 0) {
-      const CLAIMS_STORAGE_KEY = "hospital_claims_hosp-001";
-      localStorage.setItem(CLAIMS_STORAGE_KEY, JSON.stringify(localClaims));
-    }
-  }, [localClaims, isHydrated]);
+    fetchClaims();
+  }, [fetchClaims]);
 
   const handleVerifyPatient = async () => {
     if (!cnicNumber.trim()) return;
 
     setIsVerifying(true);
     try {
-      // API call to verify patient
       await apiFetch("/api/patients/verify", {
         method: "POST",
         body: JSON.stringify({ cnic: cnicNumber }),
       });
-      // Handle success - could show a toast or update UI
       alert("Patient verified successfully");
       setCnicNumber("");
     } catch (error) {
@@ -71,41 +73,28 @@ export default function HospitalDashboardPage() {
     }
   };
 
-  // Filter claims by hospital ID
-  const defaultClaims = (claims as Claim[]).filter(
-    (claim) => claim.hospitalId === currentHospitalId,
-  );
-
-  // Combine default claims with locally saved claims
-  const allClaims = [...defaultClaims, ...localClaims];
-
-  // Remove duplicates by ID
-  const uniqueClaims = Array.from(
-    new Map(allClaims.map((claim) => [claim.id, claim])).values(),
-  );
-
-  // Calculate hospital-specific statistics from filtered claims
-  const pendingClaims = uniqueClaims.filter((c) => c.status === "Pending");
-  const approvedClaims = uniqueClaims.filter((c) => c.status === "Approved");
-
-  const hospitalStats = {
-    patientsToday: uniqueClaims.length, // Number of unique patients with claims
-    claimsSubmitted: uniqueClaims.length,
-    pendingApproval: pendingClaims.length,
-    approvedToday: approvedClaims.length,
+  // Helper to extract patient name from API claim
+  const getPatientName = (claim: ApiClaim): string => {
+    if (claim.hospitalVisit?.dependent) {
+      const d = claim.hospitalVisit.dependent;
+      return `${d.firstName} ${d.lastName}`;
+    }
+    if (claim.hospitalVisit?.employee?.user) {
+      const u = claim.hospitalVisit.employee.user;
+      return `${u.firstName} ${u.lastName}`;
+    }
+    return claim.claimNumber || "—";
   };
 
-  // Recent claims for hospital - sorted newest-first
-  const recentClaims = sortClaimsByDateDesc(uniqueClaims)
-    .slice(0, 4)
-    .map((c) => ({
-      id: c.id,
-      patientName: c.employeeName || c.claimNumber || "—",
-      cnic: "—",
-      amount: c.amountClaimed || 0,
-      date: c.admissionDate ?? c.createdAt ?? "—",
-      status: c.status,
-    }));
+  // Recent claims from API
+  const recentClaims = apiClaims.slice(0, 4).map((c) => ({
+    id: c.id,
+    patientName: getPatientName(c),
+    cnic: "—",
+    amount: typeof c.amountClaimed === "string" ? parseFloat(c.amountClaimed) : (c.amountClaimed || 0),
+    date: c.createdAt?.split("T")[0] || "—",
+    status: c.claimStatus,
+  }));
 
   return (
     <div className="p-4 lg:p-6">

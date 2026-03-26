@@ -1,22 +1,38 @@
 'use client';
 
 import { ReactNode } from 'react';
-import Sidebar from '@/components/layouts/Sidebar';
-import Topbar from '@/components/layouts/Topbar';
+import { useRouter } from 'next/navigation';
+import DashboardLayout from '@/components/layouts/DashboardLayout';
+import { useNotifications } from '@/hooks/useNotifications';
+import { AlertNotification } from '@/types';
 
 export default function CorporateLayout({ children }: { children: ReactNode }) {
+  const router = useRouter();
+  const { notifications, dismiss, markAsRead } = useNotifications();
+
+  const handleSelectNotification = (notification: AlertNotification) => {
+    if (!notification.isRead) {
+      markAsRead(notification.id);
+    }
+    if (notification.category === 'messaging' || notification.category === 'claims') {
+      router.push('/corporate/claims');
+    }
+  };
+
+  const handleDismissNotification = (id: string) => {
+    dismiss(id);
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Sidebar userRole="corporate" />
-      
-      <div className="md:ml-64 flex flex-col pt-12 md:pt-0">
-        <Topbar userRole="corporate" userName="TechCorp Ltd." />
-        
-        <main className="flex-1 overflow-auto">
-          {children}
-        </main>
-      </div>
-    </div>
+    <DashboardLayout
+      userRole="corporate"
+      userName="TechCorp Ltd."
+      notifications={notifications}
+      onNotificationSelect={handleSelectNotification}
+      onNotificationDismiss={handleDismissNotification}
+    >
+      {children}
+    </DashboardLayout>
   );
 }
 

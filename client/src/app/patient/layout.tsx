@@ -1,23 +1,27 @@
 'use client';
-import { ReactNode, useMemo } from 'react';
+import { ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/layouts/DashboardLayout';
-import notificationsData from '@/data/patientNotifications.json';
+import { useNotifications } from '@/hooks/useNotifications';
 import { AlertNotification } from '@/types';
 
 export default function PatientLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
-  const notifications = useMemo(
-    () => notificationsData as AlertNotification[],
-    []
-  );
+  const { notifications, dismiss, markAsRead } = useNotifications();
 
   const handleSelectNotification = (notification: AlertNotification) => {
+    if (!notification.isRead) {
+      markAsRead(notification.id);
+    }
     if (notification.category === 'claims') {
       router.push('/patient/claims');
     } else if (notification.category === 'benefits') {
       router.push('/patient/profile');
     }
+  };
+
+  const handleDismissNotification = (id: string) => {
+    dismiss(id);
   };
 
   return (
@@ -26,6 +30,7 @@ export default function PatientLayout({ children }: { children: ReactNode }) {
       userName="Ali Raza"
       notifications={notifications}
       onNotificationSelect={handleSelectNotification}
+      onNotificationDismiss={handleDismissNotification}
     >
       {children}
     </DashboardLayout>

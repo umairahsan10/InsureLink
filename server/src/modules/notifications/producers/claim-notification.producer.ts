@@ -45,6 +45,16 @@ export class ClaimNotificationProducer {
               hospital: {
                 select: { userId: true },
               },
+              employee: {
+                select: { userId: true },
+              },
+              dependent: {
+                select: {
+                  employee: {
+                    select: { userId: true },
+                  },
+                },
+              },
             },
           },
           corporate: {
@@ -92,6 +102,9 @@ export class ClaimNotificationProducer {
     const corporateUserId = claim.corporate?.userId;
     const insurerUserId = claim.insurer?.userId;
     const hospitalUserId = claim.hospitalVisit?.hospital?.userId;
+    const patientUserId =
+      claim.hospitalVisit?.employee?.userId ??
+      claim.hospitalVisit?.dependent?.employee?.userId;
 
     switch (event.statusTo) {
       case ClaimStatus.Approved:
@@ -102,7 +115,7 @@ export class ClaimNotificationProducer {
             amount: event.approvedAmount ?? Number(claim.approvedAmount),
           }),
           severity: Severity.info,
-          recipientUserIds: [corporateUserId, hospitalUserId],
+          recipientUserIds: [patientUserId, corporateUserId, hospitalUserId],
         };
 
       case ClaimStatus.Rejected:
@@ -113,7 +126,7 @@ export class ClaimNotificationProducer {
             reason: event.eventNote,
           }),
           severity: Severity.warning,
-          recipientUserIds: [corporateUserId, hospitalUserId],
+          recipientUserIds: [patientUserId, corporateUserId, hospitalUserId],
         };
 
       case ClaimStatus.OnHold:
@@ -124,7 +137,7 @@ export class ClaimNotificationProducer {
             reason: event.eventNote,
           }),
           severity: Severity.warning,
-          recipientUserIds: [corporateUserId, hospitalUserId],
+          recipientUserIds: [patientUserId, corporateUserId, hospitalUserId],
         };
 
       case ClaimStatus.Paid:
@@ -134,7 +147,7 @@ export class ClaimNotificationProducer {
             amount: event.approvedAmount ?? Number(claim.approvedAmount),
           }),
           severity: Severity.info,
-          recipientUserIds: [corporateUserId, hospitalUserId],
+          recipientUserIds: [patientUserId, corporateUserId, hospitalUserId],
         };
 
       case ClaimStatus.Pending:
@@ -153,7 +166,7 @@ export class ClaimNotificationProducer {
           title: 'Claim Updated',
           message: `Claim ${event.claimNumber} status changed to ${event.statusTo}`,
           severity: Severity.info,
-          recipientUserIds: [corporateUserId, insurerUserId, hospitalUserId],
+          recipientUserIds: [patientUserId, corporateUserId, insurerUserId, hospitalUserId],
         };
     }
   }

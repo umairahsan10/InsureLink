@@ -11,6 +11,7 @@ interface TopbarProps {
   userRole?: string;
   notifications?: AlertNotification[];
   onNotificationSelect?: (notification: AlertNotification) => void;
+  onNotificationDismiss?: (id: string) => void;
 }
 
 export default function Topbar({
@@ -18,6 +19,7 @@ export default function Topbar({
   userRole = 'Guest',
   notifications,
   onNotificationSelect,
+  onNotificationDismiss,
 }: TopbarProps) {
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const notificationsArray = notifications || EMPTY_NOTIFICATIONS;
@@ -50,7 +52,11 @@ export default function Topbar({
   };
 
   const handleDismiss = (id: string) => {
-    setAlerts((current) => current.filter((notification) => notification.id !== id));
+    if (onNotificationDismiss) {
+      onNotificationDismiss(id);
+    } else {
+      setAlerts((current) => current.filter((notification) => notification.id !== id));
+    }
   };
 
   const handleClose = () => {

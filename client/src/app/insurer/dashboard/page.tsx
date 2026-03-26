@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import DashboardLayout from "@/components/layouts/DashboardLayout";
 import MessageButton from "@/components/messaging/MessageButton";
 import { useClaimsMessaging } from "@/contexts/ClaimsMessagingContext";
-import notificationsData from "@/data/insurerNotifications.json";
+import { useNotifications } from "@/hooks/useNotifications";
 import { AlertNotification } from "@/types";
 import ClaimActionDrawer, {
   ClaimRecord,
@@ -41,13 +41,7 @@ function getHospitalName(claim: Claim): string {
 
 export default function InsurerDashboardPage() {
   const { hasUnreadAlert } = useClaimsMessaging();
-  const insurerNotifications = useMemo(
-    () =>
-      (notificationsData as AlertNotification[]).map((notification) => ({
-        ...notification,
-      })),
-    [],
-  );
+  const { notifications, dismiss, markAsRead } = useNotifications();
   const router = useRouter();
 
   // API state
@@ -82,7 +76,7 @@ export default function InsurerDashboardPage() {
           limit: 3,
           page: 1,
           sortBy: "createdAt",
-          sortOrder: "desc",
+          order: "desc",
         }),
         claimsApi.getClaims({ limit: 1, page: 1 }),
         claimsApi.getClaims({ status: "Approved", limit: 1, page: 1 }),
@@ -240,12 +234,16 @@ export default function InsurerDashboardPage() {
     <DashboardLayout
       userRole="insurer"
       userName="HealthGuard Insurance"
-      notifications={insurerNotifications}
+      notifications={notifications}
       onNotificationSelect={(notification) => {
-        if (notification.category === "messaging") {
+        if (!notification.isRead) {
+          markAsRead(notification.id);
+        }
+        if (notification.category === "messaging" || notification.category === "claims") {
           router.push("/insurer/claims");
         }
       }}
+      onNotificationDismiss={(id) => dismiss(id)}
     >
       <div className="p-4 md:p-8 bg-gray-50 min-h-screen">
         {/* Header */}
