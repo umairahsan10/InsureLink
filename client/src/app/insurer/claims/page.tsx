@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import DashboardLayout from "@/components/layouts/DashboardLayout";
 import MessageButton from "@/components/messaging/MessageButton";
 import { useClaimsMessaging } from "@/contexts/ClaimsMessagingContext";
-import notificationsData from "@/data/insurerNotifications.json";
+import { useNotifications } from "@/hooks/useNotifications";
 import { AlertNotification } from "@/types";
 import ClaimDetailsModal from "@/components/modals/ClaimDetailsModal";
 import BulkApproveDialog from "@/components/claims/BulkApproveDialog";
@@ -56,13 +56,7 @@ const statusBadge = (status: string) => {
 
 export default function InsurerClaimsPage() {
   const router = useRouter();
-  const insurerNotifications = useMemo(
-    () =>
-      (notificationsData as AlertNotification[]).map((notification) => ({
-        ...notification,
-      })),
-    [],
-  );
+  const { notifications: insurerNotifications, dismiss, markAsRead } = useNotifications();
   const { hasUnreadAlert } = useClaimsMessaging();
 
   // API state
@@ -272,7 +266,9 @@ export default function InsurerClaimsPage() {
       userRole="insurer"
       userName="HealthGuard Insurance"
       notifications={insurerNotifications}
+      onNotificationDismiss={(id) => dismiss(id)}
       onNotificationSelect={(notification) => {
+        if (!notification.isRead) markAsRead(notification.id);
         if (notification.category === "messaging") {
           router.push("/insurer/claims");
         }

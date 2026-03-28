@@ -128,6 +128,16 @@ export interface CreateClaimRequest {
 
 // Note: corporateId, planId, insurerId are auto-populated from the hospital visit
 
+export interface PatientSubmitClaimRequest {
+  hospitalId: string;
+  visitDate: string;
+  dischargeDate?: string;
+  amountClaimed: number;
+  treatmentCategory?: string;
+  priority?: "Low" | "Normal" | "High";
+  notes?: string;
+}
+
 export interface PaginatedResponse<T> {
   data: T[];
   meta: {
@@ -268,8 +278,7 @@ export const claimsApi = {
     if (filters?.page) queryParams.append("page", filters.page.toString());
     if (filters?.limit) queryParams.append("limit", filters.limit.toString());
     if (filters?.sortBy) queryParams.append("sortBy", filters.sortBy);
-    const order = filters?.order ?? filters?.sortOrder;
-    if (order) queryParams.append("order", order);
+    if (filters?.order) queryParams.append("order", filters.order);
 
     const response = await apiFetch<PaginatedResponse<Claim>>(
       `${BASE}?${queryParams.toString()}`,
@@ -330,5 +339,29 @@ export const claimsApi = {
     await apiFetch(`${BASE}/${claimId}/documents/${documentId}`, {
       method: "DELETE",
     });
+  },
+
+  // ── Patient self-service ──────────────────────────────────────────────
+
+  async patientSubmitClaim(request: PatientSubmitClaimRequest): Promise<Claim> {
+    const response = await apiFetch<Claim>(`${BASE}/patient-submit`, {
+      method: "POST",
+      body: JSON.stringify(request),
+    });
+    return response.data;
+  },
+
+  async getPatientClaims(
+    filters?: Pick<ClaimFilters, "status" | "page" | "limit">,
+  ): Promise<PaginatedResponse<Claim>> {
+    const queryParams = new URLSearchParams();
+    if (filters?.status) queryParams.append("status", filters.status);
+    if (filters?.page) queryParams.append("page", filters.page.toString());
+    if (filters?.limit) queryParams.append("limit", filters.limit.toString());
+
+    const response = await apiFetch<PaginatedResponse<Claim>>(
+      `${BASE}/my-claims?${queryParams.toString()}`,
+    );
+    return response.data;
   },
 };

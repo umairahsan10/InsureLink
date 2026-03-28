@@ -7,7 +7,7 @@ import CorporateEmployeesModal from "@/components/insurer/CorporateEmployeesModa
 import AddCorporateModal from "@/components/modals/AddCorporateModal";
 import corporatesData from "@/data/corporates.json";
 import employeesDataRaw from "@/data/employees.json";
-import notificationsData from "@/data/insurerNotifications.json";
+import { useNotifications } from "@/hooks/useNotifications";
 import { AlertNotification } from "@/types";
 
 interface CorporateData {
@@ -75,13 +75,7 @@ export default function InsurerCorporatesPage() {
     }
   }, [localCorporates, isHydrated]);
 
-  const insurerNotifications = useMemo(
-    () =>
-      (notificationsData as AlertNotification[]).map((notification) => ({
-        ...notification,
-      })),
-    []
-  );
+  const { notifications: insurerNotifications, dismiss, markAsRead } = useNotifications();
   const industries = useMemo(
     () => [
       "All Industries",
@@ -185,7 +179,9 @@ export default function InsurerCorporatesPage() {
       userRole="insurer"
       userName="HealthGuard Insurance"
       notifications={insurerNotifications}
+      onNotificationDismiss={(id) => dismiss(id)}
       onNotificationSelect={(notification) => {
+        if (!notification.isRead) markAsRead(notification.id);
         if (notification.category === "messaging") {
           router.push("/insurer/claims");
         }

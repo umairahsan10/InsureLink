@@ -64,7 +64,9 @@ export default function CorporateDashboard() {
   const { user } = useAuth();
   const [stats, setStats] = useState<CorporateStats>(emptyStats);
   const [recentClaims, setRecentClaims] = useState<DashboardClaim[]>([]);
-  const [employeeCoverage, setEmployeeCoverage] = useState<DashboardEmployeeCoverage[]>([]);
+  const [employeeCoverage, setEmployeeCoverage] = useState<
+    DashboardEmployeeCoverage[]
+  >([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -81,68 +83,73 @@ export default function CorporateDashboard() {
       setLoading(true);
       setError(null);
       try {
-        const [statsResponse, claimsResponse, employeesResponse] = await Promise.all([
-          corporatesApi.getCorporateStats(corporateId),
-          claimsApi.getClaims({
-            corporateId,
-            page: 1,
-            limit: 5,
-            sortBy: "createdAt",
-            order: "desc",
-          }),
-          employeesApi.list({
-            corporateId,
-            page: 1,
-            limit: 5,
-          }),
-        ]);
+        const [statsResponse, claimsResponse, employeesResponse] =
+          await Promise.all([
+            corporatesApi.getCorporateStats(corporateId),
+            claimsApi.getClaims({
+              corporateId,
+              page: 1,
+              limit: 5,
+              sortBy: "createdAt",
+              order: "desc",
+            }),
+            employeesApi.list({
+              corporateId,
+              page: 1,
+              limit: 5,
+            }),
+          ]);
 
-        const mappedClaims: DashboardClaim[] = (claimsResponse.data || []).map((claim) => {
-          const employeeUser = claim.hospitalVisit?.employee?.user;
-          const dependent = claim.hospitalVisit?.dependent;
-          const employeeName = employeeUser
-            ? `${employeeUser.firstName}${employeeUser.lastName ? ` ${employeeUser.lastName}` : ""}`
-            : dependent
-              ? `${dependent.firstName} ${dependent.lastName}`
-              : "Unknown";
+        const mappedClaims: DashboardClaim[] = (claimsResponse.data || []).map(
+          (claim) => {
+            const employeeUser = claim.hospitalVisit?.employee?.user;
+            const dependent = claim.hospitalVisit?.dependent;
+            const employeeName = employeeUser
+              ? `${employeeUser.firstName}${employeeUser.lastName ? ` ${employeeUser.lastName}` : ""}`
+              : dependent
+                ? `${dependent.firstName} ${dependent.lastName}`
+                : "Unknown";
 
-          const rawStatus = claim.claimStatus;
-          const status: DashboardClaim["status"] =
-            rawStatus === "Approved" || rawStatus === "Paid"
-              ? "Approved"
-              : rawStatus === "Rejected"
-                ? "Rejected"
-                : "Pending";
-
-          return {
-            employee: employeeName,
-            claimId: claim.claimNumber,
-            amount: formatPKR(Number(claim.amountClaimed || 0)),
-            hospital: claim.hospitalVisit?.hospital?.hospitalName || "Unknown",
-            date: new Date(claim.createdAt).toLocaleDateString(),
-            status,
-          };
-        });
-
-        const mappedEmployees: DashboardEmployeeCoverage[] = (employeesResponse.items || []).map(
-          (employee) => {
-            const fullName = [employee.firstName, employee.lastName]
-              .filter(Boolean)
-              .join(" ")
-              .trim();
-            const used = Number(employee.usedAmount || 0);
-            const total = Number(employee.coverageAmount || 0);
-            const percentage = total > 0 ? Math.min(100, Math.round((used / total) * 100)) : 0;
+            const rawStatus = claim.claimStatus;
+            const status: DashboardClaim["status"] =
+              rawStatus === "Approved" || rawStatus === "Paid"
+                ? "Approved"
+                : rawStatus === "Rejected"
+                  ? "Rejected"
+                  : "Pending";
 
             return {
-              name: fullName || employee.email,
-              cnic: "N/A",
-              department: employee.department || "N/A",
-              coverageUsed: percentage,
-              totalCoverage: formatPKR(total),
+              employee: employeeName,
+              claimId: claim.claimNumber,
+              amount: formatPKR(Number(claim.amountClaimed || 0)),
+              hospital:
+                claim.hospitalVisit?.hospital?.hospitalName || "Unknown",
+              date: new Date(claim.createdAt).toLocaleDateString(),
+              status,
             };
           },
         );
+
+        const mappedEmployees: DashboardEmployeeCoverage[] = (
+          employeesResponse.items || []
+        ).map((employee) => {
+          const fullName = [employee.firstName, employee.lastName]
+            .filter(Boolean)
+            .join(" ")
+            .trim();
+          const used = Number(employee.usedAmount || 0);
+          const total = Number(employee.coverageAmount || 0);
+          const percentage =
+            total > 0 ? Math.min(100, Math.round((used / total) * 100)) : 0;
+
+          return {
+            name: fullName || employee.email,
+            cnic: "N/A",
+            department: employee.department || "N/A",
+            coverageUsed: percentage,
+            totalCoverage: formatPKR(total),
+          };
+        });
 
         if (active) {
           setStats(statsResponse);
@@ -152,7 +159,12 @@ export default function CorporateDashboard() {
       } catch (err) {
         if (active) {
           console.error("Failed to load corporate stats:", err);
-          setError(parseApiErrorMessage(err, "Could not load corporate dashboard metrics."));
+          setError(
+            parseApiErrorMessage(
+              err,
+              "Could not load corporate dashboard metrics.",
+            ),
+          );
           setStats(emptyStats);
           setRecentClaims([]);
           setEmployeeCoverage([]);
@@ -180,12 +192,18 @@ export default function CorporateDashboard() {
       usedCoverage,
       availableCoverage,
       utilizationPercentage:
-        totalCoverage > 0 ? Math.round((usedCoverage / totalCoverage) * 100) : 0,
+        totalCoverage > 0
+          ? Math.round((usedCoverage / totalCoverage) * 100)
+          : 0,
     };
   }, [stats]);
 
   if (loading) {
-    return <div className="p-5 md:p-6 lg:p-8 text-gray-600">Loading dashboard...</div>;
+    return (
+      <div className="p-5 md:p-6 lg:p-8 text-gray-600">
+        Loading dashboard...
+      </div>
+    );
   }
 
   return (
@@ -204,7 +222,6 @@ export default function CorporateDashboard() {
         coverageUtilization={totals.utilizationPercentage}
       />
 
-      {/* Company Coverage Overview */}
       <CoverageOverview
         totalCoveragePool={formatPKR(totals.totalCoverage)}
         usedCoverage={formatPKR(totals.usedCoverage)}
@@ -215,11 +232,7 @@ export default function CorporateDashboard() {
       {/* Employee Coverage Status Table (uses placeholder employees) */}
       <EmployeeCoverageStatus employees={employeeCoverage} />
 
-      {/* Recent Claims Overview Table */}
       <RecentClaimsOverview claims={recentClaims} />
-
-      {/* Quick Actions */}
-      {/* <QuickActions /> */}
     </div>
   );
 }

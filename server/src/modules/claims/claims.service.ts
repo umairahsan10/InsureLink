@@ -23,6 +23,7 @@ import { RejectClaimDto } from './dto/reject-claim.dto';
 import { OnHoldClaimDto } from './dto/on-hold-claim.dto';
 import { PaidClaimDto } from './dto/paid-claim.dto';
 import { BulkApproveClaimDto } from './dto/bulk-approve-claim.dto';
+import { PatientSubmitClaimDto } from './dto/patient-submit-claim.dto';
 import { CurrentUserDto } from '../auth/dto/current-user.dto';
 import { ClaimAction } from './constants/status-transitions';
 
@@ -593,8 +594,97 @@ export class ClaimsService {
           throw new ForbiddenException('You do not have access to this claim');
         }
         break;
+      case UserRole.patient: {
+        const employee =
+          await this.claimsRepository.findEmployeeByUserId(user.id);
+        if (!employee) {
+          throw new ForbiddenException('You do not have access to this claim');
+        }
+        const patientVisit =
+          await this.claimsRepository.getHospitalVisitWithHospital(
+            claim.hospitalVisitId,
+          );
+        if (patientVisit?.employeeId !== employee.id) {
+          throw new ForbiddenException('You do not have access to this claim');
+        }
+        break;
+      }
       default:
         throw new ForbiddenException('You do not have access to this claim');
     }
+  }
+
+  // ── Patient self-service ──────────────────────────────────────────────
+
+  /**
+   * Patient submits a claim directly.
+   * Creates a HospitalVisit and a Claim in one transaction.
+   */
+  async patientSubmitClaim(data: PatientSubmitClaimDto, user: CurrentUserDto) {
+    const employee = await this.claimsRepository.findEmployeeByUserId(user.id);
+
+    if (!employee) {
+      throw new BadRequestException(
+        'No employee record found for your account. Please contact your HR.',
+      );
+    }
+
+    const coverageAmount = Number(employee.coverageAmount);
+    const usedAmount = Number(employee.usedAmount);
+    const remainingCoverage = Math.max(0, coverageAmount - usedAmount);
+
+    if (data.amountClaimed > remainingCoverage) {
+      throw new BadRequestException(
+        `Claimed amount (${data.amountClaimed}) exceeds remaining coverage (${remainingCoverage.toFixed(2)}). Total coverage: ${coverageAmount.toFixed(2)}, Already used: ${usedAmount.toFixed(2)}`,
+      );
+    }
+
+    const claim = await this.claimsRepository.createVisitAndClaim({
+      employeeId: employee.id,
+      hospitalId: data.hospitalId,
+      visitDate: data.visitDate,
+      dischargeDate: data.dischargeDate,
+      corporateId: employee.corporateId,
+      planId: employee.planId,
+      insurerId: employee.plan.insurerId,
+      amountClaimed: data.amountClaimed,
+      treatmentCategory: data.treatmentCategory,
+      priority: data.priority,
+      notes: data.notes,
+    });
+
+    await this.claimEventsRepository.create({
+      claimId: claim.id,
+      actorUserId: user.id,
+      actorName: user.email,
+      actorRole: user.role,
+      action: ClaimAction.CLAIM_SUBMITTED,
+      statusTo: ClaimEventStatus.Pending,
+      eventNote: 'Claim submitted by patient',
+    });
+
+    return claim;
+  }
+
+  /**
+   * Patient retrieves their own claims.
+   */
+  async getPatientClaims(filters: ClaimFilterDto, user: CurrentUserDto) {
+    const { claims, total } =
+      await this.claimsRepository.findClaimsByEmployeeUserId(user.id, {
+        status: filters.status,
+        page: filters.page,
+        limit: filters.limit,
+      });
+
+    return {
+      data: claims,
+      meta: {
+        total,
+        page: filters.page ?? 1,
+        limit: filters.limit ?? 10,
+        totalPages: Math.ceil(total / (filters.limit ?? 10)),
+      },
+    };
   }
 }

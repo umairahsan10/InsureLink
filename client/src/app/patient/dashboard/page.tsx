@@ -1,92 +1,142 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Card from "@/components/shared/Card";
 import ClaimStatusBadge from "@/components/claims/ClaimStatusBadge";
 import type { ClaimStatus } from "@/types/claims";
-import type { Claim } from "@/types/claims";
 import { formatPKR } from "@/lib/format";
-import claimsDataRaw from "@/data/claims.json";
-import { sortClaimsByDateDesc } from "@/lib/sort";
+import { claimsApi } from "@/lib/api/claims";
+import { useAuth } from "@/contexts/AuthContext";
 
-const claimsData = claimsDataRaw as Claim[];
+interface PatientData {
+  totalClaims: number;
+  approvedClaims: number;
+  totalReimbursed: number;
+  pendingClaims: number;
+  approvalRate: number;
+  recentClaims: {
+    id: string;
+    claimNumber: string;
+    name: string;
+    amount: number;
+    status: ClaimStatus;
+    date: string;
+    icon: string;
+  }[];
+  coverageBalance: { category: string; used: number; total: number; percentage: number }[];
+}
 
 export default function PatientDashboardPage() {
-  // Get claims for patient emp-001 (Ali Raza)
-  const patientId = "emp-001";
+  const { user } = useAuth();
+  const [loading, setLoading] = useState(true);
   const [hoveredCard, setHoveredCard] = useState<string | null>(null);
+  const [patientData, setPatientData] = useState<PatientData>({
+    totalClaims: 0,
+    approvedClaims: 0,
+    totalReimbursed: 0,
+    pendingClaims: 0,
+    approvalRate: 0,
+    recentClaims: [],
+    coverageBalance: [],
+  });
 
-  const patientClaims = useMemo(() => {
-    return claimsData.filter((claim) => claim.employeeId === patientId);
+  const loadData = useCallback(async () => {
+    try {
+      const [allRes, pendingRes] = await Promise.all([
+        claimsApi.getPatientClaims({ limit: 100 }),
+        claimsApi.getPatientClaims({ limit: 100, status: "Pending" }),
+      ]);
+
+      const allClaims = allRes.data ?? [];
+      const totalClaims = allRes.meta?.total ?? allClaims.length;
+      const pendingCount = pendingRes.meta?.total ?? 0;
+
+      const approvedClaims = allClaims.filter(
+        (c) => c.claimStatus === "Approved" || c.claimStatus === "Paid"
+      );
+      const approvedCount = approvedClaims.length;
+      const totalReimbursed = approvedClaims.reduce(
+        (s, c) => s + Number(c.approvedAmount || c.amountClaimed || 0),
+        0
+      );
+      const approvalRate =
+        totalClaims > 0 ? Math.round((approvedCount / totalClaims) * 100) : 0;
+
+      const recent = [...allClaims]
+        .sort(
+          (a, b) =>
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        )
+        .slice(0, 3)
+        .map((c) => ({
+          id: c.id,
+          claimNumber: c.claimNumber,
+          name: c.hospitalVisit?.hospital?.hospitalName || "—",
+          amount: Number(c.amountClaimed),
+          status: c.claimStatus as ClaimStatus,
+          date: c.createdAt,
+          icon:
+            c.claimStatus === "Approved" || c.claimStatus === "Paid"
+              ? "✓"
+              : c.claimStatus === "Rejected"
+              ? "✕"
+              : "⏰",
+        }));
+
+      // Derive coverage balance from plan data attached to claims
+      const coverageMap = new Map<
+        string,
+        { used: number; total: number }
+      >();
+      for (const c of allClaims) {
+        const label = c.plan?.planName || "Insurance Coverage";
+        const sumInsured = Number(c.plan?.sumInsured || 0);
+        const entry = coverageMap.get(label) ?? { used: 0, total: sumInsured };
+        entry.used += Number(c.amountClaimed);
+        if (sumInsured > entry.total) entry.total = sumInsured;
+        coverageMap.set(label, entry);
+      }
+      const coverageBalance = Array.from(coverageMap.entries()).map(
+        ([category, { used, total }]) => ({
+          category,
+          used,
+          total,
+          percentage: total > 0 ? Math.min(100, Math.round((used / total) * 100)) : 0,
+        })
+      );
+
+      setPatientData({
+        totalClaims,
+        approvedClaims: approvedCount,
+        totalReimbursed,
+        pendingClaims: pendingCount,
+        approvalRate,
+        recentClaims: recent,
+        coverageBalance,
+      });
+    } catch {
+      // leave defaults
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  // Get the latest 3 claims sorted by date
-  const recentClaims = useMemo(() => {
-    return sortClaimsByDateDesc(patientClaims)
-      .slice(0, 3)
-      .map((claim) => ({
-        id: claim.id,
-        claimNumber: claim.claimNumber,
-        name: claim.hospitalName,
-        amount: claim.amountClaimed,
-        status: claim.status as ClaimStatus,
-        date: claim.createdAt,
-        icon:
-          claim.status === "Approved"
-            ? "✓"
-            : claim.status === "Rejected"
-            ? "✕"
-            : "⏰",
-      }));
-  }, [patientClaims]);
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
-  // Calculate statistics based on actual claims data
-  const patientData = useMemo(() => {
-    const approvedClaims = patientClaims.filter(
-      (claim) => claim.status === "Approved"
-    ).length;
-    const totalReimbursed = patientClaims
-      .filter((claim) => claim.status === "Approved")
-      .reduce((sum, claim) => sum + (claim.approvedAmount || 0), 0);
-    const pendingClaims = patientClaims.filter(
-      (claim) => claim.status === "Pending"
-    ).length;
-    const approvalRate =
-      patientClaims.length > 0
-        ? Math.round((approvedClaims / patientClaims.length) * 100)
-        : 0;
-
-    return {
-      patientId,
-      patientName: "Ali Raza",
-      totalClaims: patientClaims.length,
-      approvedClaims,
-      totalReimbursed,
-      pendingClaims,
-      approvalRate,
-      recentClaims,
-      coverageBalance: [
-        {
-          category: "Medical",
-          used: 2_500,
-          total: 5_000,
-          percentage: 50,
-        },
-        {
-          category: "Dental",
-          used: 850,
-          total: 1_500,
-          percentage: 57,
-        },
-        {
-          category: "Vision",
-          used: 200,
-          total: 500,
-          percentage: 40,
-        },
-      ],
-    };
-  }, [patientClaims, recentClaims]);
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-slate-50 p-4 sm:p-5">
+        <div className="mb-8 h-12 w-48 bg-gray-200 rounded animate-pulse" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="bg-white rounded-lg shadow p-6 h-28 animate-pulse" />
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-slate-50 p-4 sm:p-5">
@@ -96,7 +146,7 @@ export default function PatientDashboardPage() {
           Dashboard
         </h1>
         <p className="text-gray-600 text-xs sm:text-sm">
-          Welcome back, {patientData.patientName}. Here's your health insurance
+          Welcome back, {user?.name || "Patient"}. Here's your health insurance
           overview.
         </p>
       </div>
@@ -366,7 +416,8 @@ export default function PatientDashboardPage() {
             </div>
 
             <div className="space-y-3 sm:space-y-4">
-              {patientData.coverageBalance.map((coverage) => (
+              {patientData.coverageBalance.length > 0 ? (
+                patientData.coverageBalance.map((coverage) => (
                 <div key={coverage.category} className="group">
                   <div className="flex justify-between items-center mb-1.5">
                     <span className="text-xs font-semibold text-gray-700 group-hover:text-gray-900 transition-colors">
@@ -393,7 +444,12 @@ export default function PatientDashboardPage() {
                     <span>Rs. {coverage.total.toLocaleString()}</span>
                   </div>
                 </div>
-              ))}
+                ))
+              ) : (
+                <div className="text-center py-8">
+                  <p className="text-xs text-gray-400">No coverage data available</p>
+                </div>
+              )}
             </div>
           </Card>
         </div>

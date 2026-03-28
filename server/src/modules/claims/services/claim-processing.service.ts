@@ -1,5 +1,6 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { ClaimStatus, ClaimEventStatus } from '@prisma/client';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { ClaimsRepository } from '../repositories/claims.repository';
 import { ClaimEventsRepository } from '../repositories/claim-events.repository';
 import {
@@ -14,6 +15,7 @@ export class ClaimProcessingService {
   constructor(
     private readonly claimsRepository: ClaimsRepository,
     private readonly claimEventsRepository: ClaimEventsRepository,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   /**
@@ -91,6 +93,14 @@ export class ClaimProcessingService {
       })
       .catch((err) => console.error('Failed to create claim event:', err));
 
+    this.eventEmitter.emit('claim.status_changed', {
+      claimId,
+      fromStatus: claim.claimStatus,
+      toStatus: ClaimStatus.Approved,
+      actorUserId: user.id,
+      approvedAmount,
+    });
+
     return updatedClaim;
   }
 
@@ -126,6 +136,13 @@ export class ClaimProcessingService {
         eventNote,
       })
       .catch((err) => console.error('Failed to create claim event:', err));
+
+    this.eventEmitter.emit('claim.status_changed', {
+      claimId,
+      fromStatus: claim.claimStatus,
+      toStatus: ClaimStatus.Rejected,
+      actorUserId: user.id,
+    });
 
     return updatedClaim;
   }
@@ -170,6 +187,13 @@ export class ClaimProcessingService {
             : eventNote,
       })
       .catch((err) => console.error('Failed to create claim event:', err));
+
+    this.eventEmitter.emit('claim.status_changed', {
+      claimId,
+      fromStatus: claim.claimStatus,
+      toStatus: ClaimStatus.OnHold,
+      actorUserId: user.id,
+    });
 
     return updatedClaim;
   }
@@ -225,6 +249,13 @@ export class ClaimProcessingService {
         eventNote: note,
       })
       .catch((err) => console.error('Failed to create claim event:', err));
+
+    this.eventEmitter.emit('claim.status_changed', {
+      claimId,
+      fromStatus: claim.claimStatus,
+      toStatus: ClaimStatus.Paid,
+      actorUserId: user.id,
+    });
 
     return updatedClaim;
   }

@@ -692,4 +692,114 @@ export class ClaimsRepository {
       },
     });
   }
+
+  // ── Patient self-service methods ──────────────────────────────────────
+
+  /**
+   * Find the employee record for a given user (patient).
+   */
+  async findEmployeeByUserId(userId: string) {
+    return this.prisma.employee.findUnique({
+      where: { userId },
+      select: {
+        id: true,
+        corporateId: true,
+        planId: true,
+        coverageAmount: true,
+        usedAmount: true,
+        plan: {
+          select: {
+            insurerId: true,
+          },
+        },
+      },
+    });
+  }
+
+  /**
+   * Create a HospitalVisit and then a Claim in a single transaction.
+   * Used for patient self-service claim submission.
+   */
+  async createVisitAndClaim(data: {
+    employeeId: string;
+    hospitalId: string;
+    visitDate: string;
+    dischargeDate?: string;
+    corporateId: string;
+    planId: string;
+    insurerId: string;
+    amountClaimed: number;
+    treatmentCategory?: string;
+    priority?: string;
+    notes?: string;
+  }): Promise<Claim> {
+    const claimNumber = await this.generateClaimNumber();
+
+    return this.prisma.$transaction(async (tx) => {
+      const visit = await tx.hospitalVisit.create({
+        data: {
+          employeeId: data.employeeId,
+          hospitalId: data.hospitalId,
+          visitDate: new Date(data.visitDate),
+          dischargeDate: data.dischargeDate
+            ? new Date(data.dischargeDate)
+            : null,
+          status: 'Claimed',
+        },
+      });
+
+      return tx.claim.create({
+        data: {
+          claimNumber,
+          hospitalVisitId: visit.id,
+          corporateId: data.corporateId,
+          planId: data.planId,
+          insurerId: data.insurerId,
+          amountClaimed: new Prisma.Decimal(data.amountClaimed),
+          approvedAmount: new Prisma.Decimal(0),
+          treatmentCategory: data.treatmentCategory,
+          priority: (data.priority as any) || 'Normal',
+          notes: data.notes,
+          claimStatus: 'Pending',
+        },
+        include: this.getClaimIncludes(),
+      });
+    });
+  }
+
+  /**
+   * Find all claims belonging to an employee (by their userId).
+   */
+  async findClaimsByEmployeeUserId(
+    userId: string,
+    filters: {
+      status?: string;
+      page?: number;
+      limit?: number;
+    },
+  ): Promise<{ claims: Claim[]; total: number }> {
+    const page = filters.page ?? 1;
+    const limit = filters.limit ?? 10;
+    const skip = (page - 1) * limit;
+
+    const where: Prisma.ClaimWhereInput = {
+      hospitalVisit: {
+        employee: { userId },
+      },
+      ...(filters.status && { claimStatus: filters.status as any }),
+    };
+
+    const [claims, total] = await this.prisma.$transaction([
+      this.prisma.claim.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+        include: this.getClaimListIncludes(),
+      }),
+      this.prisma.claim.count({ where }),
+    ]);
+
+    return { claims, total };
+  }
 }

@@ -2302,7 +2302,7 @@ async function main() {
   // STEP 5.5: Create Sample Employee Upload Data (for testing bulk upload)
   // ========================================================================
   console.log('📤 Creating Sample Employee Upload Data...');
-  
+
   // Create a sample employee upload
   const sampleUpload = await prisma.employeeUpload.create({
     data: {
@@ -2313,7 +2313,7 @@ async function main() {
       status: 'processed',
     },
   });
-  
+
   // Create some sample invalid employee uploads (for testing edit/resubmit)
   const invalidUploads = [
     {
@@ -2330,7 +2330,10 @@ async function main() {
       coverageEndDate: new Date('2025-12-31'),
       dob: new Date('1990-01-01'),
       cnic: '42101-9999999-1',
-      errorMessages: ['Duplicate email already exists', 'Employee number already in use'],
+      errorMessages: [
+        'Duplicate email already exists',
+        'Employee number already in use',
+      ],
     },
     {
       employeeNumber: 'E-INVALID-002',
@@ -2349,7 +2352,7 @@ async function main() {
       errorMessages: ['Coverage dates must be within corporate contract dates'],
     },
   ];
-  
+
   for (const invalid of invalidUploads) {
     await prisma.invalidEmployeeUpload.create({
       data: {
@@ -2380,7 +2383,7 @@ async function main() {
       },
     });
   }
-  
+
   console.log(`   ✅ 1 employee upload and 2 invalid uploads created\n`);
 
   // ========================================================================

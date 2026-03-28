@@ -17,6 +17,8 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { ClaimsService } from './claims.service';
+import { Auditable } from '../audit/decorators/auditable.decorator';
+import { AuditLogInterceptor } from '../audit/interceptors/audit-log.interceptor';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { CurrentUserDto } from '../auth/dto/current-user.dto';
@@ -28,6 +30,7 @@ import { RejectClaimDto } from './dto/reject-claim.dto';
 import { OnHoldClaimDto } from './dto/on-hold-claim.dto';
 import { PaidClaimDto } from './dto/paid-claim.dto';
 import { BulkApproveClaimDto } from './dto/bulk-approve-claim.dto';
+import { PatientSubmitClaimDto } from './dto/patient-submit-claim.dto';
 
 // Use memory storage for Supabase upload
 const claimDocumentStorage = memoryStorage();
@@ -61,11 +64,38 @@ export class ClaimsController {
   @Post()
   @Roles('hospital')
   @HttpCode(HttpStatus.CREATED)
+  @Auditable('Claim')
+  @UseInterceptors(AuditLogInterceptor)
   async create(
     @Body() data: CreateClaimDto,
     @CurrentUser() user: CurrentUserDto,
   ) {
     return this.claimsService.create(data, user);
+  }
+
+  /**
+   * Patient self-service claim submission
+   */
+  @Post('patient-submit')
+  @Roles('patient')
+  @HttpCode(HttpStatus.CREATED)
+  async patientSubmit(
+    @Body() data: PatientSubmitClaimDto,
+    @CurrentUser() user: CurrentUserDto,
+  ) {
+    return this.claimsService.patientSubmitClaim(data, user);
+  }
+
+  /**
+   * Patient retrieves their own claims
+   */
+  @Get('my-claims')
+  @Roles('patient')
+  async getMyClaimsAsPatient(
+    @Query() filters: ClaimFilterDto,
+    @CurrentUser() user: CurrentUserDto,
+  ) {
+    return this.claimsService.getPatientClaims(filters, user);
   }
 
   /**
@@ -84,7 +114,7 @@ export class ClaimsController {
    * Get claim by ID with full details
    */
   @Get(':id')
-  @Roles('hospital', 'insurer', 'corporate', 'admin')
+  @Roles('hospital', 'insurer', 'corporate', 'admin', 'patient')
   async findById(@Param('id') id: string, @CurrentUser() user: CurrentUserDto) {
     return this.claimsService.findById(id, user);
   }
@@ -133,6 +163,8 @@ export class ClaimsController {
    */
   @Patch(':id/approve')
   @Roles('insurer')
+  @Auditable('Claim')
+  @UseInterceptors(AuditLogInterceptor)
   async approve(
     @Param('id') id: string,
     @Body() data: ApproveClaimDto,
@@ -146,6 +178,8 @@ export class ClaimsController {
    */
   @Patch(':id/reject')
   @Roles('insurer')
+  @Auditable('Claim')
+  @UseInterceptors(AuditLogInterceptor)
   async reject(
     @Param('id') id: string,
     @Body() data: RejectClaimDto,
@@ -159,6 +193,8 @@ export class ClaimsController {
    */
   @Patch(':id/on-hold')
   @Roles('insurer')
+  @Auditable('Claim')
+  @UseInterceptors(AuditLogInterceptor)
   async onHold(
     @Param('id') id: string,
     @Body() data: OnHoldClaimDto,
@@ -172,6 +208,8 @@ export class ClaimsController {
    */
   @Patch(':id/paid')
   @Roles('insurer')
+  @Auditable('Claim')
+  @UseInterceptors(AuditLogInterceptor)
   async markPaid(
     @Param('id') id: string,
     @Body() data: PaidClaimDto,
@@ -188,7 +226,7 @@ export class ClaimsController {
    * Get claim events timeline
    */
   @Get(':id/events')
-  @Roles('hospital', 'insurer', 'corporate', 'admin')
+  @Roles('hospital', 'insurer', 'corporate', 'admin', 'patient')
   async getEvents(
     @Param('id') id: string,
     @Query('page') page: string = '1',
@@ -211,7 +249,7 @@ export class ClaimsController {
    * Upload a claim document
    */
   @Post(':id/documents')
-  @Roles('hospital', 'insurer')
+  @Roles('hospital', 'insurer', 'patient')
   @HttpCode(HttpStatus.CREATED)
   @UseInterceptors(
     FileInterceptor('file', {

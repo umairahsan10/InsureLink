@@ -151,6 +151,12 @@ const BASE = "/api/v1/hospitals";
 export const hospitalsApi = {
   // ── Hospital CRUD ────────────────────────────────────────────────────
 
+  /** Public endpoint — no auth required. Returns all active hospitals. */
+  async getAllPublic(): Promise<Hospital[]> {
+    const res = await apiFetch<Hospital[]>(`${BASE}/all`);
+    return res.data;
+  },
+
   async createHospital(data: CreateHospitalRequest): Promise<Hospital> {
     const res = await apiFetch<Hospital>(BASE, {
       method: "POST",

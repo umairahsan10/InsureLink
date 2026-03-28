@@ -9,6 +9,7 @@ interface DashboardLayoutProps {
   userName?: string;
   notifications?: AlertNotification[];
   onNotificationSelect?: (notification: AlertNotification) => void;
+  onNotificationDismiss?: (id: string) => void;
 }
 
 export default function DashboardLayout({
@@ -17,6 +18,7 @@ export default function DashboardLayout({
   userName,
   notifications,
   onNotificationSelect,
+  onNotificationDismiss,
 }: DashboardLayoutProps) {
   return (
     <div className="min-h-screen bg-gray-50">
@@ -28,6 +30,7 @@ export default function DashboardLayout({
           userRole={userRole}
           notifications={notifications}
           onNotificationSelect={onNotificationSelect}
+          onNotificationDismiss={onNotificationDismiss}
         />
         
         <main className="flex-1 overflow-auto">

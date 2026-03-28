@@ -1,16 +1,13 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import claimsDataRaw from "@/data/claims.json";
+import { claimsApi, type Claim } from "@/lib/api/claims";
 import ClaimDetailsModal from "@/components/patient/ClaimDetailsModal";
-import type { Claim } from "@/types/claims";
-import { sortClaimsByDateDesc } from "@/lib/sort";
-
-const claimsData = claimsDataRaw as Claim[];
 
 export default function PatientHistoryPage() {
-  // Get claims for patient emp-001 (Ali Raza)
-  const patientId = "emp-001";
+  const [allClaims, setAllClaims] = useState<Claim[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("All Status");
@@ -20,25 +17,40 @@ export default function PatientHistoryPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
 
-  // Filter claims based on search term, status, and date range
-  const filteredClaims = useMemo(() => {
-    let filtered = claimsData.filter((claim) => claim.employeeId === patientId);
+  useEffect(() => {
+    setIsLoading(true);
+    claimsApi
+      .getPatientClaims({ limit: 100 })
+      .then((res) => setAllClaims(res.data))
+      .catch((err: unknown) => {
+        const msg = err instanceof Error ? err.message : "Failed to load claims";
+        setError(msg);
+      })
+      .finally(() => setIsLoading(false));
+  }, []);
 
-    // Filter by search term (claim ID or hospital name)
+  const filteredClaims = useMemo(() => {
+    let filtered = [...allClaims];
+
     if (searchTerm) {
+      const lower = searchTerm.toLowerCase();
       filtered = filtered.filter(
         (claim) =>
-          claim.claimNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          claim.hospitalName.toLowerCase().includes(searchTerm.toLowerCase())
+          claim.claimNumber.toLowerCase().includes(lower) ||
+          (claim.hospitalVisit?.hospital?.hospitalName ?? "")
+            .toLowerCase()
+            .includes(lower)
       );
     }
 
-    // Filter by status
     if (selectedStatus !== "All Status") {
-      filtered = filtered.filter((claim) => claim.status === selectedStatus);
+      const statusMap: Record<string, string> = {
+        "On Hold": "OnHold",
+      };
+      const apiStatus = statusMap[selectedStatus] ?? selectedStatus;
+      filtered = filtered.filter((claim) => claim.claimStatus === apiStatus);
     }
 
-    // Filter by date range
     if (selectedDateRange !== "All Time") {
       const now = new Date();
       const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
@@ -59,20 +71,17 @@ export default function PatientHistoryPage() {
       });
     }
 
-    // Return a new array sorted by date (newest first) without mutating source
-    return sortClaimsByDateDesc(filtered);
-  }, [searchTerm, selectedStatus, selectedDateRange]);
+    return filtered.sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+  }, [allClaims, searchTerm, selectedStatus, selectedDateRange]);
 
-  // Reset page when filters or page size change
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm, selectedStatus, selectedDateRange, itemsPerPage]);
 
-  const totalPages = Math.max(
-    1,
-    Math.ceil(filteredClaims.length / itemsPerPage)
-  );
-
+  const totalPages = Math.max(1, Math.ceil(filteredClaims.length / itemsPerPage));
   const displayedClaims = useMemo(() => {
     const start = (currentPage - 1) * itemsPerPage;
     return filteredClaims.slice(start, start + itemsPerPage);
@@ -84,16 +93,18 @@ export default function PatientHistoryPage() {
         return "bg-green-100 text-green-800 border-green-200";
       case "Rejected":
         return "bg-red-100 text-red-800 border-red-200";
-      // Any other value is treated as Pending for color/display purposes
+      case "Paid":
+        return "bg-blue-100 text-blue-800 border-blue-200";
+      case "OnHold":
+        return "bg-orange-100 text-orange-800 border-orange-200";
       default:
         return "bg-yellow-100 text-yellow-800 border-yellow-200";
     }
   };
 
   const getStatusDisplayName = (status: string) => {
-    if (status === "Approved") return "Approved";
-    if (status === "Rejected") return "Rejected";
-    return "Pending";
+    if (status === "OnHold") return "On Hold";
+    return status;
   };
 
   const formatDate = (dateString: string) => {
@@ -104,18 +115,44 @@ export default function PatientHistoryPage() {
     });
   };
 
-  const formatAmount = (amount: number) => {
-    return `Rs. ${amount.toLocaleString()}`;
+  const formatAmount = (amount: string | number) => {
+    return `Rs. ${Number(amount).toLocaleString()}`;
   };
 
   const handleViewDetails = (claim: Claim) => {
-    setSelectedClaim(claim as Claim);
+    setSelectedClaim(claim);
     setIsModalOpen(true);
   };
+
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setSelectedClaim(null);
   };
+
+  if (isLoading) {
+    return (
+      <div className="p-4 sm:p-6 bg-gray-50 min-h-screen flex items-center justify-center">
+        <p className="text-gray-500 text-lg">Loading your claims...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-4 sm:p-6 bg-gray-50 min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-600 text-lg mb-4">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-4 sm:p-6 bg-gray-50 min-h-screen">
       <div className="max-w-6xl mx-auto">
@@ -124,9 +161,7 @@ export default function PatientHistoryPage() {
             <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
               Claim History
             </h1>
-            <p className="text-gray-600">
-              Track and manage all your insurance claims
-            </p>
+            <p className="text-gray-600">Track and manage all your insurance claims</p>
           </div>
         </div>
 
@@ -134,34 +169,18 @@ export default function PatientHistoryPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
             <p className="text-sm text-gray-500 mb-1">Total Claims</p>
-            <p className="text-2xl font-bold text-gray-900">
-              {
-                claimsData.filter((claim) => claim.employeeId === patientId)
-                  .length
-              }
-            </p>
+            <p className="text-2xl font-bold text-gray-900">{allClaims.length}</p>
           </div>
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
             <p className="text-sm text-gray-500 mb-1">Approved</p>
             <p className="text-2xl font-bold text-green-600">
-              {
-                claimsData.filter(
-                  (claim) =>
-                    claim.employeeId === patientId &&
-                    claim.status === "Approved"
-                ).length
-              }
+              {allClaims.filter((c) => c.claimStatus === "Approved").length}
             </p>
           </div>
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
             <p className="text-sm text-gray-500 mb-1">Pending</p>
             <p className="text-2xl font-bold text-yellow-600">
-              {
-                claimsData.filter(
-                  (claim) =>
-                    claim.employeeId === patientId && claim.status === "Pending"
-                ).length
-              }
+              {allClaims.filter((c) => c.claimStatus === "Pending").length}
             </p>
           </div>
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
@@ -169,9 +188,7 @@ export default function PatientHistoryPage() {
             <p className="text-2xl font-bold text-blue-600">
               Rs.{" "}
               {Math.round(
-                claimsData
-                  .filter((claim) => claim.employeeId === patientId)
-                  .reduce((sum, claim) => sum + claim.amountClaimed, 0) / 1000
+                allClaims.reduce((sum, c) => sum + Number(c.amountClaimed), 0) / 1000
               )}
               K
             </p>
@@ -206,6 +223,8 @@ export default function PatientHistoryPage() {
                 <option>Pending</option>
                 <option>Approved</option>
                 <option>Rejected</option>
+                <option>Paid</option>
+                <option>On Hold</option>
               </select>
             </div>
             <div>
@@ -236,7 +255,6 @@ export default function PatientHistoryPage() {
                   className="p-4 sm:p-6 hover:bg-gray-50 transition-colors"
                 >
                   <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start space-y-4 lg:space-y-0">
-                    {/* Left Section - Claim Info */}
                     <div className="flex-1 space-y-2">
                       <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4">
                         <h3 className="text-lg font-semibold text-gray-900">
@@ -244,16 +262,16 @@ export default function PatientHistoryPage() {
                         </h3>
                         <span
                           className={`inline-flex px-3 py-1 text-sm font-medium rounded-full border ${getStatusColor(
-                            claim.status
+                            claim.claimStatus
                           )}`}
                         >
-                          {getStatusDisplayName(claim.status)}
+                          {getStatusDisplayName(claim.claimStatus)}
                         </span>
                       </div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm text-gray-600">
                         <div>
                           <span className="font-medium">Hospital:</span>{" "}
-                          {claim.hospitalName}
+                          {claim.hospitalVisit?.hospital?.hospitalName ?? "\u2014"}
                         </div>
                         <div>
                           <span className="font-medium">Date:</span>{" "}
@@ -264,15 +282,15 @@ export default function PatientHistoryPage() {
                           {formatAmount(claim.amountClaimed)}
                         </div>
                         <div>
-                          <span className="font-medium">Approved Amount:</span>
+                          <span className="font-medium">Approved Amount:</span>{" "}
                           <span
                             className={
-                              claim.approvedAmount > 0
+                              Number(claim.approvedAmount) > 0
                                 ? "text-green-600 font-medium"
                                 : "text-gray-500"
                             }
                           >
-                            {claim.approvedAmount > 0
+                            {Number(claim.approvedAmount) > 0
                               ? formatAmount(claim.approvedAmount)
                               : "Pending"}
                           </span>
@@ -280,7 +298,6 @@ export default function PatientHistoryPage() {
                       </div>
                     </div>
 
-                    {/* Right Section - Actions */}
                     <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 lg:ml-6">
                       <button
                         onClick={() => handleViewDetails(claim)}
@@ -288,7 +305,6 @@ export default function PatientHistoryPage() {
                       >
                         View Details
                       </button>
-                      {/* Pending actions removed: Provide Info and Track Progress buttons */}
                     </div>
                   </div>
                 </div>
@@ -296,10 +312,8 @@ export default function PatientHistoryPage() {
             </div>
           ) : (
             <div className="p-8 text-center">
-              <div className="text-gray-400 text-6xl mb-4">📋</div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
-                No claims found
-              </h3>
+              <div className="text-gray-400 text-6xl mb-4">&#128203;</div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No claims found</h3>
               <p className="text-gray-500 mb-4">
                 {searchTerm ||
                 selectedStatus !== "All Status" ||
@@ -314,7 +328,7 @@ export default function PatientHistoryPage() {
           )}
         </div>
 
-        {/* Pagination Info */}
+        {/* Pagination */}
         {filteredClaims.length > 0 && (
           <div className="mt-6 bg-white rounded-lg shadow-sm border border-gray-200 px-6 py-3">
             <div className="flex flex-col sm:flex-row items-center sm:justify-between gap-3">
@@ -322,28 +336,19 @@ export default function PatientHistoryPage() {
                 <p className="text-sm text-gray-700">
                   Showing{" "}
                   <span className="font-medium">
-                    {filteredClaims.length === 0
-                      ? 0
-                      : (currentPage - 1) * itemsPerPage + 1}
+                    {filteredClaims.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1}
                   </span>{" "}
                   to{" "}
                   <span className="font-medium">
-                    {Math.min(
-                      filteredClaims.length,
-                      currentPage * itemsPerPage
-                    )}
+                    {Math.min(filteredClaims.length, currentPage * itemsPerPage)}
                   </span>{" "}
                   of{" "}
                   <span className="font-medium">{filteredClaims.length}</span>{" "}
                   claims
-                  {filteredClaims.length !== claimsData.length && (
-                    <span className="text-gray-500">
-                      {" "}
-                      (filtered from {claimsData.length} total)
-                    </span>
+                  {filteredClaims.length !== allClaims.length && (
+                    <span className="text-gray-500"> (filtered from {allClaims.length} total)</span>
                   )}
                 </p>
-
                 <label className="text-sm text-gray-600">Items per page:</label>
                 <select
                   value={itemsPerPage}
@@ -370,26 +375,22 @@ export default function PatientHistoryPage() {
                   Previous
                 </button>
 
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map(
-                  (p) => (
-                    <button
-                      key={p}
-                      onClick={() => setCurrentPage(p)}
-                      className={`px-3 py-1 text-sm rounded-md border ${
-                        p === currentPage
-                          ? "text-white bg-blue-600 border-blue-600"
-                          : "text-gray-500 bg-white border-gray-300 hover:bg-gray-50"
-                      }`}
-                    >
-                      {p}
-                    </button>
-                  )
-                )}
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+                  <button
+                    key={p}
+                    onClick={() => setCurrentPage(p)}
+                    className={`px-3 py-1 text-sm rounded-md border ${
+                      p === currentPage
+                        ? "text-white bg-blue-600 border-blue-600"
+                        : "text-gray-500 bg-white border-gray-300 hover:bg-gray-50"
+                    }`}
+                  >
+                    {p}
+                  </button>
+                ))}
 
                 <button
-                  onClick={() =>
-                    setCurrentPage((p) => Math.min(totalPages, p + 1))
-                  }
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                   disabled={currentPage === totalPages}
                   className={`px-3 py-1 text-sm rounded-md border ${
                     currentPage === totalPages
@@ -405,7 +406,6 @@ export default function PatientHistoryPage() {
         )}
       </div>
 
-      {/* Claim Details Modal */}
       <ClaimDetailsModal
         isOpen={isModalOpen}
         onClose={handleCloseModal}
