@@ -199,4 +199,14 @@ export class EmployeesController {
   ): Promise<{ success: boolean; message: string }> {
     return this.employeesService.deleteInvalidUpload(invalidUploadId, actor);
   }
+
+  @Auth()
+  @Roles('corporate', 'admin')
+  @Delete('bulk-import/delete-all-invalid')
+  async deleteAllInvalidUploads(
+    @Query('corporateId') corporateId: string,
+    @CurrentUser() actor: CurrentUserDto,
+  ): Promise<{ success: boolean; message: string; deletedCount: number }> {
+    return this.employeesService.deleteAllInvalidUploads(corporateId, actor);
+  }
 }

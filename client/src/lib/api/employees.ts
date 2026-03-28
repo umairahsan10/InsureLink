@@ -240,6 +240,13 @@ export const employeesApi = {
     return response.data;
   },
 
+  async deleteAllInvalidUploads(corporateId: string): Promise<{ success: boolean; message: string; deletedCount: number }> {
+    const response = await apiFetch<{ success: boolean; message: string; deletedCount: number }>(`/api/employees/bulk-import/delete-all-invalid?corporateId=${corporateId}`, {
+      method: "DELETE",
+    });
+    return response.data;
+  },
+
   async findByEmployeeNumber(corporateId: string, employeeNumber: string): Promise<Employee | null> {
     const params = new URLSearchParams();
     if (corporateId) params.append('corporateId', corporateId);
