@@ -1,4 +1,4 @@
-import { apiFetch } from './client';
+import { apiFetch } from "./client";
 
 export interface Patient extends Record<string, unknown> {
   id: string;
@@ -16,13 +16,13 @@ export interface Patient extends Record<string, unknown> {
 export interface PatientProfile {
   id: string;
   isPatient: boolean;
-  patientType?: 'employee' | 'dependent';
+  patientType?: "employee" | "dependent";
   name?: string;
   email?: string;
   mobile?: string;
   insurance?: string;
   corporateName?: string;
-  status?: 'Active' | 'Inactive';
+  status?: "Active" | "Inactive";
   role?: string;
 }
 
@@ -44,23 +44,44 @@ export interface UpdatePatientProfileRequest {
   mobile?: string;
 }
 
+export interface PatientCoverage {
+  employeeId?: string;
+  fullName?: string;
+  planName: string;
+  totalCoverageAmount: string | number;
+  usedAmount: string | number;
+  availableAmount: string | number;
+  coverageStartDate: string;
+  coverageEndDate: string;
+  status: string;
+}
+
 export const patientsApi = {
   async getMe(): Promise<PatientProfile> {
-    const response = await apiFetch<PatientProfile>('/api/patients/me');
+    const response = await apiFetch<PatientProfile>("/api/patients/me");
     return response.data;
   },
 
-  async updateProfile(request: UpdatePatientProfileRequest): Promise<PatientProfile> {
-    const response = await apiFetch<PatientProfile>('/api/patients/me', {
-      method: 'PATCH',
+  async getCoverage(patientId: string): Promise<PatientCoverage> {
+    const response = await apiFetch<PatientCoverage>(
+      `/api/patients/${patientId}/coverage`,
+    );
+    return response.data;
+  },
+
+  async updateProfile(
+    request: UpdatePatientProfileRequest,
+  ): Promise<PatientProfile> {
+    const response = await apiFetch<PatientProfile>("/api/patients/me", {
+      method: "PATCH",
       body: JSON.stringify(request),
     });
     return response.data;
   },
 
   async verifyPatient(request: VerifyPatientRequest): Promise<Patient> {
-    const response = await apiFetch<Patient>('/api/patients/verify', {
-      method: 'POST',
+    const response = await apiFetch<Patient>("/api/patients/verify", {
+      method: "POST",
       body: JSON.stringify(request),
     });
     return response.data;
@@ -72,8 +93,8 @@ export const patientsApi = {
   },
 
   async registerPatient(request: RegisterPatientRequest): Promise<Patient> {
-    const response = await apiFetch<Patient>('/api/patients', {
-      method: 'POST',
+    const response = await apiFetch<Patient>("/api/patients", {
+      method: "POST",
       body: JSON.stringify(request),
     });
     return response.data;
@@ -85,14 +106,13 @@ export const patientsApi = {
     insurance?: string;
   }): Promise<Patient[]> {
     const queryParams = new URLSearchParams();
-    if (filters?.search) queryParams.append('search', filters.search);
-    if (filters?.status) queryParams.append('status', filters.status);
-    if (filters?.insurance) queryParams.append('insurance', filters.insurance);
+    if (filters?.search) queryParams.append("search", filters.search);
+    if (filters?.status) queryParams.append("status", filters.status);
+    if (filters?.insurance) queryParams.append("insurance", filters.insurance);
 
-    const response = await apiFetch<Patient[]>(`/api/patients?${queryParams.toString()}`);
+    const response = await apiFetch<Patient[]>(
+      `/api/patients?${queryParams.toString()}`,
+    );
     return response.data;
   },
 };
-
-
-

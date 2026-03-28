@@ -6,6 +6,7 @@ import ClaimStatusBadge from "@/components/claims/ClaimStatusBadge";
 import type { ClaimStatus } from "@/types/claims";
 import { formatPKR } from "@/lib/format";
 import { claimsApi } from "@/lib/api/claims";
+import { patientsApi } from "@/lib/api/patients";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface PatientData {
@@ -23,7 +24,12 @@ interface PatientData {
     date: string;
     icon: string;
   }[];
-  coverageBalance: { category: string; used: number; total: number; percentage: number }[];
+  coverageBalance: {
+    category: string;
+    used: number;
+    total: number;
+    percentage: number;
+  }[];
 }
 
 export default function PatientDashboardPage() {
@@ -42,9 +48,10 @@ export default function PatientDashboardPage() {
 
   const loadData = useCallback(async () => {
     try {
-      const [allRes, pendingRes] = await Promise.all([
+      const [allRes, pendingRes, meRes] = await Promise.all([
         claimsApi.getPatientClaims({ limit: 100 }),
         claimsApi.getPatientClaims({ limit: 100, status: "Pending" }),
+        patientsApi.getMe(),
       ]);
 
       const allClaims = allRes.data ?? [];
@@ -52,12 +59,12 @@ export default function PatientDashboardPage() {
       const pendingCount = pendingRes.meta?.total ?? 0;
 
       const approvedClaims = allClaims.filter(
-        (c) => c.claimStatus === "Approved" || c.claimStatus === "Paid"
+        (c) => c.claimStatus === "Approved" || c.claimStatus === "Paid",
       );
       const approvedCount = approvedClaims.length;
       const totalReimbursed = approvedClaims.reduce(
         (s, c) => s + Number(c.approvedAmount || c.amountClaimed || 0),
-        0
+        0,
       );
       const approvalRate =
         totalClaims > 0 ? Math.round((approvedCount / totalClaims) * 100) : 0;
@@ -65,7 +72,7 @@ export default function PatientDashboardPage() {
       const recent = [...allClaims]
         .sort(
           (a, b) =>
-            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
         )
         .slice(0, 3)
         .map((c) => ({
@@ -79,31 +86,40 @@ export default function PatientDashboardPage() {
             c.claimStatus === "Approved" || c.claimStatus === "Paid"
               ? "✓"
               : c.claimStatus === "Rejected"
-              ? "✕"
-              : "⏰",
+                ? "✕"
+                : "⏰",
         }));
 
-      // Derive coverage balance from plan data attached to claims
-      const coverageMap = new Map<
-        string,
-        { used: number; total: number }
-      >();
-      for (const c of allClaims) {
-        const label = c.plan?.planName || "Insurance Coverage";
-        const sumInsured = Number(c.plan?.sumInsured || 0);
-        const entry = coverageMap.get(label) ?? { used: 0, total: sumInsured };
-        entry.used += Number(c.amountClaimed);
-        if (sumInsured > entry.total) entry.total = sumInsured;
-        coverageMap.set(label, entry);
+      // Get coverage balance from patient's coverage API
+      let coverageBalance: {
+        category: string;
+        used: number;
+        total: number;
+        percentage: number;
+      }[] = [];
+      if (meRes?.id) {
+        try {
+          const coverageRes = await patientsApi.getCoverage(meRes.id);
+          const totalAmount = Number(coverageRes.totalCoverageAmount || 0);
+          const usedAmount = Number(coverageRes.usedAmount || 0);
+          const percentage =
+            totalAmount > 0
+              ? Math.min(100, Math.round((usedAmount / totalAmount) * 100))
+              : 0;
+
+          coverageBalance = [
+            {
+              category: coverageRes.planName || "Insurance Coverage",
+              used: usedAmount,
+              total: totalAmount,
+              percentage,
+            },
+          ];
+        } catch {
+          // Fallback to empty coverage if API fails
+          coverageBalance = [];
+        }
       }
-      const coverageBalance = Array.from(coverageMap.entries()).map(
-        ([category, { used, total }]) => ({
-          category,
-          used,
-          total,
-          percentage: total > 0 ? Math.min(100, Math.round((used / total) * 100)) : 0,
-        })
-      );
 
       setPatientData({
         totalClaims,
@@ -131,7 +147,10 @@ export default function PatientDashboardPage() {
         <div className="mb-8 h-12 w-48 bg-gray-200 rounded animate-pulse" />
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           {[...Array(4)].map((_, i) => (
-            <div key={i} className="bg-white rounded-lg shadow p-6 h-28 animate-pulse" />
+            <div
+              key={i}
+              className="bg-white rounded-lg shadow p-6 h-28 animate-pulse"
+            />
           ))}
         </div>
       </div>
@@ -352,8 +371,8 @@ export default function PatientDashboardPage() {
                           claim.status === "Approved"
                             ? "bg-green-100 text-green-600"
                             : claim.status === "Rejected"
-                            ? "bg-red-100 text-red-600"
-                            : "bg-amber-100 text-amber-600"
+                              ? "bg-red-100 text-red-600"
+                              : "bg-amber-100 text-amber-600"
                         }`}
                       >
                         {claim.icon}
@@ -418,36 +437,38 @@ export default function PatientDashboardPage() {
             <div className="space-y-3 sm:space-y-4">
               {patientData.coverageBalance.length > 0 ? (
                 patientData.coverageBalance.map((coverage) => (
-                <div key={coverage.category} className="group">
-                  <div className="flex justify-between items-center mb-1.5">
-                    <span className="text-xs font-semibold text-gray-700 group-hover:text-gray-900 transition-colors">
-                      {coverage.category}
-                    </span>
-                    <span className="text-xs text-gray-500 font-medium">
-                      {coverage.percentage}%
-                    </span>
+                  <div key={coverage.category} className="group">
+                    <div className="flex justify-between items-center mb-1.5">
+                      <span className="text-xs font-semibold text-gray-700 group-hover:text-gray-900 transition-colors">
+                        {coverage.category}
+                      </span>
+                      <span className="text-xs font-semibold text-gray-900 bg-blue-50 px-2 py-1 rounded">
+                        {coverage.percentage}% Used
+                      </span>
+                    </div>
+                    <div className="relative w-full h-2 bg-gray-200 rounded-full overflow-hidden shadow-sm">
+                      <div
+                        className={`h-full rounded-full transition-all duration-500 ${
+                          coverage.percentage < 50
+                            ? "bg-gradient-to-r from-green-500 to-emerald-500"
+                            : coverage.percentage < 75
+                              ? "bg-gradient-to-r from-amber-500 to-orange-500"
+                              : "bg-gradient-to-r from-red-500 to-rose-500"
+                        }`}
+                        style={{ width: `${coverage.percentage}%` }}
+                      />
+                    </div>
+                    <div className="flex justify-between mt-1 text-xs text-gray-500">
+                      <span>Rs. {coverage.used.toLocaleString()}</span>
+                      <span>Rs. {coverage.total.toLocaleString()}</span>
+                    </div>
                   </div>
-                  <div className="relative w-full h-2 bg-gray-200 rounded-full overflow-hidden shadow-sm">
-                    <div
-                      className={`h-full rounded-full transition-all duration-500 ${
-                        coverage.percentage < 50
-                          ? "bg-gradient-to-r from-green-500 to-emerald-500"
-                          : coverage.percentage < 75
-                          ? "bg-gradient-to-r from-amber-500 to-orange-500"
-                          : "bg-gradient-to-r from-red-500 to-rose-500"
-                      }`}
-                      style={{ width: `${coverage.percentage}%` }}
-                    />
-                  </div>
-                  <div className="flex justify-between mt-1 text-xs text-gray-500">
-                    <span>Rs. {coverage.used.toLocaleString()}</span>
-                    <span>Rs. {coverage.total.toLocaleString()}</span>
-                  </div>
-                </div>
                 ))
               ) : (
                 <div className="text-center py-8">
-                  <p className="text-xs text-gray-400">No coverage data available</p>
+                  <p className="text-xs text-gray-400">
+                    No coverage data available
+                  </p>
                 </div>
               )}
             </div>

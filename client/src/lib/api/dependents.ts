@@ -34,7 +34,26 @@ export interface ListDependentsQuery {
 
 const BASE = "/api/v1/dependents";
 
+export interface CreateDependentInput {
+  employeeId: string;
+  firstName: string;
+  lastName: string;
+  relationship: string;
+  dateOfBirth: string;
+  gender: string;
+  cnic?: string;
+  phoneNumber?: string;
+}
+
 export const dependentsApi = {
+  async create(data: CreateDependentInput): Promise<Dependent> {
+    const res = await apiFetch<Dependent>(`${BASE}`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+    return res.data;
+  },
+
   async list(query: ListDependentsQuery = {}): Promise<PaginatedDependents> {
     const params = new URLSearchParams();
     if (query.page) params.append("page", String(query.page));
@@ -44,7 +63,9 @@ export const dependentsApi = {
     if (query.corporateId) params.append("corporateId", query.corporateId);
 
     const qs = params.toString();
-    const res = await apiFetch<PaginatedDependents>(`${BASE}${qs ? `?${qs}` : ""}`);
+    const res = await apiFetch<PaginatedDependents>(
+      `${BASE}${qs ? `?${qs}` : ""}`,
+    );
     return res.data;
   },
 
@@ -64,7 +85,10 @@ export const dependentsApi = {
     return res.data;
   },
 
-  async reject(dependentId: string, rejectionReason: string): Promise<Dependent> {
+  async reject(
+    dependentId: string,
+    rejectionReason: string,
+  ): Promise<Dependent> {
     const res = await apiFetch<Dependent>(`${BASE}/${dependentId}/reject`, {
       method: "PATCH",
       body: JSON.stringify({ rejectionReason }),

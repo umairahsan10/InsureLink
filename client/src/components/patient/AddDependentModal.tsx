@@ -2,11 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { DependentFormData } from "@/types/dependent";
-import {
-  addDependentRequest,
-  generateDependentId,
-  calculateAge,
-} from "@/utils/dependentHelpers";
+import { dependentsApi } from "@/lib/api/dependents";
+import { calculateAge } from "@/utils/dependentHelpers";
 
 interface AddDependentModalProps {
   isOpen: boolean;
@@ -47,6 +44,10 @@ export default function AddDependentModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
   const [touchedFields, setTouchedFields] = useState<Set<string>>(new Set());
+  const [toast, setToast] = useState<{
+    message: string;
+    type: "success" | "error";
+  } | null>(null);
 
   // Set default coverage date
   useEffect(() => {
@@ -78,10 +79,18 @@ export default function AddDependentModal({
     if (isDirty && typeof window !== "undefined") {
       sessionStorage.setItem(
         `dependent_form_${employeeId}`,
-        JSON.stringify(formData)
+        JSON.stringify(formData),
       );
     }
   }, [formData, isDirty, employeeId]);
+
+  // Auto-dismiss toast after 4 seconds
+  useEffect(() => {
+    if (toast) {
+      const timer = setTimeout(() => setToast(null), 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [toast]);
 
   const validateField = (fieldName: string, value: any): string | undefined => {
     switch (fieldName) {
@@ -166,7 +175,7 @@ export default function AddDependentModal({
       case "coverage":
         const coverageError = validateField(
           "coverageStartDate",
-          formData.coverageStartDate
+          formData.coverageStartDate,
         );
         if (coverageError) newErrors.coverageStartDate = coverageError;
         break;
@@ -189,7 +198,7 @@ export default function AddDependentModal({
     const cnicError = validateField("cnic", formData.cnic);
     const coverageError = validateField(
       "coverageStartDate",
-      formData.coverageStartDate
+      formData.coverageStartDate,
     );
     const docsError = validateField("documents", null);
 
@@ -206,7 +215,7 @@ export default function AddDependentModal({
   const handleInputChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
-    >
+    >,
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -243,18 +252,24 @@ export default function AddDependentModal({
       const maxSize = 5 * 1024 * 1024; // 5MB
 
       if (!validTypes.includes(file.type)) {
-        alert(`${file.name} is not a valid file type (PDF, JPG, PNG)`);
+        setToast({
+          message: `${file.name} is not a valid file type (PDF, JPG, PNG)`,
+          type: "error",
+        });
         return false;
       }
       if (file.size > maxSize) {
-        alert(`${file.name} exceeds 5MB size limit`);
+        setToast({
+          message: `${file.name} exceeds 5MB size limit`,
+          type: "error",
+        });
         return false;
       }
       return true;
     });
 
     if (formData.documents.length + validFiles.length > 3) {
-      alert("Maximum 3 documents allowed");
+      setToast({ message: "Maximum 3 documents allowed", type: "error" });
       return;
     }
 
@@ -318,34 +333,32 @@ export default function AddDependentModal({
     setIsSubmitting(true);
 
     try {
-      const dependentId = generateDependentId();
-      const documentNames = formData.documents.map((file) => file.name);
+      // Split name into firstName and lastName
+      const nameParts = formData.name.trim().split(/\s+/);
+      const firstName = nameParts[0];
+      const lastName = nameParts.slice(1).join(" ") || nameParts[0];
 
-      const newDependent = {
-        id: dependentId,
+      // Create dependent via API
+      await dependentsApi.create({
         employeeId,
-        employeeName,
-        corporateId,
-        name: formData.name,
+        firstName,
+        lastName,
         relationship: formData.relationship,
         dateOfBirth: formData.dateOfBirth,
         gender: formData.gender,
         cnic: formData.cnic,
-        phoneNumber: formData.phoneNumber || "",
-        status: "Pending" as const,
-        requestedAt: new Date().toISOString(),
-        documents: documentNames,
-        coverageStartDate: formData.coverageStartDate,
-      };
-
-      addDependentRequest(newDependent);
+        phoneNumber: formData.phoneNumber || undefined,
+      });
 
       // Clear saved form
       if (typeof window !== "undefined") {
         sessionStorage.removeItem(`dependent_form_${employeeId}`);
       }
 
-      alert("Dependent request submitted successfully!");
+      setToast({
+        message: "Dependent request submitted successfully!",
+        type: "success",
+      });
       onSuccess();
 
       // Reset form
@@ -367,8 +380,13 @@ export default function AddDependentModal({
       setIsDirty(false);
 
       onClose();
-    } catch {
-      alert("Failed to submit request. Please try again.");
+    } catch (error) {
+      console.error("Failed to add dependent:", error);
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Failed to submit request. Please try again.";
+      setToast({ message: errorMessage, type: "error" });
     } finally {
       setIsSubmitting(false);
     }
@@ -564,7 +582,7 @@ export default function AddDependentModal({
                 : "border-gray-300"
             }`}
             placeholder="12345-6789012-3"
-            maxLength={17}
+            maxLength={15}
           />
           {touchedFields.has("cnic") && errors.cnic && (
             <p className="text-red-500 text-sm mt-2 flex items-center">
@@ -903,7 +921,7 @@ export default function AddDependentModal({
                     year: "numeric",
                     month: "long",
                     day: "numeric",
-                  }
+                  },
                 )}
               </p>
             </div>
@@ -1165,6 +1183,56 @@ export default function AddDependentModal({
             </button>
           )}
         </div>
+
+        {/* Toast Notification */}
+        {toast && (
+          <div
+            className={`fixed bottom-4 right-4 px-6 py-4 rounded-lg shadow-lg flex items-center gap-3 animate-in slide-in-from-bottom-4 ${
+              toast.type === "success"
+                ? "bg-green-50 border border-green-200 text-green-800"
+                : "bg-red-50 border border-red-200 text-red-800"
+            }`}
+          >
+            {toast.type === "success" ? (
+              <svg
+                className="w-5 h-5 flex-shrink-0"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            ) : (
+              <svg
+                className="w-5 h-5 flex-shrink-0"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            )}
+            <p className="font-medium text-sm">{toast.message}</p>
+            <button
+              onClick={() => setToast(null)}
+              className="ml-4 text-gray-400 hover:text-gray-600"
+            >
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  fillRule="evenodd"
+                  d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
