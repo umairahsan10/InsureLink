@@ -1,98 +1,316 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
-import employeesData from '@/data/employees.json';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import AddEmployeeModal from '@/components/corporate/AddEmployeeModal';
-import { Employee } from '@/types/employee';
 import DependentRequestsTable from '@/components/corporate/DependentRequestsTable';
 import DependentReviewModal from '@/components/corporate/DependentReviewModal';
 import EmployeeDependentsModal from '@/components/corporate/EmployeeDependentsModal';
-import { getDependentsFromStorage, getPendingDependentRequests, getDependentsByEmployee } from '@/utils/dependentHelpers';
-import { Dependent } from '@/types/dependent';
-import dependentsData from '@/data/dependents.json';
 import BulkUploadModal from '@/components/corporate/BulkUploadModal';
 import InvalidEmployeesTable from '@/components/corporate/InvalidEmployeesTable';
+import type { EmployeePlanOption } from '@/components/forms/EmployeeForm';
+import { useAuth } from '@/hooks/useAuth';
+import { employeesApi, type CreateEmployeeRequest } from '@/lib/api/employees';
+import { corporatesApi } from '@/lib/api/corporates';
+import { insurersApi } from '@/lib/api/insurers';
+import { dependentsApi, type Dependent as ApiDependent } from '@/lib/api/dependents';
+import { Employee } from '@/types/employee';
+import { Dependent } from '@/types/dependent';
+
+const pageSize = 10;
+const departmentOptions = [
+  'R&D',
+  'Product',
+  'Finance',
+  'People',
+  'IT',
+  'Engineering',
+  'Sales',
+  'Logistics',
+  'Production',
+  'Design',
+  'Customer',
+];
+
+function parseApiErrorMessage(err: unknown, fallback: string): string {
+  if (!(err instanceof Error)) return fallback;
+
+  try {
+    const raw = JSON.parse(err.message) as {
+      message?: string;
+      errors?: string[];
+    };
+    if (Array.isArray(raw.errors) && raw.errors.length > 0) {
+      return raw.errors.join(', ');
+    }
+    if (typeof raw.message === 'string' && raw.message) {
+      return raw.message;
+    }
+  } catch {
+    // ignore parsing errors and use plain message
+  }
+
+  return err.message || fallback;
+}
+
+function splitName(fullName: string): { firstName: string; lastName: string } {
+  const parts = fullName.trim().split(/\s+/).filter(Boolean);
+  if (parts.length <= 1) {
+    return { firstName: parts[0] || 'Employee', lastName: '' };
+  }
+
+  return {
+    firstName: parts[0],
+    lastName: parts.slice(1).join(' '),
+  };
+}
+
+function defaultCoverageStart(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function defaultCoverageEnd(): string {
+  const d = new Date();
+  d.setFullYear(d.getFullYear() + 1);
+  return d.toISOString().slice(0, 10);
+}
+
+function toUiEmployee(employee: Awaited<ReturnType<typeof employeesApi.getById>>): Employee {
+  const fullName = [employee.firstName, employee.lastName].filter(Boolean).join(' ').trim();
+
+  return {
+    id: employee.id,
+    employeeNumber: employee.employeeNumber,
+    name: fullName || employee.email,
+    email: employee.email,
+    mobile: employee.phone,
+    corporateId: employee.corporateId,
+    planId: employee.planId,
+    coverageStart: new Date(employee.coverageStartDate).toISOString().slice(0, 10),
+    coverageEnd: new Date(employee.coverageEndDate).toISOString().slice(0, 10),
+    designation: employee.designation,
+    department: employee.department,
+  };
+}
+
+function toUiDependent(dep: ApiDependent, employeeName: string): Dependent {
+  return {
+    id: dep.id,
+    employeeId: dep.employeeId,
+    employeeName,
+    corporateId: dep.corporateId,
+    name: `${dep.firstName} ${dep.lastName}`.trim(),
+    relationship: dep.relationship as Dependent['relationship'],
+    dateOfBirth: dep.dateOfBirth,
+    gender: dep.gender as Dependent['gender'],
+    cnic: dep.cnic || '',
+    phoneNumber: dep.phoneNumber,
+    status: dep.status as Dependent['status'],
+    requestedAt: dep.requestDate,
+    reviewedAt: dep.reviewedDate,
+    rejectionReason: dep.rejectionReason,
+    documents: [],
+    coverageStartDate: dep.requestDate,
+  };
+}
 
 export default function CorporateEmployeesPage() {
+  const { user } = useAuth();
+  const corporateId = user?.corporateId;
+
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedDepartment, setSelectedDepartment] = useState('All Departments');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isRemoveMode, setIsRemoveMode] = useState(false);
-  const [employees, setEmployees] = useState<Employee[]>(employeesData as Employee[]);
+  const [employees, setEmployees] = useState<Employee[]>([]);
   const [employeeToRemove, setEmployeeToRemove] = useState<Employee | null>(null);
   const [removedEmployeeMessage, setRemovedEmployeeMessage] = useState<string | null>(null);
-  
-  // Tab state
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
   const [activeTab, setActiveTab] = useState<'employees' | 'requests' | 'invalid'>('employees');
-  
-  // Bulk upload state
   const [isBulkUploadOpen, setIsBulkUploadOpen] = useState(false);
-  const [invalidEmployees, setInvalidEmployees] = useState<Employee[]>([]);
-  
-  // Dependent management state
+  const [invalidReloadKey, setInvalidReloadKey] = useState(0);
+
   const [pendingRequests, setPendingRequests] = useState<Dependent[]>([]);
   const [selectedDependent, setSelectedDependent] = useState<Dependent | null>(null);
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
-  const [selectedEmployeeForView, setSelectedEmployeeForView] = useState<{name: string, dependents: Dependent[]} | null>(null);
+  const [selectedEmployeeForView, setSelectedEmployeeForView] = useState<{ name: string; dependents: Dependent[] } | null>(null);
   const [isDependentsModalOpen, setIsDependentsModalOpen] = useState(false);
 
-  // Mock current corporate ID
-  const currentCorporateId = 'corp-001';
-
-  // Initialize localStorage with seed data on first load
-  useEffect(() => {
-    const existing = getDependentsFromStorage();
-    if (existing.length === 0) {
-      localStorage.setItem('insurelink_dependents', JSON.stringify(dependentsData));
-    }
-    loadPendingRequests();
-  }, []);
-
-  const loadPendingRequests = () => {
-    const requests = getPendingDependentRequests(currentCorporateId);
-    setPendingRequests(requests);
-  };
-
-  // Pagination
   const [currentPage, setCurrentPage] = useState(1);
-  const pageSize = 10;
+  const [totalEmployees, setTotalEmployees] = useState(0);
+  const [defaultPlanId, setDefaultPlanId] = useState<string>('');
+  const [planOptions, setPlanOptions] = useState<EmployeePlanOption[]>([]);
+  const [contractStartDate, setContractStartDate] = useState<string>('');
+  const [contractEndDate, setContractEndDate] = useState<string>('');
 
-  // Filter employees based on search term and department
-  const filteredEmployees = useMemo(() => {
-    let filtered = employees;
+  const employeeNameById = useMemo(() => {
+    const map: Record<string, string> = {};
+    employees.forEach((emp) => {
+      map[emp.id] = emp.name;
+    });
+    return map;
+  }, [employees]);
 
-    if (searchTerm) {
-      filtered = filtered.filter(employee =>
-        employee.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        employee.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        employee.employeeNumber.toLowerCase().includes(searchTerm.toLowerCase())
-      );
+  const loadEmployees = useCallback(async () => {
+    if (!corporateId) {
+      setError('Corporate profile is not linked to this account.');
+      setLoading(false);
+      return;
     }
 
-    if (selectedDepartment !== 'All Departments') {
-      filtered = filtered.filter(employee => {
-        if (selectedDepartment === 'Human Resources' && employee.department === 'People') return true;
-        return employee.department === selectedDepartment;
+    setLoading(true);
+    setError(null);
+
+    try {
+      const response = await employeesApi.list({
+        corporateId,
+        page: currentPage,
+        limit: pageSize,
+        search: searchTerm || undefined,
+        department: selectedDepartment === 'All Departments'
+          ? undefined
+          : selectedDepartment === 'Human Resources'
+            ? 'People'
+            : selectedDepartment,
       });
+
+      setEmployees(response.items.map(toUiEmployee));
+      setTotalEmployees(response.total);
+    } catch (err) {
+      console.error('Failed to load employees:', err);
+      setError(parseApiErrorMessage(err, 'Could not load employees right now.'));
+      setEmployees([]);
+      setTotalEmployees(0);
+    } finally {
+      setLoading(false);
     }
+  }, [corporateId, currentPage, searchTerm, selectedDepartment]);
 
-    return filtered;
-  }, [searchTerm, selectedDepartment, employees]);
+  const loadPendingRequests = useCallback(async () => {
+    if (!corporateId) return;
 
-  const totalPages = Math.ceil(filteredEmployees.length / pageSize);
+    try {
+      const response = await dependentsApi.list({
+        corporateId,
+        status: 'Pending',
+        page: 1,
+        limit: 100,
+      });
 
-  const displayedEmployees = filteredEmployees.slice(
-    (currentPage - 1) * pageSize,
-    currentPage * pageSize
-  );
+      const mapped = response.items.map((dep) => toUiDependent(dep, employeeNameById[dep.employeeId] || 'Employee'));
+      setPendingRequests(mapped);
+    } catch (err) {
+      console.error('Failed to load pending dependent requests:', err);
+      setPendingRequests([]);
+    }
+  }, [corporateId, employeeNameById]);
 
-  // Reset page when filters change
+  const loadDefaultPlan = useCallback(async () => {
+    if (!corporateId) return;
+
+    try {
+      const corporate = await corporatesApi.getCorporateById(corporateId);
+      setContractStartDate(new Date(corporate.contractStartDate).toISOString().slice(0, 10));
+      setContractEndDate(new Date(corporate.contractEndDate).toISOString().slice(0, 10));
+      const plans = await insurersApi.getPlans(corporate.insurerId, true);
+      const fallbackPlan = plans[0]?.id;
+      setPlanOptions(
+        plans.map((plan) => ({
+          id: plan.id,
+          label: `${plan.planName} (${plan.planCode})`,
+        })),
+      );
+      if (fallbackPlan) {
+        setDefaultPlanId(fallbackPlan);
+      }
+    } catch (err) {
+      console.error('Failed to load default plan for employee onboarding:', err);
+    }
+  }, [corporateId]);
+
+  useEffect(() => {
+    loadEmployees();
+  }, [loadEmployees]);
+
+  useEffect(() => {
+    loadPendingRequests();
+  }, [loadPendingRequests]);
+
+  useEffect(() => {
+    loadDefaultPlan();
+  }, [loadDefaultPlan]);
+
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, selectedDepartment, employees]);
+  }, [searchTerm, selectedDepartment]);
+
+  const totalPages = Math.max(1, Math.ceil(totalEmployees / pageSize));
 
   const handleRemoveClick = (employee: Employee) => {
     setEmployeeToRemove(employee);
+  };
+
+  const handleOpenDependents = async (employee: Employee) => {
+    try {
+      const response = await dependentsApi.list({
+        employeeId: employee.id,
+        page: 1,
+        limit: 100,
+      });
+
+      const mapped = response.items.map((dep) => toUiDependent(dep, employee.name));
+      setSelectedEmployeeForView({ name: employee.name, dependents: mapped });
+      setIsDependentsModalOpen(true);
+    } catch (err) {
+      console.error('Failed to load employee dependents:', err);
+      setError(parseApiErrorMessage(err, 'Could not load dependents for this employee.'));
+    }
+  };
+
+  const createEmployeePayload = (input: {
+    employeeNumber: string;
+    name: string;
+    email: string;
+    mobile: string;
+    planId: string;
+    designation: string;
+    department: string;
+    coverageStart?: string;
+    coverageEnd?: string;
+  }): CreateEmployeeRequest | null => {
+    if (!corporateId) return null;
+
+    const { firstName, lastName } = splitName(input.name);
+    const coverageStartDate = input.coverageStart || defaultCoverageStart();
+    const coverageEndDate = input.coverageEnd || defaultCoverageEnd();
+    const effectivePlanId = input.planId || defaultPlanId;
+
+    if (!effectivePlanId) {
+      setError('No insurer plan is assigned to this corporate yet. Please configure at least one plan first.');
+      return null;
+    }
+
+    const generatedPassword = `${input.employeeNumber}@Temp123`;
+
+    return {
+      corporateId,
+      planId: effectivePlanId,
+      employeeNumber: input.employeeNumber,
+      email: input.email,
+      password: generatedPassword,
+      firstName,
+      lastName: lastName || undefined,
+      phone: input.mobile,
+      coverageStartDate,
+      coverageEndDate,
+      designation: input.designation || 'Employee',
+      department: input.department || 'General',
+      cnic: undefined,
+      dob: undefined,
+      gender: undefined,
+      address: undefined,
+    };
   };
 
   return (
@@ -100,20 +318,20 @@ export default function CorporateEmployeesPage() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Employees</h1>
         <div className="flex gap-2 w-full sm:w-auto">
-          <button 
+          <button
             onClick={() => setIsAddModalOpen(true)}
             className="flex-1 sm:flex-initial bg-purple-600 text-white px-3 py-2 md:px-4 md:py-2 rounded-lg hover:bg-purple-700 transition-colors text-sm md:text-base"
           >
             + Add Employee
           </button>
-          <button 
+          <button
             onClick={() => setIsBulkUploadOpen(true)}
             className="flex-1 sm:flex-initial bg-green-600 text-white px-3 py-2 md:px-4 md:py-2 rounded-lg hover:bg-green-700 transition-colors text-sm md:text-base"
           >
             📤 Bulk Upload
           </button>
           <button
-            onClick={() => setIsRemoveMode(prev => !prev)}
+            onClick={() => setIsRemoveMode((prev) => !prev)}
             className={`flex-1 sm:flex-initial px-3 py-2 md:px-4 md:py-2 rounded-lg transition-colors text-sm md:text-base ${
               isRemoveMode ? 'bg-red-600 text-white hover:bg-red-700' : 'bg-black text-white hover:bg-gray-800'
             }`}
@@ -123,8 +341,14 @@ export default function CorporateEmployeesPage() {
         </div>
       </div>
 
-      {removedEmployeeMessage && (
+      {error && (
         <div className="mb-4 p-4 bg-red-100 text-red-800 rounded-lg">
+          {error}
+        </div>
+      )}
+
+      {removedEmployeeMessage && (
+        <div className="mb-4 p-4 bg-green-100 text-green-800 rounded-lg">
           {removedEmployeeMessage}
         </div>
       )}
@@ -132,11 +356,11 @@ export default function CorporateEmployeesPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-6">
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
           <p className="text-sm text-gray-500">Total Employees</p>
-          <p className="text-xl md:text-2xl font-bold text-gray-900">{employees.length}</p>
+          <p className="text-xl md:text-2xl font-bold text-gray-900">{totalEmployees}</p>
         </div>
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
           <p className="text-sm text-gray-500">Active Policies</p>
-          <p className="text-xl md:text-2xl font-bold text-green-600">{employees.length}</p>
+          <p className="text-xl md:text-2xl font-bold text-green-600">{totalEmployees}</p>
         </div>
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
           <p className="text-sm text-gray-500">Pending Dependent Requests</p>
@@ -144,7 +368,6 @@ export default function CorporateEmployeesPage() {
         </div>
       </div>
 
-      {/* Tabs */}
       <div className="mb-6 border-b border-gray-200">
         <nav className="-mb-px flex space-x-8">
           <button
@@ -181,17 +404,12 @@ export default function CorporateEmployeesPage() {
             }`}
           >
             Invalid Employees
-            {invalidEmployees.length > 0 && (
-              <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                {invalidEmployees.length}
-              </span>
-            )}
           </button>
         </nav>
       </div>
 
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-{activeTab === 'employees' ? (
+        {activeTab === 'employees' ? (
           <>
             <div className="p-4 border-b border-gray-200">
               <div className="flex flex-col sm:flex-row gap-4">
@@ -202,23 +420,17 @@ export default function CorporateEmployeesPage() {
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-sm md:text-base text-gray-900 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 />
-                <select 
+                <select
                   value={selectedDepartment}
                   onChange={(e) => setSelectedDepartment(e.target.value)}
                   className="px-4 py-2 border border-gray-300 rounded-lg text-sm md:text-base text-gray-900 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 >
                   <option>All Departments</option>
-                  <option>R&D</option>
-                  <option>Product</option>
-                  <option>Finance</option>
-                  <option>Human Resources</option>
-                  <option>IT</option>
-                  <option>Engineering</option>
-                  <option>Sales</option>
-                  <option>Logistics</option>
-                  <option>Production</option>
-                  <option>Design</option>
-                  <option>Customer</option>
+                  {departmentOptions.map((department) => (
+                    <option key={department}>
+                      {department === 'People' ? 'Human Resources' : department}
+                    </option>
+                  ))}
                 </select>
               </div>
             </div>
@@ -238,14 +450,18 @@ export default function CorporateEmployeesPage() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {displayedEmployees.length > 0 ? (
-                    displayedEmployees.map((employee) => {
-                      const employeeId = employee.id;
-                      const dependents = getDependentsByEmployee(employeeId);
-                      const dependentCount = dependents.length;
-                      
+                  {loading ? (
+                    <tr>
+                      <td colSpan={isRemoveMode ? 8 : 7} className="px-4 md:px-6 py-8 text-center text-gray-500">
+                        Loading employees...
+                      </td>
+                    </tr>
+                  ) : employees.length > 0 ? (
+                    employees.map((employee) => {
+                      const dependentCount = pendingRequests.filter((dep) => dep.employeeId === employee.id).length;
+
                       return (
-                        <tr key={employee.employeeNumber} className="hover:bg-gray-50">
+                        <tr key={employee.id} className="hover:bg-gray-50">
                           <td className="px-4 md:px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{employee.name}</td>
                           <td className="px-4 md:px-6 py-4 whitespace-nowrap text-sm text-gray-500">{employee.employeeNumber}</td>
                           <td className="px-4 md:px-6 py-4 whitespace-nowrap text-sm text-gray-500">{employee.department}</td>
@@ -254,8 +470,7 @@ export default function CorporateEmployeesPage() {
                           <td className="px-4 md:px-6 py-4 whitespace-nowrap text-sm">
                             <button
                               onClick={() => {
-                                setSelectedEmployeeForView({ name: employee.name, dependents });
-                                setIsDependentsModalOpen(true);
+                                void handleOpenDependents(employee);
                               }}
                               className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 hover:bg-blue-200"
                             >
@@ -304,48 +519,24 @@ export default function CorporateEmployeesPage() {
           </div>
         ) : (
           <div className="p-4">
-            {invalidEmployees.length === 0 ? (
-              <div className="text-center py-12">
-                <p className="text-gray-500">No invalid employees. All imported employees are valid.</p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                  <p className="text-sm text-yellow-800">
-                    <strong>{invalidEmployees.length}</strong> employee(s) were imported with validation errors. 
-                    Please review and fix them below.
-                  </p>
-                </div>
-                <InvalidEmployeesTable
-                  invalidEmployees={invalidEmployees}
-                  existingEmployees={employees}
-                  onResolve={(resolved) => {
-                    // move to valid list
-                    setEmployees(prev => [...prev, resolved]);
-                    setInvalidEmployees(prev => prev.filter(e => e.id !== resolved.id));
-                  }}
-                  onUpdateInvalid={(updated) => {
-                    setInvalidEmployees(prev => prev.map(e => e.id === updated.id ? updated : e));
-                  }}
-                />
-              </div>
-            )}
+            <InvalidEmployeesTable
+              corporateId={corporateId || ''}
+              reloadKey={invalidReloadKey}
+              contractStartDate={contractStartDate}
+              contractEndDate={contractEndDate}
+            />
           </div>
         )}
-        
-        {/* Pagination - only show for employees tab */}
+
         {activeTab === 'employees' && (
           <div className="px-4 md:px-6 py-3 bg-gray-50 border-t border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-3">
             <p className="text-xs md:text-sm text-gray-700 text-center sm:text-left">
-              Showing <span className="font-medium">{(currentPage - 1) * pageSize + 1}</span> to <span className="font-medium">{Math.min(currentPage * pageSize, filteredEmployees.length)}</span> of{' '}
-              <span className="font-medium">{filteredEmployees.length}</span> employees
-              {filteredEmployees.length !== employees.length && (
-                <span className="text-gray-500"> (filtered from {employees.length} total)</span>
-              )}
+              Showing <span className="font-medium">{Math.max((currentPage - 1) * pageSize + 1, totalEmployees === 0 ? 0 : 1)}</span> to <span className="font-medium">{Math.min(currentPage * pageSize, totalEmployees)}</span> of{' '}
+              <span className="font-medium">{totalEmployees}</span> employees
             </p>
             <div className="flex space-x-2">
               <button
-                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
                 disabled={currentPage === 1}
                 className="px-2 md:px-3 py-1 text-xs md:text-sm text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50"
               >
@@ -369,7 +560,7 @@ export default function CorporateEmployeesPage() {
               </div>
 
               <button
-                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
                 disabled={currentPage === totalPages}
                 className="px-2 md:px-3 py-1 text-xs md:text-sm text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50"
               >
@@ -380,47 +571,51 @@ export default function CorporateEmployeesPage() {
         )}
       </div>
 
-      {/* Bulk Upload Modal */}
       <BulkUploadModal
         isOpen={isBulkUploadOpen}
         onClose={() => setIsBulkUploadOpen(false)}
-        existingEmployees={employees}
-        onImport={(validEmployees, invalidEmployeesList) => {
-          // Add valid employees to main list
-          setEmployees(prev => [...prev, ...validEmployees]);
-          
-          // Store invalid employees separately
-          setInvalidEmployees(prev => [...prev, ...invalidEmployeesList]);
-          
-          // Show success message
-          alert(`${validEmployees.length} employees imported successfully. ${invalidEmployeesList.length} rows skipped (see Invalid Employees tab).`);
-          
-          // Switch to invalid tab if there are invalid employees
-          if (invalidEmployeesList.length > 0) {
-            setActiveTab('invalid');
-          }
+        corporateId={corporateId || ''}
+        onUploadComplete={() => {
+          // Refresh the employees list and invalid employees
+          loadEmployees();
+          setInvalidReloadKey((prev) => prev + 1);
         }}
       />
 
-      {/* Add Employee Modal */}
       <AddEmployeeModal
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
-        onAddEmployee={(employeeData) => {
-          // Generate ID for new employee
-          const newEmployee: Employee = {
-            ...employeeData,
-            id: `emp-${Date.now()}`,
-            coverageStart: '2025-01-01',
-            coverageEnd: '2025-12-31',
-            corporateId: 'corp-001'
-          };
-          setEmployees(prev => [...prev, newEmployee]);
-          alert(`Employee ${employeeData.name} added successfully!`);
+        planOptions={planOptions}
+        departmentOptions={departmentOptions}
+        onAddEmployee={async (employeeData) => {
+          const payload = createEmployeePayload({
+            employeeNumber: employeeData.employeeNumber,
+            name: employeeData.name,
+            email: employeeData.email,
+            mobile: employeeData.mobile,
+            planId: employeeData.planId,
+            designation: employeeData.designation,
+            department: employeeData.department,
+            coverageStart: employeeData.coverageStartDate,
+            coverageEnd: employeeData.coverageEndDate,
+          });
+
+          if (!payload) {
+            throw new Error('No valid insurance plan is available for this corporate account.');
+          }
+
+          try {
+            await employeesApi.create(payload);
+            await loadEmployees();
+            setRemovedEmployeeMessage(`Employee ${employeeData.name} added successfully!`);
+          } catch (err) {
+            throw new Error(parseApiErrorMessage(err, 'Failed to add employee. Please verify details and try again.'));
+          }
         }}
+        coverageMinDate={contractStartDate}
+        coverageMaxDate={contractEndDate}
       />
 
-      {/* Remove Confirmation Modal */}
       {employeeToRemove && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-30 z-50">
           <div className="bg-white rounded-xl shadow-lg max-w-sm w-full overflow-hidden">
@@ -439,11 +634,16 @@ export default function CorporateEmployeesPage() {
                   Cancel
                 </button>
                 <button
-                  onClick={() => {
-                    setEmployees(prev => prev.filter(emp => emp.employeeNumber !== employeeToRemove.employeeNumber));
-                    setRemovedEmployeeMessage(`Employee ${employeeToRemove.name} removed successfully!`);
-                    setEmployeeToRemove(null);
-                    setTimeout(() => setRemovedEmployeeMessage(null), 3000);
+                  onClick={async () => {
+                    try {
+                      await employeesApi.remove(employeeToRemove.id);
+                      setRemovedEmployeeMessage(`Employee ${employeeToRemove.name} removed successfully!`);
+                      setEmployeeToRemove(null);
+                      await loadEmployees();
+                      setTimeout(() => setRemovedEmployeeMessage(null), 3000);
+                    } catch (err) {
+                      setError(parseApiErrorMessage(err, 'Failed to remove employee.'));
+                    }
                   }}
                   className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors duration-200"
                 >
@@ -455,7 +655,6 @@ export default function CorporateEmployeesPage() {
         </div>
       )}
 
-      {/* Dependent Review Modal */}
       <DependentReviewModal
         isOpen={isReviewModalOpen}
         onClose={() => {
@@ -463,12 +662,17 @@ export default function CorporateEmployeesPage() {
           setSelectedDependent(null);
         }}
         dependent={selectedDependent}
+        onApprove={async (dependentId) => {
+          await dependentsApi.approve(dependentId);
+        }}
+        onReject={async (dependentId, rejectionReason) => {
+          await dependentsApi.reject(dependentId, rejectionReason);
+        }}
         onSuccess={() => {
-          loadPendingRequests();
+          void loadPendingRequests();
         }}
       />
 
-      {/* Employee Dependents View Modal */}
       {selectedEmployeeForView && (
         <EmployeeDependentsModal
           isOpen={isDependentsModalOpen}

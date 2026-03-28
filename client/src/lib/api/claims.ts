@@ -112,6 +112,8 @@ export interface ClaimFilters {
   limit?: number;
   sortBy?: string;
   order?: "asc" | "desc";
+  // Backward-compatible alias used by some existing callers
+  sortOrder?: "asc" | "desc";
 }
 
 // ── Create Claim Request (Simplified) ────────────────────────────────────

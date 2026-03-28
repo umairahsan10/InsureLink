@@ -2,6 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, Logger, VersioningType } from '@nestjs/common';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
+import { performance } from 'perf_hooks';
 import { AppModule } from './app.module';
 import { PrismaService } from './common/prisma/prisma.service';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
@@ -15,6 +16,18 @@ async function bootstrap() {
   app.enableCors({
     origin: process.env.CORS_ORIGIN ?? 'http://localhost:3000',
     credentials: true,
+  });
+
+  // Request logger: prints each API call in backend terminal
+  app.use((req, res, next) => {
+    const start = performance.now();
+
+    res.on('finish', () => {
+      const durationMs = Math.round((performance.now() - start) * 10) / 10;
+      logger.log(`${req.method} ${req.originalUrl} -> ${res.statusCode} (${durationMs} ms)`);
+    });
+
+    next();
   });
 
   // Serve static files from uploads directory

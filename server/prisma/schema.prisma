@@ -734,6 +734,7 @@ model InvalidEmployeeUpload {
     firstName         String         @map("first_name") @db.VarChar(100)
     lastName          String?        @map("last_name") @db.VarChar(100)
     phone             String         @db.VarChar(20)
+    password          String         @db.VarChar(255)
     userRole          UserRole       @map("user_role")
     dob               DateTime?      @db.Date
     gender            Gender?

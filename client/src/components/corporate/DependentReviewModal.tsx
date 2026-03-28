@@ -2,52 +2,66 @@
 
 import { useState } from 'react';
 import { Dependent } from '@/types/dependent';
-import { approveDependentRequest, rejectDependentRequest, calculateAge } from '@/utils/dependentHelpers';
+import { calculateAge } from '@/utils/dependentHelpers';
 
 interface DependentReviewModalProps {
   isOpen: boolean;
   onClose: () => void;
   dependent: Dependent | null;
   onSuccess: () => void;
+  onApprove?: (dependentId: string) => Promise<void>;
+  onReject?: (dependentId: string, rejectionReason: string) => Promise<void>;
 }
 
 export default function DependentReviewModal({ 
   isOpen, 
   onClose, 
   dependent, 
-  onSuccess 
+  onSuccess,
+  onApprove,
+  onReject,
 }: DependentReviewModalProps) {
   const [action, setAction] = useState<'approve' | 'reject' | null>(null);
   const [rejectionReason, setRejectionReason] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
 
-  const handleApprove = () => {
+  const handleApprove = async () => {
     setIsProcessing(true);
-    if (dependent) {
-      approveDependentRequest(dependent.id, 'HR Manager'); // In real app, get from auth context
-      alert('Dependent request approved successfully!');
-      onSuccess();
-      onClose();
+    try {
+      if (dependent) {
+        if (onApprove) {
+          await onApprove(dependent.id);
+        }
+        alert('Dependent request approved successfully!');
+        onSuccess();
+        onClose();
+      }
+    } finally {
+      setIsProcessing(false);
     }
-    setIsProcessing(false);
   };
 
-  const handleReject = () => {
+  const handleReject = async () => {
     if (!rejectionReason.trim()) {
       alert('Please provide a reason for rejection');
       return;
     }
     
     setIsProcessing(true);
-    if (dependent) {
-      rejectDependentRequest(dependent.id, rejectionReason, 'HR Manager');
-      alert('Dependent request rejected');
-      onSuccess();
-      onClose();
-      setRejectionReason('');
-      setAction(null);
+    try {
+      if (dependent) {
+        if (onReject) {
+          await onReject(dependent.id, rejectionReason);
+        }
+        alert('Dependent request rejected');
+        onSuccess();
+        onClose();
+        setRejectionReason('');
+        setAction(null);
+      }
+    } finally {
+      setIsProcessing(false);
     }
-    setIsProcessing(false);
   };
 
   if (!isOpen || !dependent) return null;

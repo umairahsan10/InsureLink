@@ -2025,7 +2025,7 @@ async function main() {
   console.log('🌱 Starting InsureLink database seed...\n');
 
   // Hash the password once
-  const passwordHash = await bcrypt.hash('password123', 10);
+  const passwordHash = await bcrypt.hash('Pass1234', 10);
 
   // ========================================================================
   // STEP 0: Clean existing data (reverse dependency order)
@@ -2036,6 +2036,8 @@ async function main() {
   await prisma.claimDocument.deleteMany();
   await prisma.chatMessageAttachment.deleteMany();
   await prisma.chatMessage.deleteMany();
+  await prisma.invalidEmployeeUpload.deleteMany();
+  await prisma.employeeUpload.deleteMany();
   await prisma.claim.deleteMany();
   await prisma.hospitalVisit.deleteMany();
   await prisma.dependent.deleteMany();
@@ -2295,6 +2297,91 @@ async function main() {
     ID_MAP[e.id] = employee.id;
   }
   console.log(`   ✅ ${employees.length} employees created\n`);
+
+  // ========================================================================
+  // STEP 5.5: Create Sample Employee Upload Data (for testing bulk upload)
+  // ========================================================================
+  console.log('📤 Creating Sample Employee Upload Data...');
+  
+  // Create a sample employee upload
+  const sampleUpload = await prisma.employeeUpload.create({
+    data: {
+      corporateId: ID_MAP['corp-001'],
+      uploadedByUserId: createdIds.corpUsers[0],
+      filePath: 'csv-uploads/sample-upload.csv',
+      originalFileName: 'sample-upload.csv',
+      status: 'processed',
+    },
+  });
+  
+  // Create some sample invalid employee uploads (for testing edit/resubmit)
+  const invalidUploads = [
+    {
+      employeeNumber: 'E-INVALID-001',
+      firstName: 'Invalid',
+      lastName: 'User',
+      email: 'invalid.user@acme.com',
+      phone: '+92-300-9999991',
+      password: 'Pass1234',
+      designation: 'Tester',
+      department: 'QA',
+      planId: ID_MAP['plan-acme-gold-2025'],
+      coverageStartDate: new Date('2025-01-01'),
+      coverageEndDate: new Date('2025-12-31'),
+      dob: new Date('1990-01-01'),
+      cnic: '42101-9999999-1',
+      errorMessages: ['Duplicate email already exists', 'Employee number already in use'],
+    },
+    {
+      employeeNumber: 'E-INVALID-002',
+      firstName: 'Another',
+      lastName: 'Invalid',
+      email: 'another.invalid@acme.com',
+      phone: '+92-300-9999992',
+      password: 'Pass1234',
+      designation: 'Invalid Tester',
+      department: 'Testing',
+      planId: ID_MAP['plan-acme-basic-2025'],
+      coverageStartDate: new Date('2025-01-01'),
+      coverageEndDate: new Date('2025-12-31'),
+      dob: new Date('1985-05-15'),
+      cnic: '42101-8888888-2',
+      errorMessages: ['Coverage dates must be within corporate contract dates'],
+    },
+  ];
+  
+  for (const invalid of invalidUploads) {
+    await prisma.invalidEmployeeUpload.create({
+      data: {
+        employeeUploadId: sampleUpload.id,
+        corporateId: ID_MAP['corp-001'],
+        errorMessages: invalid.errorMessages,
+        // User fields
+        email: invalid.email,
+        firstName: invalid.firstName,
+        lastName: invalid.lastName,
+        phone: invalid.phone,
+        password: invalid.password,
+        userRole: 'patient',
+        dob: invalid.dob,
+        gender: null,
+        cnic: invalid.cnic,
+        address: null,
+        // Employee fields
+        employeeNumber: invalid.employeeNumber,
+        planId: invalid.planId,
+        designation: invalid.designation,
+        department: invalid.department,
+        coverageStartDate: invalid.coverageStartDate,
+        coverageEndDate: invalid.coverageEndDate,
+        coverageAmount: 0,
+        usedAmount: 0,
+        status: 'Active',
+      },
+    });
+  }
+  
+  console.log(`   ✅ 1 employee upload and 2 invalid uploads created\n`);
 
   // ========================================================================
   // STEP 6: Create Dependents
@@ -2562,6 +2649,8 @@ async function main() {
   console.log(`  Plans:               ${plans.length}`);
   console.log(`  Employees:           ${employees.length}`);
   console.log(`  Dependents:          ${dependents.length}`);
+  console.log(`  Employee Uploads:    1 (sample)`);
+  console.log(`  Invalid Uploads:     2 (for testing)`);
   console.log(`  Hospital Visits:     ${claims.length}`);
   console.log(`  Claims:              ${claims.length}`);
   console.log(`  Claim Events:        ${eventCount}`);
@@ -2571,7 +2660,7 @@ async function main() {
   console.log('───────────────────────────────────────────────────────────');
   console.log('');
   console.log('🔑 LOGIN CREDENTIALS:');
-  console.log('  All users: password123');
+  console.log('  All users: Pass1234');
   console.log('');
   console.log('  Admin:      superadmin@insurelink.com');
   console.log('  Insurer:    admin@insurelink.com');

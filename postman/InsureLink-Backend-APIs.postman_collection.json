@@ -1,0 +1,765 @@
+{
+  "info": {
+    "name": "InsureLink Backend API",
+    "description": "Complete API collection for InsureLink backend - Corporates, Employees, Dependents, and Patients modules",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_postman_id": "insurelink-backend-v1",
+    "version": "1.0.0"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{access_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3001/api",
+      "type": "string"
+    },
+    {
+      "key": "access_token",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@insurelink.com\",\n  \"password\": \"SecurePass123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "login"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Corporates",
+      "item": [
+        {
+          "name": "Create Corporate",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userEmail\": \"corporate@techcorp.com\",\n  \"userPassword\": \"SecurePass123\",\n  \"userFirstName\": \"Ali\",\n  \"userLastName\": \"Raza\",\n  \"userPhone\": \"03001234567\",\n  \"userCnic\": \"1234567890123\",\n  \"name\": \"TechCorp\",\n  \"address\": \"123 Main Street, DHA Phase 5\",\n  \"city\": \"Karachi\",\n  \"province\": \"Sindh\",\n  \"employeeCount\": 100,\n  \"insurerId\": \"<insurer-id>\",\n  \"contactName\": \"Ali Raza\",\n  \"contactEmail\": \"ali@techcorp.com\",\n  \"contactPhone\": \"03001234567\",\n  \"contractStartDate\": \"2026-01-01\",\n  \"contractEndDate\": \"2026-12-31\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/corporates",
+              "host": ["{{base_url}}"],
+              "path": ["corporates"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Corporate by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/corporates/:id",
+              "host": ["{{base_url}}"],
+              "path": ["corporates", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "<corporate-id>"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List Corporates",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/corporates?page=1&limit=20&status=Active&city=Karachi&search=Tech",
+              "host": ["{{base_url}}"],
+              "path": ["corporates"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                },
+                {
+                  "key": "status",
+                  "value": "Active",
+                  "description": "Active, Inactive, Suspended"
+                },
+                {
+                  "key": "city",
+                  "value": "Karachi",
+                  "disabled": true
+                },
+                {
+                  "key": "insurerId",
+                  "value": "<insurer-id>",
+                  "disabled": true
+                },
+                {
+                  "key": "search",
+                  "value": "Tech",
+                  "disabled": true,
+                  "description": "Search by company name"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Corporate",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"TechCorp Updated\",\n  \"address\": \"456 New Address\",\n  \"city\": \"Lahore\",\n  \"employeeCount\": 150,\n  \"contactPhone\": \"03009876543\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/corporates/:id",
+              "host": ["{{base_url}}"],
+              "path": ["corporates", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "<corporate-id>"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Corporate Status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"Inactive\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/corporates/:id/status",
+              "host": ["{{base_url}}"],
+              "path": ["corporates", ":id", "status"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "<corporate-id>"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Corporate Stats",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/corporates/:id/stats",
+              "host": ["{{base_url}}"],
+              "path": ["corporates", ":id", "stats"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "<corporate-id>"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Employees",
+      "item": [
+        {
+          "name": "Create Employee",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"employee@techcorp.com\",\n  \"password\": \"SecurePass123\",\n  \"firstName\": \"Ahmed\",\n  \"lastName\": \"Khan\",\n  \"phone\": \"03001112233\",\n  \"dob\": \"1990-05-15\",\n  \"gender\": \"Male\",\n  \"cnic\": \"1234567890123\",\n  \"address\": \"789 Employee Street, Gulshan\",\n  \"corporateId\": \"<corporate-id>\",\n  \"employeeNumber\": \"EMP001\",\n  \"planId\": \"<plan-id>\",\n  \"coverageStartDate\": \"2026-01-01\",\n  \"coverageEndDate\": \"2026-12-31\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/employees",
+              "host": ["{{base_url}}"],
+              "path": ["employees"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Employee by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/employees/:id",
+              "host": ["{{base_url}}"],
+              "path": ["employees", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "<employee-id>"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List Employees",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/employees?page=1&limit=20&status=Active&corporateId=<corporate-id>",
+              "host": ["{{base_url}}"],
+              "path": ["employees"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                },
+                {
+                  "key": "status",
+                  "value": "Active",
+                  "description": "Active, Inactive, Terminated"
+                },
+                {
+                  "key": "corporateId",
+                  "value": "<corporate-id>"
+                },
+                {
+                  "key": "search",
+                  "value": "Ahmed",
+                  "disabled": true,
+                  "description": "Search by name or employee number"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Employee",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"Ahmed Updated\",\n  \"phone\": \"03009998877\",\n  \"address\": \"New Address\",\n  \"planId\": \"<new-plan-id>\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/employees/:id",
+              "host": ["{{base_url}}"],
+              "path": ["employees", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "<employee-id>"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Employee",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/employees/:id",
+              "host": ["{{base_url}}"],
+              "path": ["employees", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "<employee-id>"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Employee Coverage",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/employees/:id/coverage",
+              "host": ["{{base_url}}"],
+              "path": ["employees", ":id", "coverage"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "<employee-id>"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Validate Bulk Import",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employees\": [\n    {\n      \"email\": \"emp1@techcorp.com\",\n      \"password\": \"Pass123\",\n      \"firstName\": \"Employee\",\n      \"lastName\": \"One\",\n      \"phone\": \"03001111111\",\n      \"dob\": \"1990-01-01\",\n      \"gender\": \"Male\",\n      \"cnic\": \"1111111111111\",\n      \"employeeNumber\": \"EMP001\",\n      \"planId\": \"<plan-id>\",\n      \"coverageStartDate\": \"2026-01-01\",\n      \"coverageEndDate\": \"2026-12-31\"\n    },\n    {\n      \"email\": \"emp2@techcorp.com\",\n      \"password\": \"Pass123\",\n      \"firstName\": \"Employee\",\n      \"lastName\": \"Two\",\n      \"phone\": \"03002222222\",\n      \"dob\": \"1992-06-15\",\n      \"gender\": \"Female\",\n      \"cnic\": \"2222222222222\",\n      \"employeeNumber\": \"EMP002\",\n      \"planId\": \"<plan-id>\",\n      \"coverageStartDate\": \"2026-01-01\",\n      \"coverageEndDate\": \"2026-12-31\"\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/employees/bulk-import/:corporateId/validate",
+              "host": ["{{base_url}}"],
+              "path": ["employees", "bulk-import", ":corporateId", "validate"],
+              "variable": [
+                {
+                  "key": "corporateId",
+                  "value": "<corporate-id>"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Commit Bulk Import",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"importToken\": \"<token-from-validate-response>\",\n  \"mode\": \"skip_invalid\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/employees/bulk-import/:corporateId/commit",
+              "host": ["{{base_url}}"],
+              "path": ["employees", "bulk-import", ":corporateId", "commit"],
+              "variable": [
+                {
+                  "key": "corporateId",
+                  "value": "<corporate-id>"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Dependents",
+      "item": [
+        {
+          "name": "Create Dependent",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employeeId\": \"<employee-id>\",\n  \"firstName\": \"Sara\",\n  \"lastName\": \"Khan\",\n  \"relationship\": \"Spouse\",\n  \"dob\": \"1992-08-20\",\n  \"gender\": \"Female\",\n  \"cnic\": \"9876543210987\",\n  \"phone\": \"03007778899\",\n  \"address\": \"Same as employee\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/dependents",
+              "host": ["{{base_url}}"],
+              "path": ["dependents"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Dependent by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/dependents/:id",
+              "host": ["{{base_url}}"],
+              "path": ["dependents", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "<dependent-id>"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List Dependents",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/dependents?page=1&limit=20&status=Pending&employeeId=<employee-id>",
+              "host": ["{{base_url}}"],
+              "path": ["dependents"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                },
+                {
+                  "key": "status",
+                  "value": "Pending",
+                  "description": "Pending, Approved, Rejected, Inactive"
+                },
+                {
+                  "key": "employeeId",
+                  "value": "<employee-id>",
+                  "disabled": true
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Dependent",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"Sara Updated\",\n  \"phone\": \"03005554444\",\n  \"address\": \"Updated Address\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/dependents/:id",
+              "host": ["{{base_url}}"],
+              "path": ["dependents", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "<dependent-id>"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Approve Dependent",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/dependents/:id/approve",
+              "host": ["{{base_url}}"],
+              "path": ["dependents", ":id", "approve"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "<dependent-id>"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Reject Dependent",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rejectionReason\": \"Documentation incomplete or invalid relationship proof\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/dependents/:id/reject",
+              "host": ["{{base_url}}"],
+              "path": ["dependents", ":id", "reject"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "<dependent-id>"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Dependent Status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"Inactive\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/dependents/:id/status",
+              "host": ["{{base_url}}"],
+              "path": ["dependents", ":id", "status"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "<dependent-id>"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Patients",
+      "item": [
+        {
+          "name": "Get My Patient Profile",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/patients/me",
+              "host": ["{{base_url}}"],
+              "path": ["patients", "me"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List Patients",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/patients?page=1&limit=20&corporateId=<corporate-id>&patientType=employee&search=Ahmed",
+              "host": ["{{base_url}}"],
+              "path": ["patients"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                },
+                {
+                  "key": "corporateId",
+                  "value": "<corporate-id>",
+                  "disabled": true
+                },
+                {
+                  "key": "patientType",
+                  "value": "employee",
+                  "disabled": true,
+                  "description": "employee or dependent"
+                },
+                {
+                  "key": "search",
+                  "value": "Ahmed",
+                  "disabled": true,
+                  "description": "Search by name, CNIC, or employee number"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Patient by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/patients/:patientId/:patientType",
+              "host": ["{{base_url}}"],
+              "path": ["patients", ":patientId", ":patientType"],
+              "variable": [
+                {
+                  "key": "patientId",
+                  "value": "<patient-id>"
+                },
+                {
+                  "key": "patientType",
+                  "value": "employee",
+                  "description": "employee or dependent"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Patient Coverage",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/patients/:patientId/:patientType/coverage",
+              "host": ["{{base_url}}"],
+              "path": ["patients", ":patientId", ":patientType", "coverage"],
+              "variable": [
+                {
+                  "key": "patientId",
+                  "value": "<patient-id>"
+                },
+                {
+                  "key": "patientType",
+                  "value": "employee",
+                  "description": "employee or dependent"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Patient Claims",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/patients/:patientId/:patientType/claims",
+              "host": ["{{base_url}}"],
+              "path": ["patients", ":patientId", ":patientType", "claims"],
+              "variable": [
+                {
+                  "key": "patientId",
+                  "value": "<patient-id>"
+                },
+                {
+                  "key": "patientType",
+                  "value": "employee"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Patient Visits",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/patients/:patientId/:patientType/visits",
+              "host": ["{{base_url}}"],
+              "path": ["patients", ":patientId", ":patientType", "visits"],
+              "variable": [
+                {
+                  "key": "patientId",
+                  "value": "<patient-id>"
+                },
+                {
+                  "key": "patientType",
+                  "value": "employee"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

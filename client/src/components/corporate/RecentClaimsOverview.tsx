@@ -118,37 +118,45 @@ export default function RecentClaimsOverview({
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {claims.map((claim, index) => (
-              <tr key={index} className="hover:bg-gray-50">
-                <td className="px-4 md:px-6 py-4 md:py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                  {claim.employee}
-                </td>
-                <td className="px-4 md:px-6 py-4 md:py-4 whitespace-nowrap text-sm text-gray-500">
-                  {claim.claimId}
-                </td>
-                <td className="px-4 md:px-6 py-4 md:py-4 whitespace-nowrap text-sm text-gray-500">
-                  {claim.amount}
-                </td>
-                <td className="px-4 md:px-6 py-4 md:py-4 whitespace-nowrap text-sm text-gray-500 truncate max-w-[150px] md:max-w-none">
-                  {claim.hospital}
-                </td>
-                <td className="px-4 md:px-6 py-4 md:py-4 whitespace-nowrap text-sm text-gray-500">
-                  {claim.date}
-                </td>
-                <td className="px-4 md:px-6 py-4 md:py-4 whitespace-nowrap">
-                  <div className="flex items-center">
-                    {/* <span className="mr-2 text-base">{getStatusDot(claim.status)}</span> */}
-                    <span
-                      className={`inline-flex px-2.5 py-1.5 text-sm font-semibold rounded-full ${getStatusColor(
-                        claim.status
-                      )}`}
-                    >
-                      {claim.status}
-                    </span>
-                  </div>
+            {claims.length === 0 ? (
+              <tr>
+                <td colSpan={6} className="px-4 md:px-6 py-8 text-center text-sm text-gray-500">
+                  No claims found yet.
                 </td>
               </tr>
-            ))}
+            ) : (
+              claims.map((claim, index) => (
+                <tr key={index} className="hover:bg-gray-50">
+                  <td className="px-4 md:px-6 py-4 md:py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                    {claim.employee}
+                  </td>
+                  <td className="px-4 md:px-6 py-4 md:py-4 whitespace-nowrap text-sm text-gray-500">
+                    {claim.claimId}
+                  </td>
+                  <td className="px-4 md:px-6 py-4 md:py-4 whitespace-nowrap text-sm text-gray-500">
+                    {claim.amount}
+                  </td>
+                  <td className="px-4 md:px-6 py-4 md:py-4 whitespace-nowrap text-sm text-gray-500 truncate max-w-[150px] md:max-w-none">
+                    {claim.hospital}
+                  </td>
+                  <td className="px-4 md:px-6 py-4 md:py-4 whitespace-nowrap text-sm text-gray-500">
+                    {claim.date}
+                  </td>
+                  <td className="px-4 md:px-6 py-4 md:py-4 whitespace-nowrap">
+                    <div className="flex items-center">
+                      {/* <span className="mr-2 text-base">{getStatusDot(claim.status)}</span> */}
+                      <span
+                        className={`inline-flex px-2.5 py-1.5 text-sm font-semibold rounded-full ${getStatusColor(
+                          claim.status
+                        )}`}
+                      >
+                        {claim.status}
+                      </span>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
