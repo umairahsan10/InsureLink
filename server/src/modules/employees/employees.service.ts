@@ -22,6 +22,7 @@ import {
   UploadCsvDto,
   GetInvalidUploadsDto,
   ResubmitInvalidUploadDto,
+  UpdateInvalidUploadDto,
 } from './dto/bulk-import.dto';
 import { CreateEmployeeDto } from './dto/create-employee.dto';
 import { EmployeeCoverageDto } from './dto/employee-coverage.dto';
@@ -475,6 +476,7 @@ export class EmployeesService {
             firstName: rowData.firstName,
             lastName: rowData.lastName ?? null,
             phone: rowData.phone,
+            password: rowData.password,
             userRole: UserRole.patient, // Default for employees
             dob: rowData.dob ? new Date(rowData.dob) : null,
             gender: null, // Not in CSV
@@ -542,6 +544,7 @@ export class EmployeesService {
               firstName: row.firstName,
               lastName: row.lastName ?? null,
               phone: row.phone,
+              password: row.password,
               userRole: UserRole.patient,
               dob: row.dob ? new Date(row.dob) : null,
               gender: null,
@@ -691,6 +694,7 @@ export class EmployeesService {
         lastName: upload.lastName,
         email: upload.email,
         phone: upload.phone,
+        password: upload.password,
         designation: upload.designation,
         department: upload.department,
         planId: upload.planId,
@@ -703,6 +707,8 @@ export class EmployeesService {
   }
 
   async resubmitInvalidUpload(dto: ResubmitInvalidUploadDto, actor: CurrentUserDto): Promise<{ success: boolean; message: string }> {
+    this.logger.log(`Starting resubmission for invalid upload: ${dto.invalidUploadId}`);
+    
     const invalidUpload = await this.prisma.invalidEmployeeUpload.findUnique({
       where: { id: dto.invalidUploadId },
       include: { employeeUpload: true },
@@ -713,6 +719,7 @@ export class EmployeesService {
     }
 
     await this.ensureCorporateAccess(invalidUpload.corporateId, actor);
+    this.logger.log(`Resubmitting employee: ${invalidUpload.email}, Plan: ${invalidUpload.planId}`);
 
     // Validate the data again (in case plan or corporate constraints changed)
     const validation = await this.validateImportRow({
@@ -721,7 +728,7 @@ export class EmployeesService {
       lastName: invalidUpload.lastName || undefined,
       email: invalidUpload.email,
       phone: invalidUpload.phone,
-      password: 'temp-password', // Will be set by user
+      password: invalidUpload.password, // Use stored password from invalid upload
       designation: invalidUpload.designation,
       department: invalidUpload.department,
       planId: invalidUpload.planId,
@@ -729,7 +736,9 @@ export class EmployeesService {
       coverageEndDate: invalidUpload.coverageEndDate.toISOString().split('T')[0],
       dob: invalidUpload.dob?.toISOString().split('T')[0],
       cnic: invalidUpload.cnic || undefined,
-    }, 1, invalidUpload.corporateId);
+    }, 1, invalidUpload.corporateId, invalidUpload.id); // Pass the current invalid upload ID to exclude it
+
+    this.logger.log(`Validation result: ${validation.valid}, Errors: ${validation.errors?.join(', ')}`);
 
     if (!validation.valid) {
       throw new BadRequestException({
@@ -740,32 +749,148 @@ export class EmployeesService {
     }
 
     // Create the employee
-    await this.createEmployee(
-      {
-        corporateId: invalidUpload.corporateId,
-        planId: invalidUpload.planId,
-        employeeNumber: invalidUpload.employeeNumber,
-        email: invalidUpload.email,
-        password: 'temp-password', // TODO: Generate proper password or require user input
-        firstName: invalidUpload.firstName,
-        ...(invalidUpload.lastName ? { lastName: invalidUpload.lastName } : {}),
-        phone: invalidUpload.phone,
-        designation: invalidUpload.designation,
-        department: invalidUpload.department,
-        coverageStartDate: invalidUpload.coverageStartDate.toISOString().split('T')[0],
-        coverageEndDate: invalidUpload.coverageEndDate.toISOString().split('T')[0],
-        ...(invalidUpload.dob ? { dob: invalidUpload.dob.toISOString().split('T')[0] } : {}),
-        ...(invalidUpload.cnic ? { cnic: invalidUpload.cnic } : {}),
-      },
-      actor,
-    );
+    try {
+      // Check if user already exists (in case of race conditions)
+      const existingUser = await this.prisma.user.findUnique({
+        where: { email: invalidUpload.email },
+        select: { id: true, email: true },
+      });
+      
+      if (existingUser) {
+        this.logger.log(`User ${invalidUpload.email} already exists with ID: ${existingUser.id}`);
+        throw new BadRequestException({
+          code: 'DUPLICATE_USER',
+          message: 'User with this email already exists. Please use a different email address.',
+        });
+      }
 
-    // Delete the invalid upload record
-    await this.prisma.invalidEmployeeUpload.delete({
+      const newEmployee = await this.createEmployee(
+        {
+          corporateId: invalidUpload.corporateId,
+          planId: invalidUpload.planId,
+          employeeNumber: invalidUpload.employeeNumber,
+          email: invalidUpload.email,
+          password: invalidUpload.password, // Use stored password from invalid upload
+          firstName: invalidUpload.firstName,
+          ...(invalidUpload.lastName ? { lastName: invalidUpload.lastName } : {}),
+          phone: invalidUpload.phone,
+          designation: invalidUpload.designation,
+          department: invalidUpload.department,
+          coverageStartDate: invalidUpload.coverageStartDate.toISOString().split('T')[0],
+          coverageEndDate: invalidUpload.coverageEndDate.toISOString().split('T')[0],
+          ...(invalidUpload.dob ? { dob: invalidUpload.dob.toISOString().split('T')[0] } : {}),
+          ...(invalidUpload.cnic ? { cnic: invalidUpload.cnic } : {}),
+        },
+        actor,
+      );
+
+      this.logger.log(`Created employee: ${newEmployee.id} for ${invalidUpload.email}`);
+
+      // Delete the invalid upload record
+      await this.prisma.invalidEmployeeUpload.delete({
+        where: { id: dto.invalidUploadId },
+      });
+
+      this.logger.log(`Deleted invalid upload record: ${dto.invalidUploadId}`);
+
+      return { success: true, message: 'Employee created successfully' };
+    } catch (createError) {
+      this.logger.error(`Failed to create employee for ${invalidUpload.email}:`, createError);
+      
+      // Check if it's a duplicate user error
+      if (createError.message?.includes('Unique constraint') || createError.message?.includes('duplicate key')) {
+        throw new BadRequestException({
+          code: 'DUPLICATE_USER',
+          message: 'User with this email already exists. Please use a different email address.',
+        });
+      }
+      
+      throw createError;
+    }
+  }
+
+  async updateInvalidUpload(dto: UpdateInvalidUploadDto, actor: CurrentUserDto): Promise<{ success: boolean; message: string }> {
+    const invalidUpload = await this.prisma.invalidEmployeeUpload.findUnique({
       where: { id: dto.invalidUploadId },
     });
 
-    return { success: true, message: 'Employee created successfully' };
+    if (!invalidUpload) {
+      throw new NotFoundException({ code: 'NOT_FOUND', message: 'Invalid upload record not found' });
+    }
+
+    await this.ensureCorporateAccess(invalidUpload.corporateId, actor);
+
+    // Validate the updated data
+    const validation = await this.validateImportRow({
+      employeeNumber: dto.employeeNumber,
+      firstName: dto.firstName,
+      lastName: dto.lastName,
+      email: dto.email,
+      phone: dto.phone,
+      password: dto.password,
+      designation: dto.designation,
+      department: dto.department,
+      planId: dto.planId,
+      coverageStartDate: dto.coverageStartDate,
+      coverageEndDate: dto.coverageEndDate,
+      dob: dto.dob,
+      cnic: dto.cnic,
+    }, 1, invalidUpload.corporateId, invalidUpload.id); // Pass the current invalid upload ID to exclude it
+
+    // Update the invalid upload record with new data and updated error messages
+    await this.prisma.invalidEmployeeUpload.update({
+      where: { id: dto.invalidUploadId },
+      data: {
+        employeeNumber: dto.employeeNumber,
+        firstName: dto.firstName,
+        lastName: dto.lastName || null,
+        email: dto.email,
+        phone: dto.phone,
+        password: dto.password,
+        planId: dto.planId,
+        designation: dto.designation,
+        department: dto.department,
+        coverageStartDate: new Date(dto.coverageStartDate),
+        coverageEndDate: new Date(dto.coverageEndDate),
+        dob: dto.dob ? new Date(dto.dob) : null,
+        cnic: dto.cnic || null,
+        errorMessages: validation.valid ? [] : validation.errors, // Update with current validation results
+      },
+    });
+
+    if (validation.valid) {
+      return { success: true, message: 'Employee data is now valid. You can resubmit to create the employee.' };
+    } else {
+      return { 
+        success: true, 
+        message: `Updated with ${validation.errors.length} remaining validation error(s). Please fix these issues before resubmitting.` 
+      };
+    }
+  }
+
+  async deleteInvalidUpload(invalidUploadId: string, actor: CurrentUserDto): Promise<{ success: boolean; message: string }> {
+    this.logger.log(`Starting deletion for invalid upload: ${invalidUploadId}`);
+    
+    const invalidUpload = await this.prisma.invalidEmployeeUpload.findUnique({
+      where: { id: invalidUploadId },
+    });
+
+    if (!invalidUpload) {
+      throw new NotFoundException({ code: 'NOT_FOUND', message: 'Invalid upload record not found' });
+    }
+
+    await this.ensureCorporateAccess(invalidUpload.corporateId, actor);
+    
+    this.logger.log(`Deleting invalid upload for employee: ${invalidUpload.email}`);
+
+    // Delete the invalid upload record
+    await this.prisma.invalidEmployeeUpload.delete({
+      where: { id: invalidUploadId },
+    });
+
+    this.logger.log(`Successfully deleted invalid upload record: ${invalidUploadId}`);
+
+    return { success: true, message: 'Invalid employee record deleted successfully' };
   }
 
   async updateUsedAmount(employeeId: string, approvedAmount: Prisma.Decimal): Promise<void> {
@@ -792,6 +917,7 @@ export class EmployeesService {
     row: BulkImportEmployeeRowDto,
     rowIndex: number,
     corporateId: string,
+    excludeInvalidUploadId?: string, // Add parameter to exclude current invalid upload
   ): Promise<{ rowIndex: number; valid: boolean; errors: string[]; normalized: BulkImportEmployeeRowDto }> {
     const errors: string[] = [];
 
@@ -803,7 +929,24 @@ export class EmployeesService {
       errors.push('Duplicate employeeNumber for this corporate');
     }
 
-    const duplicateUser = await this.prisma.user.findUnique({ where: { email: row.email }, select: { id: true } });
+    // Check for duplicate email in users table, but exclude current invalid upload if provided
+    let duplicateUserQuery: any = { where: { email: row.email }, select: { id: true } };
+    if (excludeInvalidUploadId) {
+      // Also check if this email exists in invalid uploads (excluding current one)
+      const duplicateInvalidUpload = await this.prisma.invalidEmployeeUpload.findFirst({
+        where: {
+          email: row.email,
+          id: { not: excludeInvalidUploadId },
+          corporateId,
+        },
+        select: { id: true },
+      });
+      if (duplicateInvalidUpload) {
+        errors.push('Duplicate email already exists in this upload batch');
+      }
+    }
+    
+    const duplicateUser = await this.prisma.user.findUnique(duplicateUserQuery);
     if (duplicateUser) {
       errors.push('Duplicate email already exists');
     }

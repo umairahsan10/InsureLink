@@ -211,6 +211,35 @@ export const employeesApi = {
     return response.data;
   },
 
+  async updateInvalidUpload(invalidUploadId: string, data: {
+    employeeNumber: string;
+    firstName: string;
+    lastName?: string;
+    email: string;
+    phone: string;
+    password: string;
+    designation: string;
+    department: string;
+    planId: string;
+    coverageStartDate: string;
+    coverageEndDate: string;
+    dob?: string;
+    cnic?: string;
+  }): Promise<{ success: boolean; message: string }> {
+    const response = await apiFetch<{ success: boolean; message: string }>("/api/employees/bulk-import/update-invalid", {
+      method: "POST",
+      body: JSON.stringify({ invalidUploadId, ...data }),
+    });
+    return response.data;
+  },
+
+  async deleteInvalidUpload(invalidUploadId: string): Promise<{ success: boolean; message: string }> {
+    const response = await apiFetch<{ success: boolean; message: string }>(`/api/employees/bulk-import/delete-invalid?invalidUploadId=${invalidUploadId}`, {
+      method: "DELETE",
+    });
+    return response.data;
+  },
+
   async findByEmployeeNumber(corporateId: string, employeeNumber: string): Promise<Employee | null> {
     const params = new URLSearchParams();
     if (corporateId) params.append('corporateId', corporateId);

@@ -23,7 +23,7 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUserDto } from '../auth/dto/current-user.dto';
 import { EmployeesService } from './employees.service';
-import { ValidateBulkImportDto, CommitBulkImportDto, BulkImportValidationResponseDto, UploadCsvDto, GetInvalidUploadsDto, ResubmitInvalidUploadDto } from './dto/bulk-import.dto';
+import { ValidateBulkImportDto, CommitBulkImportDto, BulkImportValidationResponseDto, UploadCsvDto, GetInvalidUploadsDto, ResubmitInvalidUploadDto, UpdateInvalidUploadDto } from './dto/bulk-import.dto';
 import { CreateEmployeeDto } from './dto/create-employee.dto';
 import { EmployeeCoverageDto } from './dto/employee-coverage.dto';
 import { EmployeeResponseDto, PaginatedEmployeesResponseDto } from './dto/employee-response.dto';
@@ -172,11 +172,31 @@ export class EmployeesController {
 
   @Auth()
   @Roles('corporate', 'admin')
+  @Post('bulk-import/update-invalid')
+  async updateInvalidUpload(
+    @Body() dto: UpdateInvalidUploadDto,
+    @CurrentUser() actor: CurrentUserDto,
+  ): Promise<{ success: boolean; message: string }> {
+    return this.employeesService.updateInvalidUpload(dto, actor);
+  }
+
+  @Auth()
+  @Roles('corporate', 'admin')
   @Post('bulk-import/resubmit-invalid')
   async resubmitInvalidUpload(
     @Body() dto: ResubmitInvalidUploadDto,
     @CurrentUser() actor: CurrentUserDto,
   ): Promise<{ success: boolean; message: string }> {
     return this.employeesService.resubmitInvalidUpload(dto, actor);
+  }
+
+  @Auth()
+  @Roles('corporate', 'admin')
+  @Delete('bulk-import/delete-invalid')
+  async deleteInvalidUpload(
+    @Query('invalidUploadId') invalidUploadId: string,
+    @CurrentUser() actor: CurrentUserDto,
+  ): Promise<{ success: boolean; message: string }> {
+    return this.employeesService.deleteInvalidUpload(invalidUploadId, actor);
   }
 }

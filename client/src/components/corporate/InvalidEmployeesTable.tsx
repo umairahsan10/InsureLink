@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { employeesApi } from '@/lib/api/employees';
+import { corporatesApi } from '@/lib/api/corporates';
+import { insurersApi } from '@/lib/api/insurers';
 
 interface InvalidEmployee {
   id: string;
@@ -13,6 +15,7 @@ interface InvalidEmployee {
     lastName?: string;
     email: string;
     phone: string;
+    password: string;
     designation: string;
     department: string;
     planId: string;
@@ -38,7 +41,9 @@ export default function InvalidEmployeesTable({ corporateId, reloadKey, contract
   const [resubmitting, setResubmitting] = useState<string | null>(null);
   const [existingEmployeeMap, setExistingEmployeeMap] = useState<Record<string, any>>({});
   const [existingEmailMap, setExistingEmailMap] = useState<Record<string, any>>({});
-  const [selectedExistingEmployee, setSelectedExistingEmployee] = useState<any>(null);
+  const [plans, setPlans] = useState<any[]>([]);
+  const [planMap, setPlanMap] = useState<Record<string, any>>({});
+  const [expandedDetails, setExpandedDetails] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     loadInvalidEmployees();
@@ -66,11 +71,32 @@ export default function InvalidEmployeesTable({ corporateId, reloadKey, contract
     }
   };
 
+  const loadPlans = async () => {
+    if (!corporateId) return;
+    
+    try {
+      const corporate = await corporatesApi.getCorporateById(corporateId);
+      const plansList = await insurersApi.getPlans(corporate.insurerId, true);
+      setPlans(plansList);
+      
+      const map: Record<string, any> = {};
+      plansList.forEach((plan: any) => {
+        map[plan.id] = plan;
+      });
+      setPlanMap(map);
+    } catch (error) {
+      console.error('Failed to load plans:', error);
+    }
+  };
+
   const loadInvalidEmployees = async () => {
     try {
       const data = await employeesApi.getInvalidUploads(corporateId);
       setInvalidEmployees(data);
-      await loadExistingEmployees();
+      await Promise.all([
+        loadExistingEmployees(),
+        loadPlans()
+      ]);
     } catch (error) {
       console.error('Failed to load invalid employees:', error);
     } finally {
@@ -129,12 +155,85 @@ export default function InvalidEmployeesTable({ corporateId, reloadKey, contract
   const saveEdit = async () => {
     if (!editing || !form) return;
 
-    // Update the invalid employee record (this would require a new API endpoint)
-    // For now, we'll just resubmit
-    await handleResubmit(editing.id);
+    try {
+      // Update the invalid employee record with the new data
+      const response = await employeesApi.updateInvalidUpload(editing.id, form);
+      
+      // Reload the list to show updated validation results
+      await loadInvalidEmployees();
+      
+      // Exit edit mode
+      setEditing(null);
+      setForm(null);
+      
+      // Show success message from backend
+      alert(response.message || 'Employee data updated successfully.');
+    } catch (error: any) {
+      console.error('Failed to update employee:', error);
+      
+      // Show specific error message from backend if available
+      const errorMessage = error?.response?.data?.message || error?.message || 'Failed to update employee. Please check the data and try again.';
+      
+      alert(errorMessage);
+    }
   };
 
   const renderErrorWithContext = (error: string, emp: InvalidEmployee) => {
+    // Plan does not exist error - show available plans
+    if (error.includes('Plan does not exist') || error.includes('Invalid plan')) {
+      const planId = emp.data.planId;
+      const availablePlans = plans.filter(p => p.id !== planId);
+      const detailKey = `plan-${emp.id}`;
+      
+      return (
+        <div className="bg-red-50 border border-red-200 rounded p-2 mb-2">
+          <p className="text-sm font-medium text-red-900">Plan Issue</p>
+          <p className="text-sm text-red-800">{error}</p>
+          
+          {planId && planMap[planId] ? (
+            <div className="mt-2">
+              <button
+                onClick={() => setExpandedDetails({...expandedDetails, [detailKey]: !expandedDetails[detailKey]})}
+                className="px-2 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700"
+              >
+                {expandedDetails[detailKey] ? 'Hide' : 'Show'} Plan Details
+              </button>
+              {expandedDetails[detailKey] && (
+                <div className="bg-white rounded p-2 mt-2 text-xs border border-green-200">
+                  <p className="font-medium text-green-700">✅ Plan Found (but may be inactive):</p>
+                  <p className="text-black"><strong>Name:</strong> {planMap[planId].planName || planMap[planId].name}</p>
+                  <p className="text-black"><strong>Code:</strong> {planMap[planId].planCode}</p>
+                  <p className="text-black"><strong>Coverage:</strong> ${planMap[planId].sumInsured?.toLocaleString()}</p>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="mt-2">
+              <button
+                onClick={() => setExpandedDetails({...expandedDetails, [detailKey]: !expandedDetails[detailKey]})}
+                className="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
+              >
+                {expandedDetails[detailKey] ? 'Hide' : 'View'} Available Plans ({availablePlans.length})
+              </button>
+              {expandedDetails[detailKey] && (
+                <div className="bg-white rounded p-2 mt-2 text-xs border border-blue-200 max-h-40 overflow-y-auto">
+                  <p className="font-medium text-blue-700">Available plans for this corporate:</p>
+                  <div className="mt-1 space-y-1">
+                    {availablePlans.map((plan) => (
+                      <div key={plan.id} className="bg-gray-50 rounded p-1">
+                        <p className="text-black"><strong>{plan.planName || plan.name}</strong> ({plan.planCode})</p>
+                        <p className="text-gray-600">ID: {plan.id} | Coverage: ${plan.sumInsured?.toLocaleString()}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      );
+    }
+
     // Coverage date error - show contract dates
     if (error.includes('coverage dates must be within corporate contract dates')) {
       return (
@@ -154,40 +253,47 @@ export default function InvalidEmployeesTable({ corporateId, reloadKey, contract
     // Duplicate employee number - show existing employee
     if (error.includes('Duplicate employeeNumber')) {
       const existingEmp = getExistingEmployee(emp);
+      const detailKey = `empnum-${emp.id}`;
+      
       return (
         <div className="bg-orange-50 border border-orange-200 rounded p-2 mb-2">
           <p className="text-sm font-medium text-orange-900">Duplicate Employee Number</p>
           <p className="text-sm text-orange-800 mb-1">{error}</p>
+          
           {existingEmp ? (
-            <>
+            <div className="mt-2">
               <button
-                onClick={() => setSelectedExistingEmployee(existingEmp)}
-                className="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 mb-2"
+                onClick={() => setExpandedDetails({...expandedDetails, [detailKey]: !expandedDetails[detailKey]})}
+                className="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
               >
-                Show existing employee details
+                {expandedDetails[detailKey] ? 'Hide' : 'Show'} Employee Details
               </button>
-              <div className="bg-white rounded p-2 text-xs text-orange-700">
-                <p>
-                  <strong>Existing:</strong> {existingEmp.firstName} {existingEmp.lastName} ({existingEmp.email})
-                </p>
-                <p className="text-xs text-gray-600">ID: {existingEmp.employeeNumber}</p>
-              </div>
-            </>
+              {expandedDetails[detailKey] && (
+                <div className="bg-white rounded p-2 mt-2 text-xs border border-blue-200">
+                  <p className="font-medium text-orange-700">Existing Employee:</p>
+                  <p className="text-black"><strong>Name:</strong> {existingEmp.firstName} {existingEmp.lastName}</p>
+                  <p className="text-black"><strong>Email:</strong> {existingEmp.email}</p>
+                  <p className="text-black"><strong>Employee #:</strong> {existingEmp.employeeNumber}</p>
+                  <p className="text-black"><strong>Department:</strong> {existingEmp.department}</p>
+                  <p className="text-black"><strong>Designation:</strong> {existingEmp.designation}</p>
+                </div>
+              )}
+            </div>
           ) : (
-            <>
+            <div className="mt-2">
               <button
                 onClick={async () => {
                   const lookedUp = await loadExistingEmployeeByNumber(emp.data.employeeNumber);
                   if (lookedUp) {
-                    setSelectedExistingEmployee(lookedUp);
+                    setExpandedDetails({...expandedDetails, [detailKey]: true});
                   }
                 }}
-                className="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 mb-2"
+                className="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
               >
-                Look up existing employee by number
+                Look up existing employee
               </button>
-              <p className="text-xs text-orange-700">Existing employee record not found yet, click to verify.</p>
-            </>
+              <p className="text-xs text-orange-700 mt-1">Existing employee record not found yet, click to verify.</p>
+            </div>
           )}
         </div>
       );
@@ -196,53 +302,80 @@ export default function InvalidEmployeesTable({ corporateId, reloadKey, contract
     // Duplicate email
     if (error.includes('Duplicate email')) {
       const existingEmp = getExistingEmployee(emp);
+      const detailKey = `email-${emp.id}`;
+      
       return (
         <div className="bg-orange-50 border border-orange-200 rounded p-2 mb-2">
-          <p className="text-sm font-medium text-orange-900">Duplicate Email</p>
+          <p className="text-sm font-medium text-orange-900">Duplicate Email Address</p>
           <p className="text-sm text-orange-800">{error}</p>
-          <p className="text-xs text-orange-700 mt-1">Use a unique email address</p>
+          <p className="text-xs text-orange-700 mt-1">Each employee must have a unique email address</p>
+          
           {existingEmp ? (
-            <>
+            <div className="mt-2">
               <button
-                onClick={() => setSelectedExistingEmployee(existingEmp)}
-                className="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 mt-1"
+                onClick={() => setExpandedDetails({...expandedDetails, [detailKey]: !expandedDetails[detailKey]})}
+                className="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
               >
-                Show existing employee details
+                {expandedDetails[detailKey] ? 'Hide' : 'Show'} Employee Details
               </button>
-              <div className="bg-white rounded p-2 text-xs text-orange-700 mt-1">
-                <p>
-                  <strong>Existing:</strong> {existingEmp.firstName} {existingEmp.lastName} ({existingEmp.email})
-                </p>
-                <p className="text-xs text-gray-600">Emp#: {existingEmp.employeeNumber}</p>
-              </div>
-            </>
+              {expandedDetails[detailKey] && (
+                <div className="bg-white rounded p-2 mt-2 text-xs border border-blue-200">
+                  <p className="font-medium text-orange-700">Existing Employee:</p>
+                  <p className="text-black"><strong>Name:</strong> {existingEmp.firstName} {existingEmp.lastName}</p>
+                  <p className="text-black"><strong>Email:</strong> {existingEmp.email}</p>
+                  <p className="text-black"><strong>Employee #:</strong> {existingEmp.employeeNumber}</p>
+                  <p className="text-black"><strong>Department:</strong> {existingEmp.department}</p>
+                  <p className="text-black"><strong>Designation:</strong> {existingEmp.designation}</p>
+                </div>
+              )}
+            </div>
           ) : (
-            <>
-              <button
-                onClick={async () => {
-                  const lookedUp = await loadExistingEmployeeByNumber(emp.data.employeeNumber);
-                  if (lookedUp) {
-                    setSelectedExistingEmployee(lookedUp);
-                  }
-                }}
-                className="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 mt-1"
-              >
-                Look up existing employee by number
-              </button>
-              <p className="text-xs text-orange-700">Existing employee record not found yet, click to verify.</p>
-            </>
+            <p className="text-xs text-orange-700 mt-1">Existing employee details not available</p>
           )}
         </div>
       );
     }
 
-    // Plan does not exist or invalid format
-    if (error.includes('Plan does not exist') || error.includes('Invalid planId format')) {
+    // Invalid email format
+    if (error.includes('Invalid email') || error.includes('email must be an email')) {
       return (
-        <div className="bg-red-50 border border-red-200 rounded p-2 mb-2">
-          <p className="text-sm font-medium text-red-900">Plan Issue</p>
-          <p className="text-sm text-red-800">{error}</p>
-          <p className="text-xs text-red-700 mt-1">Check that the Plan ID is correct and active</p>
+        <div className="bg-yellow-50 border border-yellow-200 rounded p-2 mb-2">
+          <p className="text-sm font-medium text-yellow-900">Email Format Issue</p>
+          <p className="text-sm text-yellow-800">{error}</p>
+          <p className="text-xs text-yellow-700 mt-1">Please use a valid email format (e.g., user@company.com)</p>
+        </div>
+      );
+    }
+
+    // Invalid phone format
+    if (error.includes('Invalid phone') || error.includes('phone must be a string')) {
+      return (
+        <div className="bg-yellow-50 border border-yellow-200 rounded p-2 mb-2">
+          <p className="text-sm font-medium text-yellow-900">Phone Number Issue</p>
+          <p className="text-sm text-yellow-800">{error}</p>
+          <p className="text-xs text-yellow-700 mt-1">Please use a valid phone number format (e.g., +92-300-1234567)</p>
+        </div>
+      );
+    }
+
+    // Invalid date format
+    if (error.includes('Invalid date') || error.includes('must be a valid date')) {
+      return (
+        <div className="bg-yellow-50 border border-yellow-200 rounded p-2 mb-2">
+          <p className="text-sm font-medium text-yellow-900">Date Format Issue</p>
+          <p className="text-sm text-yellow-800">{error}</p>
+          <p className="text-xs text-yellow-700 mt-1">Please use YYYY-MM-DD format (e.g., 2025-01-15)</p>
+        </div>
+      );
+    }
+
+    // Required field missing
+    if (error.includes('required') || error.includes('must not be empty')) {
+      return (
+        <div className="bg-yellow-50 border border-yellow-200 rounded p-2 mb-2">
+          <p className="text-sm font-medium text-yellow-900">Missing Required Field</p>
+          <p className="text-sm text-yellow-800">{error}</p>
+          <p className="text-xs text-yellow-700 mt-1">Please fill in all required fields marked with *</p>
         </div>
       );
     }
@@ -255,6 +388,34 @@ export default function InvalidEmployeesTable({ corporateId, reloadKey, contract
     );
   };
 
+  const handleDelete = async (invalidUploadId: string) => {
+    if (!confirm('Are you sure you want to delete this invalid employee record? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      await employeesApi.deleteInvalidUpload(invalidUploadId);
+      
+      // Reload the list
+      await loadInvalidEmployees();
+      
+      // Exit edit mode if we were editing this record
+      if (editing?.id === invalidUploadId) {
+        setEditing(null);
+        setForm(null);
+      }
+      
+      alert('Invalid employee record deleted successfully.');
+    } catch (error: any) {
+      console.error('Failed to delete employee:', error);
+      
+      // Show specific error message from backend if available
+      const errorMessage = error?.response?.data?.message || error?.message || 'Failed to delete employee record.';
+      
+      alert(errorMessage);
+    }
+  };
+
   const handleResubmit = async (invalidUploadId: string) => {
     setResubmitting(invalidUploadId);
     try {
@@ -263,16 +424,27 @@ export default function InvalidEmployeesTable({ corporateId, reloadKey, contract
       await loadInvalidEmployees();
       setEditing(null);
       setForm(null);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to resubmit:', error);
-      alert('Failed to resubmit employee');
+      
+      // Show specific error message from backend if available
+      const errorMessage = error?.response?.data?.message || error?.message || 'Failed to resubmit employee';
+      
+      alert(errorMessage);
     } finally {
       setResubmitting(null);
     }
   };
 
   if (loading) {
-    return <div className="p-4">Loading invalid employees...</div>;
+    return (
+      <div className="p-4">
+        <div className="flex items-center space-x-2">
+          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+          <span>Loading invalid employees{plans.length === 0 ? ' and plans...' : '...'}</span>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -281,6 +453,9 @@ export default function InvalidEmployeesTable({ corporateId, reloadKey, contract
         <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
           Invalid Employees ({invalidEmployees.length})
         </h3>
+        <p className="text-sm text-gray-600 mb-4">
+          Click <strong>Edit</strong> to fix errors and update the record. The system will re-validate and show any remaining errors. Click <strong>Resubmit As-Is</strong> to create employee when all issues are resolved. Use <strong>Delete</strong> to permanently remove invalid records.
+        </p>
 
         {invalidEmployees.length === 0 ? (
           <p className="text-gray-500">No invalid employees to review.</p>
@@ -299,16 +474,22 @@ export default function InvalidEmployeesTable({ corporateId, reloadKey, contract
                       <>
                         <button
                           onClick={saveEdit}
-                          className="px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700"
+                          className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
                           disabled={resubmitting === emp.id}
                         >
-                          {resubmitting === emp.id ? 'Resubmitting...' : 'Resubmit'}
+                          {resubmitting === emp.id ? 'Updating...' : 'Update'}
                         </button>
                         <button
                           onClick={cancelEdit}
                           className="px-3 py-1 text-sm bg-gray-600 text-white rounded hover:bg-gray-700"
                         >
                           Cancel
+                        </button>
+                        <button
+                          onClick={() => handleDelete(emp.id)}
+                          className="px-3 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700"
+                        >
+                          Delete
                         </button>
                       </>
                     ) : (
@@ -321,10 +502,25 @@ export default function InvalidEmployeesTable({ corporateId, reloadKey, contract
                         </button>
                         <button
                           onClick={() => handleResubmit(emp.id)}
-                          className="px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700"
+                          className={`px-3 py-1 text-sm rounded ${
+                            emp.errors.length === 0 
+                              ? 'bg-green-600 text-white hover:bg-green-700' 
+                              : 'bg-orange-600 text-white hover:bg-orange-700'
+                          }`}
                           disabled={resubmitting === emp.id}
                         >
-                          {resubmitting === emp.id ? 'Resubmitting...' : 'Resubmit'}
+                          {resubmitting === emp.id 
+                            ? 'Resubmitting...' 
+                            : emp.errors.length === 0 
+                              ? '✓ Ready to Resubmit' 
+                              : 'Resubmit As-Is'
+                          }
+                        </button>
+                        <button
+                          onClick={() => handleDelete(emp.id)}
+                          className="px-3 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700"
+                        >
+                          Delete
                         </button>
                       </>
                     )}
@@ -341,25 +537,10 @@ export default function InvalidEmployeesTable({ corporateId, reloadKey, contract
                   </div>
                 )}
 
-                {selectedExistingEmployee && (
-                  <div className="bg-gray-50 border border-gray-200 rounded p-3 mb-3">
-                    <div className="flex justify-between items-center">
-                      <p className="text-sm font-medium text-gray-900">Selected existing employee details</p>
-                      <button
-                        onClick={() => setSelectedExistingEmployee(null)}
-                        className="text-xs text-gray-500 hover:text-gray-700"
-                      >
-                        Close
-                      </button>
-                    </div>
-                    <div className="text-xs text-gray-700 mt-1">
-                      <p><strong>Employee Number:</strong> {selectedExistingEmployee.employeeNumber}</p>
-                      <p><strong>Name:</strong> {selectedExistingEmployee.firstName} {selectedExistingEmployee.lastName}</p>
-                      <p><strong>Email:</strong> {selectedExistingEmployee.email}</p>
-                      <p><strong>Phone:</strong> {selectedExistingEmployee.phone || 'N/A'}</p>
-                      <p><strong>Designation:</strong> {selectedExistingEmployee.designation || 'N/A'}</p>
-                      <p><strong>Department:</strong> {selectedExistingEmployee.department || 'N/A'}</p>
-                    </div>
+                {emp.errors.length === 0 && (
+                  <div className="mb-2 bg-green-50 border border-green-200 rounded p-2">
+                    <p className="text-sm font-medium text-green-900">✓ All validation issues resolved!</p>
+                    <p className="text-sm text-green-800">This employee is ready to be created. Click "✓ Ready to Resubmit" to proceed.</p>
                   </div>
                 )}
 
@@ -402,6 +583,13 @@ export default function InvalidEmployeesTable({ corporateId, reloadKey, contract
                         className="px-2 py-1 border rounded text-sm"
                       />
                       <input
+                        type="password"
+                        placeholder="Password"
+                        value={form.password || ''}
+                        onChange={(e) => setForm({ ...form, password: e.target.value })}
+                        className="px-2 py-1 border rounded text-sm"
+                      />
+                      <input
                         type="text"
                         placeholder="Designation"
                         value={form.designation}
@@ -415,6 +603,18 @@ export default function InvalidEmployeesTable({ corporateId, reloadKey, contract
                         onChange={(e) => setForm({ ...form, department: e.target.value })}
                         className="px-2 py-1 border rounded text-sm"
                       />
+                      <select
+                        value={form.planId || ''}
+                        onChange={(e) => setForm({ ...form, planId: e.target.value })}
+                        className="px-2 py-1 border rounded text-sm text-black"
+                      >
+                        <option value="">Select Plan</option>
+                        {plans.map((plan) => (
+                          <option key={plan.id} value={plan.id}>
+                            {plan.planName || plan.name} ({plan.planCode}) - ${plan.sumInsured?.toLocaleString()}
+                          </option>
+                        ))}
+                      </select>
                       <input
                         type="date"
                         placeholder="Coverage Start"
@@ -427,6 +627,20 @@ export default function InvalidEmployeesTable({ corporateId, reloadKey, contract
                         placeholder="Coverage End"
                         value={form.coverageEndDate}
                         onChange={(e) => setForm({ ...form, coverageEndDate: e.target.value })}
+                        className="px-2 py-1 border rounded text-sm"
+                      />
+                      <input
+                        type="text"
+                        placeholder="CNIC (optional)"
+                        value={form.cnic || ''}
+                        onChange={(e) => setForm({ ...form, cnic: e.target.value })}
+                        className="px-2 py-1 border rounded text-sm"
+                      />
+                      <input
+                        type="date"
+                        placeholder="Date of Birth (optional)"
+                        value={form.dob || ''}
+                        onChange={(e) => setForm({ ...form, dob: e.target.value })}
                         className="px-2 py-1 border rounded text-sm"
                       />
                     </div>

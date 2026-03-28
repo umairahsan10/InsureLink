@@ -103,3 +103,58 @@ export class ResubmitInvalidUploadDto {
   @IsNotEmpty()
   invalidUploadId: string;
 }
+
+export class UpdateInvalidUploadDto {
+  @IsString()
+  @IsNotEmpty()
+  invalidUploadId: string;
+
+  @IsString()
+  @IsNotEmpty()
+  employeeNumber: string;
+
+  @IsString()
+  @IsNotEmpty()
+  firstName: string;
+
+  @IsOptional()
+  @IsString()
+  lastName?: string;
+
+  @IsEmail()
+  email: string;
+
+  @IsString()
+  @IsNotEmpty()
+  phone: string;
+
+  @IsString()
+  @IsNotEmpty()
+  password: string;
+
+  @IsString()
+  @IsNotEmpty()
+  designation: string;
+
+  @IsString()
+  @IsNotEmpty()
+  department: string;
+
+  @IsString()
+  @IsNotEmpty()
+  planId: string;
+
+  @IsDateString()
+  coverageStartDate: string;
+
+  @IsDateString()
+  coverageEndDate: string;
+
+  @IsOptional()
+  @IsDateString()
+  dob?: string;
+
+  @IsOptional()
+  @IsString()
+  cnic?: string;
+}
