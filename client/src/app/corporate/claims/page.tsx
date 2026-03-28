@@ -1,18 +1,72 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import claimsData from "@/data/claims.json";
+import { useEffect, useMemo, useState } from "react";
+import { claimsApi, type Claim } from "@/lib/api/claims";
+import { formatPKR } from "@/lib/format";
 
 export default function CorporateClaimsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("All Status");
-  const currentCorporateId = "corp-001"; // This would come from auth context in production
+  const [claims, setClaims] = useState<Claim[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Filter claims based on search term, status, and corporate ID
+  useEffect(() => {
+    let active = true;
+
+    const loadClaims = async () => {
+      setLoading(true);
+      setError(null);
+
+      try {
+        const response = await claimsApi.getClaims({ page: 1, limit: 100 });
+        if (active) {
+          setClaims(response.data || []);
+        }
+      } catch (err) {
+        if (active) {
+          console.error("Failed to load corporate claims:", err);
+          setError("Could not load claims right now.");
+        }
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    };
+
+    loadClaims();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const normalizedClaims = useMemo(
+    () =>
+      claims.map((claim) => {
+        const employeeUser = claim.hospitalVisit?.employee?.user;
+        const dependent = claim.hospitalVisit?.dependent;
+        const employeeName = employeeUser
+          ? `${employeeUser.firstName}${employeeUser.lastName ? ` ${employeeUser.lastName}` : ""}`
+          : dependent
+            ? `${dependent.firstName} ${dependent.lastName}`
+            : "Unknown";
+
+        return {
+          id: claim.id,
+          claimNumber: claim.claimNumber,
+          employeeName,
+          createdAt: claim.createdAt,
+          amountClaimed: Number(claim.amountClaimed || 0),
+          status: claim.claimStatus,
+        };
+      }),
+    [claims],
+  );
+
+  // Filter claims based on search term and status
   const filteredClaims = useMemo(() => {
-    let filtered = claimsData.filter(
-      (claim) => claim.corporateId === currentCorporateId
-    );
+    let filtered = normalizedClaims;
 
     // Filter by search term (employee name or claim ID)
     if (searchTerm) {
@@ -29,7 +83,7 @@ export default function CorporateClaimsPage() {
     }
 
     return filtered;
-  }, [searchTerm, selectedStatus]);
+  }, [normalizedClaims, searchTerm, selectedStatus]);
 
   // Display all filtered claims (not just first 10)
   const displayedClaims = filteredClaims;
@@ -42,6 +96,8 @@ export default function CorporateClaimsPage() {
         return "bg-yellow-100 text-yellow-800";
       case "Paid":
         return "bg-blue-100 text-blue-800";
+      case "OnHold":
+        return "bg-orange-100 text-orange-800";
       case "Rejected":
         return "bg-red-100 text-red-800";
       default:
@@ -50,44 +106,47 @@ export default function CorporateClaimsPage() {
   };
 
   const getStatusDisplayName = (status: string) => {
-    if (status === "Approved") return "Approved";
-    if (status === "Rejected") return "Rejected";
-    return "Pending";
+    if (status === "OnHold") return "On Hold";
+    return status;
   };
+
+  const totalClaimedAmount = useMemo(
+    () => normalizedClaims.reduce((sum, claim) => sum + claim.amountClaimed, 0),
+    [normalizedClaims],
+  );
 
   return (
     <div className="p-8">
       <h1 className="text-3xl font-bold text-gray-900 mb-6">Employee Claims</h1>
 
+      {error && (
+        <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {error}
+        </div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
           <p className="text-sm text-gray-500">Total Claims</p>
           <p className="text-2xl font-bold text-gray-900">
-            {claimsData.length}
+            {normalizedClaims.length}
           </p>
         </div>
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
           <p className="text-sm text-gray-500">Pending</p>
           <p className="text-2xl font-bold text-yellow-600">
-            {claimsData.filter((claim) => claim.status === "Pending").length}
+            {normalizedClaims.filter((claim) => claim.status === "Pending").length}
           </p>
         </div>
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
           <p className="text-sm text-gray-500">Approved</p>
           <p className="text-2xl font-bold text-green-600">
-            {claimsData.filter((claim) => claim.status === "Approved").length}
+            {normalizedClaims.filter((claim) => claim.status === "Approved").length}
           </p>
         </div>
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
           <p className="text-sm text-gray-500">Total Amount</p>
-          <p className="text-2xl font-bold text-blue-600">
-            Rs.{" "}
-            {Math.round(
-              claimsData.reduce((sum, claim) => sum + claim.amountClaimed, 0) /
-                1000
-            )}
-            K
-          </p>
+          <p className="text-2xl font-bold text-blue-600">{formatPKR(totalClaimedAmount)}</p>
         </div>
       </div>
 
@@ -109,6 +168,8 @@ export default function CorporateClaimsPage() {
               <option>All Status</option>
               <option>Pending</option>
               <option>Approved</option>
+              <option>OnHold</option>
+              <option>Paid</option>
               <option>Rejected</option>
             </select>
           </div>
@@ -136,7 +197,13 @@ export default function CorporateClaimsPage() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {displayedClaims.length > 0 ? (
+              {loading ? (
+                <tr>
+                  <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
+                    Loading claims...
+                  </td>
+                </tr>
+              ) : displayedClaims.length > 0 ? (
                 displayedClaims.map((claim) => (
                   <tr key={claim.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
@@ -149,7 +216,7 @@ export default function CorporateClaimsPage() {
                       {new Date(claim.createdAt).toLocaleDateString()}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      Rs. {claim.amountClaimed.toLocaleString()}
+                      {formatPKR(claim.amountClaimed)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
                       <span
@@ -182,14 +249,13 @@ export default function CorporateClaimsPage() {
             <p className="text-sm text-gray-700">
               Showing <span className="font-medium">1</span> to{" "}
               <span className="font-medium">
-                {Math.min(10, filteredClaims.length)}
+                {filteredClaims.length}
               </span>{" "}
               of <span className="font-medium">{filteredClaims.length}</span>{" "}
               claims
-              {filteredClaims.length !== claimsData.length && (
+              {filteredClaims.length !== normalizedClaims.length && (
                 <span className="text-gray-500">
-                  {" "}
-                  (filtered from {claimsData.length} total)
+                  {" "}(filtered from {normalizedClaims.length} total)
                 </span>
               )}
             </p>

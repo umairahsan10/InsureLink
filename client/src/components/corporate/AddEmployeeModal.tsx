@@ -1,18 +1,34 @@
 'use client';
 
-import { useEffect } from 'react';
-import EmployeeForm, { EmployeeFormData } from '@/components/forms/EmployeeForm';
+import { useEffect, useState } from 'react';
+import EmployeeForm, { EmployeeFormData, EmployeePlanOption } from '@/components/forms/EmployeeForm';
 
 interface AddEmployeeModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onAddEmployee: (employeeData: EmployeeFormData) => void;
+  onAddEmployee: (employeeData: EmployeeFormData) => Promise<void>;
+  planOptions?: EmployeePlanOption[];
+  departmentOptions?: string[];
+  coverageMinDate?: string;
+  coverageMaxDate?: string;
 }
 
-export default function AddEmployeeModal({ isOpen, onClose, onAddEmployee }: AddEmployeeModalProps) {
+export default function AddEmployeeModal({
+  isOpen,
+  onClose,
+  onAddEmployee,
+  planOptions = [],
+  departmentOptions = [],
+  coverageMinDate,
+  coverageMaxDate,
+}: AddEmployeeModalProps) {
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   // Prevent body scroll when modal is open
   useEffect(() => {
     if (isOpen) {
+      setSubmitError(null);
       // Save current scroll position
       const scrollY = window.scrollY;
       // Lock body scroll
@@ -36,9 +52,18 @@ export default function AddEmployeeModal({ isOpen, onClose, onAddEmployee }: Add
     };
   }, [isOpen]);
 
-  const handleAddEmployee = (employeeData: EmployeeFormData) => {
-    onAddEmployee(employeeData);
-    onClose();
+  const handleAddEmployee = async (employeeData: EmployeeFormData) => {
+    setSubmitError(null);
+    setIsSubmitting(true);
+
+    try {
+      await onAddEmployee(employeeData);
+      onClose();
+    } catch (err) {
+      setSubmitError(err instanceof Error ? err.message : 'Failed to add employee.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (!isOpen) return null;
@@ -62,6 +87,12 @@ export default function AddEmployeeModal({ isOpen, onClose, onAddEmployee }: Add
           <EmployeeForm
             onSubmit={handleAddEmployee}
             onCancel={onClose}
+            isLoading={isSubmitting}
+            submitError={submitError}
+            planOptions={planOptions}
+            departmentOptions={departmentOptions}
+            coverageMinDate={coverageMinDate}
+            coverageMaxDate={coverageMaxDate}
           />
         </div>
       </div>

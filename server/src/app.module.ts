@@ -12,6 +12,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 import { CorporatesModule } from './modules/corporates/corporates.module';
 import { DependentsModule } from './modules/dependents/dependents.module';
+import { EmployeesModule } from './modules/employees/employees.module';
 import { PatientsModule } from './modules/patients/patients.module';
 import { HospitalsModule } from './modules/hospitals/hospitals.module';
 import { InsurersModule } from './modules/insurers/insurers.module';
@@ -41,6 +42,7 @@ import { VerificationModule } from './modules/verification/verification.module';
     AuthModule,
     UsersModule,
     CorporatesModule,
+    EmployeesModule,
     DependentsModule,
     PatientsModule,
 
