@@ -13,6 +13,19 @@ export interface Patient extends Record<string, unknown> {
   status?: string;
 }
 
+export interface PatientProfile {
+  id: string;
+  isPatient: boolean;
+  patientType?: 'employee' | 'dependent';
+  name?: string;
+  email?: string;
+  mobile?: string;
+  insurance?: string;
+  corporateName?: string;
+  status?: 'Active' | 'Inactive';
+  role?: string;
+}
+
 export interface VerifyPatientRequest {
   cnic: string;
 }
@@ -26,7 +39,25 @@ export interface RegisterPatientRequest {
   address?: string;
 }
 
+export interface UpdatePatientProfileRequest {
+  email?: string;
+  mobile?: string;
+}
+
 export const patientsApi = {
+  async getMe(): Promise<PatientProfile> {
+    const response = await apiFetch<PatientProfile>('/api/patients/me');
+    return response.data;
+  },
+
+  async updateProfile(request: UpdatePatientProfileRequest): Promise<PatientProfile> {
+    const response = await apiFetch<PatientProfile>('/api/patients/me', {
+      method: 'PATCH',
+      body: JSON.stringify(request),
+    });
+    return response.data;
+  },
+
   async verifyPatient(request: VerifyPatientRequest): Promise<Patient> {
     const response = await apiFetch<Patient>('/api/patients/verify', {
       method: 'POST',
