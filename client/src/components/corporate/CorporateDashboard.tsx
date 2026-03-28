@@ -57,10 +57,10 @@ export default function CorporateDashboard() {
         });
 
         setCoverage({
-          totalCoveragePool: formatPKR(coverageData.totalPool ?? poolNum),
-          usedCoverage: formatPKR(coverageData.usedAmount ?? usedNum),
+          totalCoveragePool: formatPKR(coverageData.totalCoverageAmount ?? poolNum),
+          usedCoverage: formatPKR(coverageData.totalUsedAmount ?? usedNum),
           availableCoverage: formatPKR(
-            coverageData.availableAmount ?? availableNum
+            (coverageData.totalCoverageAmount ?? poolNum) - (coverageData.totalUsedAmount ?? usedNum)
           ),
           utilizationPercentage: coverageData.utilizationRate ?? utilPct,
         });
