@@ -893,6 +893,21 @@ export class EmployeesService {
     return { success: true, message: 'Invalid employee record deleted successfully' };
   }
 
+  async deleteAllInvalidUploads(corporateId: string, actor: CurrentUserDto): Promise<{ success: boolean; message: string; deletedCount: number }> {
+    this.logger.log(`Starting deletion of all invalid uploads for corporate: ${corporateId}`);
+    
+    await this.ensureCorporateAccess(corporateId, actor);
+
+    // Delete all invalid uploads for this corporate
+    const result = await this.prisma.invalidEmployeeUpload.deleteMany({
+      where: { corporateId },
+    });
+
+    this.logger.log(`Successfully deleted ${result.count} invalid upload records for corporate: ${corporateId}`);
+
+    return { success: true, message: `Deleted ${result.count} invalid employee records`, deletedCount: result.count };
+  }
+
   async updateUsedAmount(employeeId: string, approvedAmount: Prisma.Decimal): Promise<void> {
     const employee = await this.prisma.employee.findUnique({ where: { id: employeeId } });
     if (!employee) {
@@ -920,6 +935,33 @@ export class EmployeesService {
     excludeInvalidUploadId?: string, // Add parameter to exclude current invalid upload
   ): Promise<{ rowIndex: number; valid: boolean; errors: string[]; normalized: BulkImportEmployeeRowDto }> {
     const errors: string[] = [];
+
+    // Get corporate to check contract dates early
+    const corporate = await this.prisma.corporate.findUnique({
+      where: { id: corporateId },
+      select: { contractStartDate: true, contractEndDate: true },
+    });
+    if (!corporate) {
+      errors.push('Corporate not found');
+    }
+
+    // Validate coverage dates against contract dates
+    if (corporate && row.coverageStartDate && row.coverageEndDate) {
+      try {
+        const coverageStart = new Date(row.coverageStartDate);
+        const coverageEnd = new Date(row.coverageEndDate);
+        const contractStart = new Date(corporate.contractStartDate);
+        const contractEnd = new Date(corporate.contractEndDate);
+
+        if (coverageEnd <= coverageStart) {
+          errors.push('coverageEndDate must be after coverageStartDate');
+        } else if (coverageStart < contractStart || coverageEnd > contractEnd) {
+          errors.push(`Employee coverage dates must be within corporate contract dates (${contractStart.toISOString().split('T')[0]} to ${contractEnd.toISOString().split('T')[0]})`);
+        }
+      } catch (error) {
+        errors.push('Invalid date format in coverage dates');
+      }
+    }
 
     const duplicateEmployeeNumber = await this.prisma.employee.findFirst({
       where: { corporateId, employeeNumber: row.employeeNumber },

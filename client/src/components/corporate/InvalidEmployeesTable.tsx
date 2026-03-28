@@ -44,6 +44,34 @@ export default function InvalidEmployeesTable({ corporateId, reloadKey, contract
   const [plans, setPlans] = useState<any[]>([]);
   const [planMap, setPlanMap] = useState<Record<string, any>>({});
   const [expandedDetails, setExpandedDetails] = useState<Record<string, boolean>>({});
+  // Map of duplicate employee numbers to their existing employee details
+  const [duplicateEmployeeDetails, setDuplicateEmployeeDetails] = useState<Record<string, any>>({});
+  const [deletingAll, setDeletingAll] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteConfirmType, setDeleteConfirmType] = useState<'single' | 'all'>('single');
+  const [recordToDelete, setRecordToDelete] = useState<InvalidEmployee | null>(null);
+  // For plan-specific coverage date range
+  const [planCoverageRange, setPlanCoverageRange] = useState<{ min?: string; max?: string }>({});
+
+  // Ensure planCoverageRange is always in sync with form.planId and planMap
+  useEffect(() => {
+    if (editing && form && form.planId && planMap[form.planId]) {
+      const plan = planMap[form.planId];
+      // Support both camelCase and snake_case for validFrom/validUntil
+      const min = plan.validFrom || plan.valid_from || '';
+      const max = plan.validUntil || plan.valid_until || '';
+      if (min && max) {
+        if (planCoverageRange.min !== min || planCoverageRange.max !== max) {
+          setPlanCoverageRange({ min, max });
+        }
+      } else {
+        setPlanCoverageRange({});
+      }
+    } else {
+      setPlanCoverageRange({});
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form?.planId, planMap, editing]);
 
   useEffect(() => {
     loadInvalidEmployees();
@@ -97,6 +125,19 @@ export default function InvalidEmployeesTable({ corporateId, reloadKey, contract
         loadExistingEmployees(),
         loadPlans()
       ]);
+
+      // Prefetch existing employees for duplicate numbers
+      const duplicateNumbers = data
+        .filter((emp: any) => emp.errors.some((e: string) => e.includes('Duplicate employeeNumber')))
+        .map((emp: any) => emp.data.employeeNumber);
+      const detailsMap: Record<string, any> = {};
+      for (const empNum of duplicateNumbers) {
+        try {
+          const existing = await employeesApi.findByEmployeeNumber(corporateId, empNum);
+          if (existing) detailsMap[empNum] = existing;
+        } catch {}
+      }
+      setDuplicateEmployeeDetails(detailsMap);
     } catch (error) {
       console.error('Failed to load invalid employees:', error);
     } finally {
@@ -145,6 +186,19 @@ export default function InvalidEmployeesTable({ corporateId, reloadKey, contract
   const startEdit = (emp: InvalidEmployee) => {
     setEditing(emp);
     setForm({ ...emp.data });
+    // Set plan coverage range if planId exists
+    if (emp.data.planId && planMap[emp.data.planId]) {
+      const plan = planMap[emp.data.planId];
+      const min = plan.validFrom || plan.valid_from || '';
+      const max = plan.validUntil || plan.valid_until || '';
+      if (min && max) {
+        setPlanCoverageRange({ min, max });
+      } else {
+        setPlanCoverageRange({});
+      }
+    } else {
+      setPlanCoverageRange({});
+    }
   };
 
   const cancelEdit = () => {
@@ -156,18 +210,34 @@ export default function InvalidEmployeesTable({ corporateId, reloadKey, contract
     if (!editing || !form) return;
 
     try {
+      setResubmitting(editing.id);
+      
       // Update the invalid employee record with the new data
       const response = await employeesApi.updateInvalidUpload(editing.id, form);
       
-      // Reload the list to show updated validation results
-      await loadInvalidEmployees();
+      // Check if the employee data is now valid
+      // If valid, automatically resubmit to create the employee
+      const updatedList = await employeesApi.getInvalidUploads(corporateId);
+      const updatedEmployee = updatedList.find((emp: any) => emp.id === editing.id);
       
-      // Exit edit mode
-      setEditing(null);
-      setForm(null);
-      
-      // Show success message from backend
-      alert(response.message || 'Employee data updated successfully.');
+      if (updatedEmployee && updatedEmployee.errors.length === 0) {
+        // Data is valid, automatically resubmit to create the employee
+        await employeesApi.resubmitInvalidUpload(editing.id);
+        
+        // Reload the list
+        await loadInvalidEmployees();
+        
+        // Exit edit mode
+        setEditing(null);
+        setForm(null);
+      } else {
+        // Data still has errors, just reload to show updated validation results
+        await loadInvalidEmployees();
+        
+        // Exit edit mode
+        setEditing(null);
+        setForm(null);
+      }
     } catch (error: any) {
       console.error('Failed to update employee:', error);
       
@@ -175,6 +245,8 @@ export default function InvalidEmployeesTable({ corporateId, reloadKey, contract
       const errorMessage = error?.response?.data?.message || error?.message || 'Failed to update employee. Please check the data and try again.';
       
       alert(errorMessage);
+    } finally {
+      setResubmitting(null);
     }
   };
 
@@ -234,41 +306,33 @@ export default function InvalidEmployeesTable({ corporateId, reloadKey, contract
       );
     }
 
-    // Coverage date error - show contract dates
+    // Coverage date error - only show generic message (plan-specific range is shown in edit form)
     if (error.includes('coverage dates must be within corporate contract dates')) {
       return (
         <div className="bg-blue-50 border border-blue-200 rounded p-2 mb-2">
           <p className="text-sm font-medium text-blue-900">Coverage Date Issue</p>
-          <p className="text-sm text-blue-800">{error}</p>
-          {contractStartDate && contractEndDate && (
-            <p className="text-xs text-blue-700 mt-1">
-              Valid range: {new Date(contractStartDate).toLocaleDateString()} to{' '}
-              {new Date(contractEndDate).toLocaleDateString()}
-            </p>
-          )}
+          <p className="text-sm text-blue-800">Employee coverage dates must be within corporate contract dates</p>
         </div>
       );
     }
 
     // Duplicate employee number - show existing employee
     if (error.includes('Duplicate employeeNumber')) {
-      const existingEmp = getExistingEmployee(emp);
-      const detailKey = `empnum-${emp.id}`;
-      
+      const empNum = emp.data.employeeNumber;
+      const existingEmp = duplicateEmployeeDetails[empNum];
       return (
         <div className="bg-orange-50 border border-orange-200 rounded p-2 mb-2">
           <p className="text-sm font-medium text-orange-900">Duplicate Employee Number</p>
           <p className="text-sm text-orange-800 mb-1">{error}</p>
-          
           {existingEmp ? (
             <div className="mt-2">
               <button
-                onClick={() => setExpandedDetails({...expandedDetails, [detailKey]: !expandedDetails[detailKey]})}
+                onClick={() => setExpandedDetails({...expandedDetails, [`empnum-${emp.id}`]: !expandedDetails[`empnum-${emp.id}`]})}
                 className="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
               >
-                {expandedDetails[detailKey] ? 'Hide' : 'Show'} Employee Details
+                {expandedDetails[`empnum-${emp.id}`] ? 'Hide' : 'Show'} Employee Details
               </button>
-              {expandedDetails[detailKey] && (
+              {expandedDetails[`empnum-${emp.id}`] && (
                 <div className="bg-white rounded p-2 mt-2 text-xs border border-blue-200">
                   <p className="font-medium text-orange-700">Existing Employee:</p>
                   <p className="text-black"><strong>Name:</strong> {existingEmp.firstName} {existingEmp.lastName}</p>
@@ -280,20 +344,7 @@ export default function InvalidEmployeesTable({ corporateId, reloadKey, contract
               )}
             </div>
           ) : (
-            <div className="mt-2">
-              <button
-                onClick={async () => {
-                  const lookedUp = await loadExistingEmployeeByNumber(emp.data.employeeNumber);
-                  if (lookedUp) {
-                    setExpandedDetails({...expandedDetails, [detailKey]: true});
-                  }
-                }}
-                className="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
-              >
-                Look up existing employee
-              </button>
-              <p className="text-xs text-orange-700 mt-1">Existing employee record not found yet, click to verify.</p>
-            </div>
+            <div className="mt-2 text-xs text-orange-700">Looking up existing employee...</div>
           )}
         </div>
       );
@@ -388,34 +439,56 @@ export default function InvalidEmployeesTable({ corporateId, reloadKey, contract
     );
   };
 
-  const handleDelete = async (invalidUploadId: string) => {
-    if (!confirm('Are you sure you want to delete this invalid employee record? This action cannot be undone.')) {
-      return;
-    }
+  const handleDelete = async (emp: InvalidEmployee) => {
+    setRecordToDelete(emp);
+    setDeleteConfirmType('single');
+    setShowDeleteConfirm(true);
+  };
 
-    try {
-      await employeesApi.deleteInvalidUpload(invalidUploadId);
-      
-      // Reload the list
-      await loadInvalidEmployees();
-      
-      // Exit edit mode if we were editing this record
-      if (editing?.id === invalidUploadId) {
-        setEditing(null);
-        setForm(null);
+  const handleDeleteAllClick = () => {
+    setDeleteConfirmType('all');
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDelete = async () => {
+    setShowDeleteConfirm(false);
+
+    if (deleteConfirmType === 'single' && recordToDelete) {
+      try {
+        await employeesApi.deleteInvalidUpload(recordToDelete.id);
+        
+        // Reload the list
+        await loadInvalidEmployees();
+        
+        // Exit edit mode if we were editing this record
+        if (editing?.id === recordToDelete.id) {
+          setEditing(null);
+          setForm(null);
+        }
+        
+        setRecordToDelete(null);
+      } catch (error: any) {
+        console.error('Failed to delete employee:', error);
+        const errorMessage = error?.response?.data?.message || error?.message || 'Failed to delete employee record.';
+        alert(errorMessage);
       }
-      
-      alert('Invalid employee record deleted successfully.');
-    } catch (error: any) {
-      console.error('Failed to delete employee:', error);
-      
-      // Show specific error message from backend if available
-      const errorMessage = error?.response?.data?.message || error?.message || 'Failed to delete employee record.';
-      
-      alert(errorMessage);
+    } else if (deleteConfirmType === 'all') {
+      setDeletingAll(true);
+      try {
+        const response = await employeesApi.deleteAllInvalidUploads(corporateId);
+        alert(response.message);
+        await loadInvalidEmployees();
+      } catch (error: any) {
+        console.error('Failed to delete all invalid uploads:', error);
+        const errorMessage = error?.response?.data?.message || error?.message || 'Failed to delete invalid records';
+        alert(errorMessage);
+      } finally {
+        setDeletingAll(false);
+      }
     }
   };
 
+  
   const handleResubmit = async (invalidUploadId: string) => {
     setResubmitting(invalidUploadId);
     try {
@@ -450,11 +523,22 @@ export default function InvalidEmployeesTable({ corporateId, reloadKey, contract
   return (
     <div className="bg-white shadow rounded-lg">
       <div className="px-4 py-5 sm:p-6">
-        <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
-          Invalid Employees ({invalidEmployees.length})
-        </h3>
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg leading-6 font-medium text-gray-900">
+            Invalid Employees ({invalidEmployees.length})
+          </h3>
+          {invalidEmployees.length > 0 && (
+            <button
+              onClick={handleDeleteAllClick}
+              disabled={deletingAll}
+              className="px-4 py-2 text-sm bg-red-600 text-white rounded hover:bg-red-700 disabled:bg-red-400 disabled:cursor-not-allowed font-medium"
+            >
+              {deletingAll ? 'Deleting All...' : 'Delete All Invalid Records'}
+            </button>
+          )}
+        </div>
         <p className="text-sm text-gray-600 mb-4">
-          Click <strong>Edit</strong> to fix errors and update the record. The system will re-validate and show any remaining errors. Click <strong>Resubmit As-Is</strong> to create employee when all issues are resolved. Use <strong>Delete</strong> to permanently remove invalid records.
+          Click <strong>Edit</strong> to fix errors and update the record. The system will re-validate and show any remaining errors. Click <strong>Resubmit As-Is</strong> to create employee when all issues are resolved. Use <strong>Delete</strong> to remove individual records, or <strong>Delete All Invalid Records</strong> to clear all at once.
         </p>
 
         {invalidEmployees.length === 0 ? (
@@ -477,7 +561,7 @@ export default function InvalidEmployeesTable({ corporateId, reloadKey, contract
                           className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
                           disabled={resubmitting === emp.id}
                         >
-                          {resubmitting === emp.id ? 'Updating...' : 'Update'}
+                          {resubmitting === emp.id ? 'Submitting...' : 'Submit'}
                         </button>
                         <button
                           onClick={cancelEdit}
@@ -486,7 +570,7 @@ export default function InvalidEmployeesTable({ corporateId, reloadKey, contract
                           Cancel
                         </button>
                         <button
-                          onClick={() => handleDelete(emp.id)}
+                          onClick={() => handleDelete(emp)}
                           className="px-3 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700"
                         >
                           Delete
@@ -501,23 +585,7 @@ export default function InvalidEmployeesTable({ corporateId, reloadKey, contract
                           Edit
                         </button>
                         <button
-                          onClick={() => handleResubmit(emp.id)}
-                          className={`px-3 py-1 text-sm rounded ${
-                            emp.errors.length === 0 
-                              ? 'bg-green-600 text-white hover:bg-green-700' 
-                              : 'bg-orange-600 text-white hover:bg-orange-700'
-                          }`}
-                          disabled={resubmitting === emp.id}
-                        >
-                          {resubmitting === emp.id 
-                            ? 'Resubmitting...' 
-                            : emp.errors.length === 0 
-                              ? '✓ Ready to Resubmit' 
-                              : 'Resubmit As-Is'
-                          }
-                        </button>
-                        <button
-                          onClick={() => handleDelete(emp.id)}
+                          onClick={() => handleDelete(emp)}
                           className="px-3 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700"
                         >
                           Delete
@@ -546,108 +614,203 @@ export default function InvalidEmployeesTable({ corporateId, reloadKey, contract
 
                 {editing?.id === emp.id && form && (
                   <div className="mt-4 space-y-2">
-                    <div className="grid grid-cols-2 gap-2">
-                      <input
-                        type="text"
-                        placeholder="Employee Number"
-                        value={form.employeeNumber}
-                        onChange={(e) => setForm({ ...form, employeeNumber: e.target.value })}
-                        className="px-2 py-1 border rounded text-sm"
-                      />
-                      <input
-                        type="email"
-                        placeholder="Email"
-                        value={form.email}
-                        onChange={(e) => setForm({ ...form, email: e.target.value })}
-                        className="px-2 py-1 border rounded text-sm"
-                      />
-                      <input
-                        type="text"
-                        placeholder="First Name"
-                        value={form.firstName}
-                        onChange={(e) => setForm({ ...form, firstName: e.target.value })}
-                        className="px-2 py-1 border rounded text-sm"
-                      />
-                      <input
-                        type="text"
-                        placeholder="Last Name"
-                        value={form.lastName || ''}
-                        onChange={(e) => setForm({ ...form, lastName: e.target.value })}
-                        className="px-2 py-1 border rounded text-sm"
-                      />
-                      <input
-                        type="text"
-                        placeholder="Phone"
-                        value={form.phone}
-                        onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                        className="px-2 py-1 border rounded text-sm"
-                      />
-                      <input
-                        type="password"
-                        placeholder="Password"
-                        value={form.password || ''}
-                        onChange={(e) => setForm({ ...form, password: e.target.value })}
-                        className="px-2 py-1 border rounded text-sm"
-                      />
-                      <input
-                        type="text"
-                        placeholder="Designation"
-                        value={form.designation}
-                        onChange={(e) => setForm({ ...form, designation: e.target.value })}
-                        className="px-2 py-1 border rounded text-sm"
-                      />
-                      <input
-                        type="text"
-                        placeholder="Department"
-                        value={form.department}
-                        onChange={(e) => setForm({ ...form, department: e.target.value })}
-                        className="px-2 py-1 border rounded text-sm"
-                      />
-                      <select
-                        value={form.planId || ''}
-                        onChange={(e) => setForm({ ...form, planId: e.target.value })}
-                        className="px-2 py-1 border rounded text-sm text-black"
-                      >
-                        <option value="">Select Plan</option>
-                        {plans.map((plan) => (
-                          <option key={plan.id} value={plan.id}>
-                            {plan.planName || plan.name} ({plan.planCode}) - ${plan.sumInsured?.toLocaleString()}
-                          </option>
-                        ))}
-                      </select>
-                      <input
-                        type="date"
-                        placeholder="Coverage Start"
-                        value={form.coverageStartDate}
-                        onChange={(e) => setForm({ ...form, coverageStartDate: e.target.value })}
-                        className="px-2 py-1 border rounded text-sm"
-                      />
-                      <input
-                        type="date"
-                        placeholder="Coverage End"
-                        value={form.coverageEndDate}
-                        onChange={(e) => setForm({ ...form, coverageEndDate: e.target.value })}
-                        className="px-2 py-1 border rounded text-sm"
-                      />
-                      <input
-                        type="text"
-                        placeholder="CNIC (optional)"
-                        value={form.cnic || ''}
-                        onChange={(e) => setForm({ ...form, cnic: e.target.value })}
-                        className="px-2 py-1 border rounded text-sm"
-                      />
-                      <input
-                        type="date"
-                        placeholder="Date of Birth (optional)"
-                        value={form.dob || ''}
-                        onChange={(e) => setForm({ ...form, dob: e.target.value })}
-                        className="px-2 py-1 border rounded text-sm"
-                      />
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">Employee Number</label>
+                        <input
+                          type="text"
+                          value={form.employeeNumber}
+                          onChange={(e) => setForm({ ...form, employeeNumber: e.target.value })}
+                          className="px-2 py-1 border rounded text-sm w-full"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">Email</label>
+                        <input
+                          type="email"
+                          value={form.email}
+                          onChange={(e) => setForm({ ...form, email: e.target.value })}
+                          className="px-2 py-1 border rounded text-sm w-full"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">First Name</label>
+                        <input
+                          type="text"
+                          value={form.firstName}
+                          onChange={(e) => setForm({ ...form, firstName: e.target.value })}
+                          className="px-2 py-1 border rounded text-sm w-full"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">Last Name</label>
+                        <input
+                          type="text"
+                          value={form.lastName || ''}
+                          onChange={(e) => setForm({ ...form, lastName: e.target.value })}
+                          className="px-2 py-1 border rounded text-sm w-full"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">Phone</label>
+                        <input
+                          type="text"
+                          value={form.phone}
+                          onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                          className="px-2 py-1 border rounded text-sm w-full"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">Password</label>
+                        <input
+                          type="password"
+                          value={form.password || ''}
+                          onChange={(e) => setForm({ ...form, password: e.target.value })}
+                          className="px-2 py-1 border rounded text-sm w-full"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">Designation</label>
+                        <input
+                          type="text"
+                          value={form.designation}
+                          onChange={(e) => setForm({ ...form, designation: e.target.value })}
+                          className="px-2 py-1 border rounded text-sm w-full"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">Department</label>
+                        <input
+                          type="text"
+                          value={form.department}
+                          onChange={(e) => setForm({ ...form, department: e.target.value })}
+                          className="px-2 py-1 border rounded text-sm w-full"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">Plan</label>
+                        <select
+                          value={form.planId || ''}
+                          onChange={e => {
+                            const selectedPlanId = e.target.value;
+                            setForm({ ...form, planId: selectedPlanId });
+                            if (selectedPlanId && planMap[selectedPlanId]) {
+                              const plan = planMap[selectedPlanId];
+                              const min = plan.validFrom || plan.valid_from || '';
+                              const max = plan.validUntil || plan.valid_until || '';
+                              if (min && max) {
+                                setPlanCoverageRange({ min, max });
+                              } else {
+                                setPlanCoverageRange({});
+                              }
+                            } else {
+                              setPlanCoverageRange({});
+                            }
+                          }}
+                          className="px-2 py-1 border rounded text-sm text-black w-full"
+                        >
+                          <option value="">Select Plan</option>
+                          {plans.map((plan) => (
+                            <option key={plan.id} value={plan.id}>
+                              {plan.planName || plan.name} ({plan.planCode}) - ${plan.sumInsured?.toLocaleString()}
+                            </option>
+                          ))}
+                        </select>
+                        {contractStartDate && contractEndDate && (
+                          <div className="text-xs text-blue-700 mt-1">
+                            Valid coverage dates: {new Date(contractStartDate).toLocaleDateString()} to {new Date(contractEndDate).toLocaleDateString()}
+                          </div>
+                        )}
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">Coverage Start</label>
+                        <input
+                          type="date"
+                          value={form.coverageStartDate}
+                          min={contractStartDate}
+                          max={contractEndDate}
+                          onChange={(e) => setForm({ ...form, coverageStartDate: e.target.value })}
+                          className="px-2 py-1 border rounded text-sm w-full"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">Coverage End</label>
+                        <input
+                          type="date"
+                          value={form.coverageEndDate}
+                          min={contractStartDate}
+                          max={contractEndDate}
+                          onChange={(e) => setForm({ ...form, coverageEndDate: e.target.value })}
+                          className="px-2 py-1 border rounded text-sm w-full"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">CNIC</label>
+                        <input
+                          type="text"
+                          value={form.cnic || ''}
+                          onChange={(e) => setForm({ ...form, cnic: e.target.value })}
+                          className="px-2 py-1 border rounded text-sm w-full"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">Date of Birth</label>
+                        <input
+                          type="date"
+                          value={form.dob || ''}
+                          onChange={(e) => setForm({ ...form, dob: e.target.value })}
+                          className="px-2 py-1 border rounded text-sm w-full"
+                        />
+                      </div>
                     </div>
                   </div>
                 )}
               </div>
             ))}
+          </div>
+        )}
+
+        {/* Confirmation Modal */}
+        {showDeleteConfirm && (
+          <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+            <div className="bg-white rounded-lg shadow-xl max-w-sm w-full mx-4">
+              <div className="p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  {deleteConfirmType === 'all' ? 'Delete All Invalid Records' : 'Delete Invalid Record'}
+                </h3>
+                
+                {deleteConfirmType === 'single' && recordToDelete && (
+                  <div className="mb-4 p-3 bg-gray-50 rounded border border-gray-200">
+                    <p className="text-sm text-gray-700">
+                      <strong>{recordToDelete.data.firstName} {recordToDelete.data.lastName}</strong>
+                    </p>
+                    <p className="text-sm text-gray-600">{recordToDelete.data.email}</p>
+                  </div>
+                )}
+
+                <p className="text-sm text-gray-600 mb-6">
+                  {deleteConfirmType === 'all' 
+                    ? `Are you sure you want to delete all ${invalidEmployees.length} invalid employee records? This action cannot be undone.`
+                    : 'Are you sure you want to delete this invalid employee record? This action cannot be undone.'
+                  }
+                </p>
+
+                <div className="flex justify-end gap-3">
+                  <button
+                    onClick={() => setShowDeleteConfirm(false)}
+                    className="px-4 py-2 text-sm bg-gray-600 text-white rounded hover:bg-gray-700 font-medium"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={confirmDelete}
+                    className="px-4 py-2 text-sm bg-red-600 text-white rounded hover:bg-red-700 font-medium"
+                  >
+                    {deleteConfirmType === 'all' ? 'Delete All' : 'Delete'}
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </div>
