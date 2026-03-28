@@ -95,10 +95,15 @@ export class ClaimProcessingService {
 
     this.eventEmitter.emit('claim.status_changed', {
       claimId,
-      fromStatus: claim.claimStatus,
-      toStatus: ClaimStatus.Approved,
+      claimNumber: claim.claimNumber,
+      statusFrom: claim.claimStatus,
+      statusTo: ClaimStatus.Approved,
       actorUserId: user.id,
+      actorRole: user.role,
       approvedAmount,
+      eventNote:
+        eventNote ||
+        `Claim approved. Amount: ${approvedAmount}. Employee used coverage updated.`,
     });
 
     return updatedClaim;
@@ -139,9 +144,12 @@ export class ClaimProcessingService {
 
     this.eventEmitter.emit('claim.status_changed', {
       claimId,
-      fromStatus: claim.claimStatus,
-      toStatus: ClaimStatus.Rejected,
+      claimNumber: claim.claimNumber,
+      statusFrom: claim.claimStatus,
+      statusTo: ClaimStatus.Rejected,
       actorUserId: user.id,
+      actorRole: user.role,
+      eventNote,
     });
 
     return updatedClaim;
@@ -190,9 +198,15 @@ export class ClaimProcessingService {
 
     this.eventEmitter.emit('claim.status_changed', {
       claimId,
-      fromStatus: claim.claimStatus,
-      toStatus: ClaimStatus.OnHold,
+      claimNumber: claim.claimNumber,
+      statusFrom: claim.claimStatus,
+      statusTo: ClaimStatus.OnHold,
       actorUserId: user.id,
+      actorRole: user.role,
+      eventNote:
+        requiredDocuments && requiredDocuments.length > 0
+          ? `${eventNote}\nRequired Documents: ${requiredDocuments.join(', ')}`
+          : eventNote,
     });
 
     return updatedClaim;
@@ -252,9 +266,12 @@ export class ClaimProcessingService {
 
     this.eventEmitter.emit('claim.status_changed', {
       claimId,
-      fromStatus: claim.claimStatus,
-      toStatus: ClaimStatus.Paid,
+      claimNumber: claim.claimNumber,
+      statusFrom: claim.claimStatus,
+      statusTo: ClaimStatus.Paid,
       actorUserId: user.id,
+      actorRole: user.role,
+      eventNote: note,
     });
 
     return updatedClaim;

@@ -1,22 +1,28 @@
-'use client';
-import { ReactNode } from 'react';
-import { useRouter } from 'next/navigation';
-import DashboardLayout from '@/components/layouts/DashboardLayout';
-import { useNotifications } from '@/hooks/useNotifications';
-import { AlertNotification } from '@/types';
+"use client";
+import { ReactNode } from "react";
+import { useRouter } from "next/navigation";
+import DashboardLayout from "@/components/layouts/DashboardLayout";
+import { useNotifications } from "@/hooks/useNotifications";
+import { useAuth } from "@/hooks/useAuth";
+import { AlertNotification } from "@/types";
 
 export default function PatientLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
+  const { user } = useAuth();
   const { notifications, dismiss, markAsRead } = useNotifications();
 
   const handleSelectNotification = (notification: AlertNotification) => {
     if (!notification.isRead) {
       markAsRead(notification.id);
     }
-    if (notification.category === 'claims') {
-      router.push('/patient/claims');
-    } else if (notification.category === 'benefits') {
-      router.push('/patient/profile');
+    
+    // Use actionUrl if provided, otherwise fall back to category-based routing
+    if (notification.actionUrl) {
+      router.push(notification.actionUrl);
+    } else if (notification.category === "claims") {
+      router.push("/patient/claims");
+    } else if (notification.category === "benefits") {
+      router.push("/patient/profile");
     }
   };
 
@@ -27,7 +33,7 @@ export default function PatientLayout({ children }: { children: ReactNode }) {
   return (
     <DashboardLayout
       userRole="patient"
-      userName="Ali Raza"
+      userName={user?.name || "Patient"}
       notifications={notifications}
       onNotificationSelect={handleSelectNotification}
       onNotificationDismiss={handleDismissNotification}
@@ -36,4 +42,3 @@ export default function PatientLayout({ children }: { children: ReactNode }) {
     </DashboardLayout>
   );
 }
-

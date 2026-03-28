@@ -8,5 +8,6 @@ export interface AlertNotification {
   category: 'claims' | 'policies' | 'dependents' | 'messaging' | string;
   timestamp: string;
   isRead: boolean;
+  actionUrl?: string;
 }
 

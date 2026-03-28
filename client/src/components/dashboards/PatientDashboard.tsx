@@ -1,8 +1,16 @@
+"use client";
+import { useState } from "react";
 import claims from "@/data/claims.json";
 import type { Claim } from "@/types/claims";
 import { formatPKR, formatPKRShort } from "@/lib/format";
+import { useNotifications } from "@/hooks/useNotifications";
 
 export default function PatientDashboard() {
+  const { notifications, unreadCount, dismiss } = useNotifications({
+    autoFetch: true,
+    listenForRealtime: true,
+  });
+
   const allClaims = claims as Claim[];
   const totalClaims = allClaims.length;
   const approved = allClaims.filter((c) => c.status === "Approved").length;
@@ -17,7 +25,7 @@ export default function PatientDashboard() {
     .sort(
       (a, b) =>
         new Date(b.createdAt || b.admissionDate).getTime() -
-        new Date(a.createdAt || a.admissionDate).getTime()
+        new Date(a.createdAt || a.admissionDate).getTime(),
     )
     .slice(0, 2)
     .map((c) => ({
@@ -32,6 +40,61 @@ export default function PatientDashboard() {
       <h1 className="text-3xl font-bold text-gray-900 mb-6">
         Patient Dashboard
       </h1>
+
+      {/* Notifications Section */}
+      {notifications.length > 0 && (
+        <div className="mb-6 space-y-2">
+          {notifications.slice(0, 3).map((notification) => (
+            <div
+              key={notification.id}
+              className={`p-4 rounded-lg flex justify-between items-start ${
+                notification.severity === "warning"
+                  ? "bg-yellow-50 border border-yellow-200"
+                  : notification.severity === "error"
+                    ? "bg-red-50 border border-red-200"
+                    : "bg-blue-50 border border-blue-200"
+              }`}
+            >
+              <div className="flex-1">
+                <h3
+                  className={`font-semibold ${
+                    notification.severity === "warning"
+                      ? "text-yellow-900"
+                      : notification.severity === "error"
+                        ? "text-red-900"
+                        : "text-blue-900"
+                  }`}
+                >
+                  {notification.title}
+                </h3>
+                <p
+                  className={`text-sm mt-1 ${
+                    notification.severity === "warning"
+                      ? "text-yellow-800"
+                      : notification.severity === "error"
+                        ? "text-red-800"
+                        : "text-blue-800"
+                  }`}
+                >
+                  {notification.message}
+                </p>
+              </div>
+              <button
+                onClick={() => dismiss(notification.id)}
+                className="ml-4 text-gray-400 hover:text-gray-600"
+              >
+                ✕
+              </button>
+            </div>
+          ))}
+          {unreadCount > 3 && (
+            <p className="text-sm text-gray-600 text-center">
+              +{unreadCount - 3} more notification
+              {unreadCount - 3 > 1 ? "s" : ""}
+            </p>
+          )}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <div className="bg-white rounded-lg shadow p-6">

@@ -8,7 +8,7 @@ export class AuditController {
   constructor(private readonly auditService: AuditService) {}
 
   @Get('logs')
-  @Roles('insurer', 'corporate')
+  @Roles('admin', 'insurer', 'corporate')
   async getLogs(
     @Query('entityType') entityType?: string,
     @Query('userId') userId?: string,

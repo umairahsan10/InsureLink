@@ -136,7 +136,7 @@ export default function PatientClaimsPage() {
         (apiMessage && friendlyMessages[apiMessage]) ?
           friendlyMessages[apiMessage] :
           apiMessage?.includes("exceeds remaining coverage") ?
-            `The amount you entered exceeds your remaining insurance coverage. Please enter a lower amount or contact support.` :
+            apiMessage :
             apiMessage?.includes("already has a claim submitted") ?
               "A claim has already been submitted for this visit." :
               "Something went wrong while submitting your claim. Please try again or contact support."

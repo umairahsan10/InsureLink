@@ -279,7 +279,7 @@ export class ClaimsController {
    * Get all documents for a claim
    */
   @Get(':id/documents')
-  @Roles('hospital', 'insurer', 'corporate', 'admin')
+  @Roles('hospital', 'insurer', 'corporate', 'admin', 'patient')
   async getDocuments(
     @Param('id') id: string,
     @CurrentUser() user: CurrentUserDto,
@@ -291,7 +291,7 @@ export class ClaimsController {
    * Delete a claim document
    */
   @Delete(':id/documents/:documentId')
-  @Roles('hospital', 'insurer')
+  @Roles('hospital', 'insurer', 'patient')
   async deleteDocument(
     @Param('id') id: string,
     @Param('documentId') documentId: string,

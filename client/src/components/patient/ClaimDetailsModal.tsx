@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { claimsApi, type Claim, type ClaimEvent } from "@/lib/api/claims";
+import ClaimDocumentsSection from "@/components/claims/ClaimDocumentsSection";
 
 interface ClaimDetailsModalProps {
   isOpen: boolean;
@@ -249,6 +250,13 @@ export default function ClaimDetailsModal({
                 <p className="text-sm text-gray-700 bg-gray-50 rounded-lg p-4">{displayClaim.notes}</p>
               </div>
             )}
+
+            <div>
+              <ClaimDocumentsSection
+                claimId={displayClaim.id}
+                claimStatus={displayClaim.claimStatus}
+              />
+            </div>
 
             <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200">
               <button onClick={onClose} className="px-6 py-3 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors font-medium">
