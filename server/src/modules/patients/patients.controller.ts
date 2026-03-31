@@ -1,9 +1,10 @@
-import { Controller, Get, Param, Query } from '@nestjs/common';
+import { Controller, Get, Patch, Param, Query, Body } from '@nestjs/common';
 import { Auth } from '../auth/decorators/auth.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { CurrentUserDto } from '../auth/dto/current-user.dto';
 import { ListPatientsQueryDto } from './dto/list-patients-query.dto';
 import { PatientCoverageDto } from './dto/patient-coverage.dto';
+import { UpdatePatientProfileDto } from './dto/patient-profile.dto';
 import { PaginatedPatientsDto, PatientClaimsDto, PatientVisitsDto } from './dto/patient-response.dto';
 import { PatientsService } from './patients.service';
 
@@ -15,6 +16,15 @@ export class PatientsController {
   @Get('me')
   async getMe(@CurrentUser() actor: CurrentUserDto) {
     return this.patientsService.getMe(actor);
+  }
+
+  @Auth()
+  @Patch('me')
+  async updateMe(
+    @Body() dto: UpdatePatientProfileDto,
+    @CurrentUser() actor: CurrentUserDto,
+  ) {
+    return this.patientsService.updateMe(actor, dto);
   }
 
   @Auth()

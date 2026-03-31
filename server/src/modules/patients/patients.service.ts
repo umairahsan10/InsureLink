@@ -45,6 +45,42 @@ export class PatientsService {
     };
   }
 
+  async updateMe(actor: CurrentUserDto, dto: any) {
+    const employee = await this.prisma.employee.findUnique({
+      where: { userId: actor.id },
+      include: {
+        user: true,
+        corporate: true,
+        plan: true,
+      },
+    });
+
+    if (!employee) {
+      throw new ForbiddenException('Patient not found');
+    }
+
+    // Update user data
+    const updatedUser = await this.prisma.user.update({
+      where: { id: actor.id },
+      data: {
+        ...(dto.email !== undefined ? { email: dto.email } : {}),
+        ...(dto.mobile !== undefined ? { phone: dto.mobile } : {}),
+      },
+    });
+
+    return {
+      id: employee.id,
+      isPatient: true,
+      patientType: 'employee',
+      name: `${employee.user.firstName}${employee.user.lastName ? ` ${employee.user.lastName}` : ''}`,
+      email: updatedUser.email,
+      mobile: updatedUser.phone,
+      insurance: employee.plan.planName,
+      corporateName: employee.corporate.name,
+      status: employee.status === 'Active' ? 'Active' : 'Inactive',
+    };
+  }
+
   async listPatients(query: ListPatientsQueryDto, actor: CurrentUserDto): Promise<PaginatedPatientsDto> {
     this.ensurePatientsReadAccess(actor);
 

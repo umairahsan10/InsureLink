@@ -52,23 +52,44 @@ export function useClaimSocket({
       process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3001";
     const token = getAccessToken();
 
+    // Guard against empty token
+    if (!token) {
+      console.warn("[useClaimSocket] No auth token available");
+      return;
+    }
+
     const socket = io(baseUrl, {
       auth: { token },
       transports: ["websocket", "polling"],
+      reconnection: true,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
+      reconnectionAttempts: 10,
+      timeout: 10000,
     });
 
     socketRef.current = socket;
 
     socket.on("connect", () => {
+      console.log("[useClaimSocket] Connected to server");
       setIsConnected(true);
-      socket.emit("join-claim-room", { claimId });
+      // Join the room after connection
+      socket.emit("join-claim-room", { claimId }, (response: any) => {
+        console.log("[useClaimSocket] Room join response:", response);
+      });
     });
 
-    socket.on("disconnect", () => {
+    socket.on("disconnect", (reason: string) => {
+      console.log("[useClaimSocket] Disconnected:", reason);
       setIsConnected(false);
     });
 
+    socket.on("room-joined", (data: any) => {
+      console.log("[useClaimSocket] Successfully joined room:", data);
+    });
+
     socket.on("claim-message-new", (message: ClaimMessage) => {
+      console.log("[useClaimSocket] New message received:", message.id);
       onNewMessageRef.current?.(message);
     });
 
@@ -80,6 +101,7 @@ export function useClaimSocket({
         readAt: string;
         markedCount: number;
       }) => {
+        console.log("[useClaimSocket] Message read receipt:", data);
         onMessageReadRef.current?.(data);
       },
     );
@@ -91,8 +113,20 @@ export function useClaimSocket({
       },
     );
 
+    socket.on("error", (error: any) => {
+      console.error("[useClaimSocket] Socket error:", error);
+    });
+
+    socket.on("connect_error", (error: any) => {
+      console.error("[useClaimSocket] Connection error:", error.message);
+    });
+
     return () => {
-      socket.emit("leave-claim-room", { claimId });
+      try {
+        socket.emit("leave-claim-room", { claimId });
+      } catch (error) {
+        console.error("[useClaimSocket] Error leaving room:", error);
+      }
       socket.disconnect();
       socketRef.current = null;
       setIsConnected(false);

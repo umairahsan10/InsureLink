@@ -13,7 +13,11 @@ export default function HospitalLayout({ children }: { children: ReactNode }) {
     if (!notification.isRead) {
       markAsRead(notification.id);
     }
-    if (notification.category === 'messaging') {
+    
+    // Use actionUrl if provided, otherwise fall back to category-based routing
+    if (notification.actionUrl) {
+      router.push(notification.actionUrl);
+    } else if (notification.category === 'messaging') {
       router.push('/hospital/claims');
     }
   };

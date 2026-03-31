@@ -4,4 +4,9 @@ export class PatientProfileDto {
   email: string;
 }
 
+export class UpdatePatientProfileDto {
+  email?: string;
+  mobile?: string;
+}
+
 

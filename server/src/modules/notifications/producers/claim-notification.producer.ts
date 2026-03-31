@@ -71,6 +71,11 @@ export class ClaimNotificationProducer {
       const { title, message, severity, recipientUserIds } =
         this.buildNotificationData(event, claim);
 
+      // Determine action URL based on claim status
+      const actionUrl = event.statusTo === ClaimStatus.OnHold 
+        ? `/patient/history` 
+        : `/claims/${event.claimId}`;
+
       // Send notification to each recipient
       for (const userId of recipientUserIds) {
         if (!userId || userId === event.actorUserId) continue;
@@ -81,7 +86,7 @@ export class ClaimNotificationProducer {
           severity,
           relatedEntityId: event.claimId,
           relatedEntityType: 'Claim',
-          actionUrl: `/claims/${event.claimId}`,
+          actionUrl,
           category: 'claims',
         });
       }

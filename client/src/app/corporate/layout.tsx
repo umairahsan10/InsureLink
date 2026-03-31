@@ -14,7 +14,11 @@ export default function CorporateLayout({ children }: { children: ReactNode }) {
     if (!notification.isRead) {
       markAsRead(notification.id);
     }
-    if (notification.category === 'messaging' || notification.category === 'claims') {
+    
+    // Use actionUrl if provided, otherwise fall back to category-based routing
+    if (notification.actionUrl) {
+      router.push(notification.actionUrl);
+    } else if (notification.category === 'messaging' || notification.category === 'claims') {
       router.push('/corporate/claims');
     }
   };

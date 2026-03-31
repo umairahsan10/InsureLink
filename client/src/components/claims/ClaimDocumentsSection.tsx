@@ -239,7 +239,7 @@ export default function ClaimDocumentsSection({
                       </p>
                     </div>
                   </div>
-                  {claimStatus === "Pending" && (
+                  {(claimStatus === "Pending" || claimStatus === "OnHold") && (
                     <button
                       onClick={() => handleDelete(doc.id)}
                       disabled={deletingId === doc.id}
@@ -302,6 +302,14 @@ export default function ClaimDocumentsSection({
           <p className="text-xs text-gray-500 mt-1">
             PDF, JPEG, or PNG. Max 10MB.
           </p>
+
+          {documents.length > 0 && (
+            <div className="mt-4 flex justify-end">
+              <button className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium">
+                Save Documents
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>

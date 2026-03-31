@@ -68,7 +68,7 @@ export class AuditLogsRepository {
       if (filters.endDate) where.timestamp.lte = filters.endDate;
     }
 
-    const [items, total] = await Promise.all([
+    const [data, total] = await Promise.all([
       this.prisma.auditLog.findMany({
         where,
         orderBy: { timestamp: 'desc' },
@@ -83,7 +83,8 @@ export class AuditLogsRepository {
       this.prisma.auditLog.count({ where }),
     ]);
 
-    return { items, total, page, limit };
+    const totalPages = Math.ceil(total / limit);
+    return { data, total, page, limit, totalPages };
   }
 
   async findByEntity(
@@ -94,7 +95,7 @@ export class AuditLogsRepository {
   ) {
     const where = { entityType, entityId };
 
-    const [items, total] = await Promise.all([
+    const [data, total] = await Promise.all([
       this.prisma.auditLog.findMany({
         where,
         orderBy: { timestamp: 'desc' },
@@ -109,6 +110,7 @@ export class AuditLogsRepository {
       this.prisma.auditLog.count({ where }),
     ]);
 
-    return { items, total, page, limit };
+    const totalPages = Math.ceil(total / limit);
+    return { data, total, page, limit, totalPages };
   }
 }

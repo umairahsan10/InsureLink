@@ -1,34 +1,37 @@
-'use client';
+"use client";
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import AddEmployeeModal from '@/components/corporate/AddEmployeeModal';
-import DependentRequestsTable from '@/components/corporate/DependentRequestsTable';
-import DependentReviewModal from '@/components/corporate/DependentReviewModal';
-import EmployeeDependentsModal from '@/components/corporate/EmployeeDependentsModal';
-import BulkUploadModal from '@/components/corporate/BulkUploadModal';
-import InvalidEmployeesTable from '@/components/corporate/InvalidEmployeesTable';
-import type { EmployeePlanOption } from '@/components/forms/EmployeeForm';
-import { useAuth } from '@/hooks/useAuth';
-import { employeesApi, type CreateEmployeeRequest } from '@/lib/api/employees';
-import { corporatesApi } from '@/lib/api/corporates';
-import { insurersApi } from '@/lib/api/insurers';
-import { dependentsApi, type Dependent as ApiDependent } from '@/lib/api/dependents';
-import { Employee } from '@/types/employee';
-import { Dependent } from '@/types/dependent';
+import { useCallback, useEffect, useMemo, useState } from "react";
+import AddEmployeeModal from "@/components/corporate/AddEmployeeModal";
+import DependentRequestsTable from "@/components/corporate/DependentRequestsTable";
+import DependentReviewModal from "@/components/corporate/DependentReviewModal";
+import EmployeeDependentsModal from "@/components/corporate/EmployeeDependentsModal";
+import BulkUploadModal from "@/components/corporate/BulkUploadModal";
+import InvalidEmployeesTable from "@/components/corporate/InvalidEmployeesTable";
+import type { EmployeePlanOption } from "@/components/forms/EmployeeForm";
+import { useAuth } from "@/hooks/useAuth";
+import { employeesApi, type CreateEmployeeRequest } from "@/lib/api/employees";
+import { corporatesApi } from "@/lib/api/corporates";
+import { insurersApi } from "@/lib/api/insurers";
+import {
+  dependentsApi,
+  type Dependent as ApiDependent,
+} from "@/lib/api/dependents";
+import { Employee } from "@/types/employee";
+import { Dependent } from "@/types/dependent";
 
 const pageSize = 10;
 const departmentOptions = [
-  'R&D',
-  'Product',
-  'Finance',
-  'People',
-  'IT',
-  'Engineering',
-  'Sales',
-  'Logistics',
-  'Production',
-  'Design',
-  'Customer',
+  "R&D",
+  "Product",
+  "Finance",
+  "People",
+  "IT",
+  "Engineering",
+  "Sales",
+  "Logistics",
+  "Production",
+  "Design",
+  "Customer",
 ];
 
 function parseApiErrorMessage(err: unknown, fallback: string): string {
@@ -40,9 +43,9 @@ function parseApiErrorMessage(err: unknown, fallback: string): string {
       errors?: string[];
     };
     if (Array.isArray(raw.errors) && raw.errors.length > 0) {
-      return raw.errors.join(', ');
+      return raw.errors.join(", ");
     }
-    if (typeof raw.message === 'string' && raw.message) {
+    if (typeof raw.message === "string" && raw.message) {
       return raw.message;
     }
   } catch {
@@ -55,12 +58,12 @@ function parseApiErrorMessage(err: unknown, fallback: string): string {
 function splitName(fullName: string): { firstName: string; lastName: string } {
   const parts = fullName.trim().split(/\s+/).filter(Boolean);
   if (parts.length <= 1) {
-    return { firstName: parts[0] || 'Employee', lastName: '' };
+    return { firstName: parts[0] || "Employee", lastName: "" };
   }
 
   return {
     firstName: parts[0],
-    lastName: parts.slice(1).join(' '),
+    lastName: parts.slice(1).join(" "),
   };
 }
 
@@ -74,8 +77,13 @@ function defaultCoverageEnd(): string {
   return d.toISOString().slice(0, 10);
 }
 
-function toUiEmployee(employee: Awaited<ReturnType<typeof employeesApi.getById>>): Employee {
-  const fullName = [employee.firstName, employee.lastName].filter(Boolean).join(' ').trim();
+function toUiEmployee(
+  employee: Awaited<ReturnType<typeof employeesApi.getById>>,
+): Employee {
+  const fullName = [employee.firstName, employee.lastName]
+    .filter(Boolean)
+    .join(" ")
+    .trim();
 
   return {
     id: employee.id,
@@ -85,7 +93,9 @@ function toUiEmployee(employee: Awaited<ReturnType<typeof employeesApi.getById>>
     mobile: employee.phone,
     corporateId: employee.corporateId,
     planId: employee.planId,
-    coverageStart: new Date(employee.coverageStartDate).toISOString().slice(0, 10),
+    coverageStart: new Date(employee.coverageStartDate)
+      .toISOString()
+      .slice(0, 10),
     coverageEnd: new Date(employee.coverageEndDate).toISOString().slice(0, 10),
     designation: employee.designation,
     department: employee.department,
@@ -98,18 +108,18 @@ function toUiDependent(dep: ApiDependent, employeeName: string): Dependent {
     employeeId: dep.employeeId,
     employeeName,
     corporateId: dep.corporateId,
-    name: `${dep.firstName} ${dep.lastName}`.trim(),
-    relationship: dep.relationship as Dependent['relationship'],
+    name: dep.name,
+    relationship: dep.relationship as Dependent["relationship"],
     dateOfBirth: dep.dateOfBirth,
-    gender: dep.gender as Dependent['gender'],
-    cnic: dep.cnic || '',
+    gender: dep.gender as Dependent["gender"],
+    cnic: dep.cnic || "",
     phoneNumber: dep.phoneNumber,
-    status: dep.status as Dependent['status'],
-    requestedAt: dep.requestDate,
-    reviewedAt: dep.reviewedDate,
+    status: dep.status as Dependent["status"],
+    requestedAt: dep.requestedAt,
+    reviewedAt: dep.reviewedAt,
     rejectionReason: dep.rejectionReason,
     documents: [],
-    coverageStartDate: dep.requestDate,
+    coverageStartDate: dep.coverageStartDate || "",
   };
 }
 
@@ -117,32 +127,44 @@ export default function CorporateEmployeesPage() {
   const { user } = useAuth();
   const corporateId = user?.corporateId;
 
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedDepartment, setSelectedDepartment] = useState('All Departments');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedDepartment, setSelectedDepartment] =
+    useState("All Departments");
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isRemoveMode, setIsRemoveMode] = useState(false);
   const [employees, setEmployees] = useState<Employee[]>([]);
-  const [employeeToRemove, setEmployeeToRemove] = useState<Employee | null>(null);
-  const [removedEmployeeMessage, setRemovedEmployeeMessage] = useState<string | null>(null);
+  const [employeeToRemove, setEmployeeToRemove] = useState<Employee | null>(
+    null,
+  );
+  const [removedEmployeeMessage, setRemovedEmployeeMessage] = useState<
+    string | null
+  >(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const [activeTab, setActiveTab] = useState<'employees' | 'requests' | 'invalid'>('employees');
+  const [activeTab, setActiveTab] = useState<
+    "employees" | "requests" | "invalid"
+  >("employees");
   const [isBulkUploadOpen, setIsBulkUploadOpen] = useState(false);
   const [invalidReloadKey, setInvalidReloadKey] = useState(0);
 
   const [pendingRequests, setPendingRequests] = useState<Dependent[]>([]);
-  const [selectedDependent, setSelectedDependent] = useState<Dependent | null>(null);
+  const [selectedDependent, setSelectedDependent] = useState<Dependent | null>(
+    null,
+  );
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
-  const [selectedEmployeeForView, setSelectedEmployeeForView] = useState<{ name: string; dependents: Dependent[] } | null>(null);
+  const [selectedEmployeeForView, setSelectedEmployeeForView] = useState<{
+    name: string;
+    dependents: Dependent[];
+  } | null>(null);
   const [isDependentsModalOpen, setIsDependentsModalOpen] = useState(false);
 
   const [currentPage, setCurrentPage] = useState(1);
   const [totalEmployees, setTotalEmployees] = useState(0);
-  const [defaultPlanId, setDefaultPlanId] = useState<string>('');
+  const [defaultPlanId, setDefaultPlanId] = useState<string>("");
   const [planOptions, setPlanOptions] = useState<EmployeePlanOption[]>([]);
-  const [contractStartDate, setContractStartDate] = useState<string>('');
-  const [contractEndDate, setContractEndDate] = useState<string>('');
+  const [contractStartDate, setContractStartDate] = useState<string>("");
+  const [contractEndDate, setContractEndDate] = useState<string>("");
 
   const employeeNameById = useMemo(() => {
     const map: Record<string, string> = {};
@@ -154,7 +176,7 @@ export default function CorporateEmployeesPage() {
 
   const loadEmployees = useCallback(async () => {
     if (!corporateId) {
-      setError('Corporate profile is not linked to this account.');
+      setError("Corporate profile is not linked to this account.");
       setLoading(false);
       return;
     }
@@ -168,18 +190,21 @@ export default function CorporateEmployeesPage() {
         page: currentPage,
         limit: pageSize,
         search: searchTerm || undefined,
-        department: selectedDepartment === 'All Departments'
-          ? undefined
-          : selectedDepartment === 'Human Resources'
-            ? 'People'
-            : selectedDepartment,
+        department:
+          selectedDepartment === "All Departments"
+            ? undefined
+            : selectedDepartment === "Human Resources"
+              ? "People"
+              : selectedDepartment,
       });
 
       setEmployees(response.items.map(toUiEmployee));
       setTotalEmployees(response.total);
     } catch (err) {
-      console.error('Failed to load employees:', err);
-      setError(parseApiErrorMessage(err, 'Could not load employees right now.'));
+      console.error("Failed to load employees:", err);
+      setError(
+        parseApiErrorMessage(err, "Could not load employees right now."),
+      );
       setEmployees([]);
       setTotalEmployees(0);
     } finally {
@@ -193,15 +218,17 @@ export default function CorporateEmployeesPage() {
     try {
       const response = await dependentsApi.list({
         corporateId,
-        status: 'Pending',
+        status: "Pending",
         page: 1,
         limit: 100,
       });
 
-      const mapped = response.items.map((dep) => toUiDependent(dep, employeeNameById[dep.employeeId] || 'Employee'));
+      const mapped = response.items.map((dep) =>
+        toUiDependent(dep, employeeNameById[dep.employeeId] || "Employee"),
+      );
       setPendingRequests(mapped);
     } catch (err) {
-      console.error('Failed to load pending dependent requests:', err);
+      console.error("Failed to load pending dependent requests:", err);
       setPendingRequests([]);
     }
   }, [corporateId, employeeNameById]);
@@ -211,8 +238,12 @@ export default function CorporateEmployeesPage() {
 
     try {
       const corporate = await corporatesApi.getCorporateById(corporateId);
-      setContractStartDate(new Date(corporate.contractStartDate).toISOString().slice(0, 10));
-      setContractEndDate(new Date(corporate.contractEndDate).toISOString().slice(0, 10));
+      setContractStartDate(
+        new Date(corporate.contractStartDate).toISOString().slice(0, 10),
+      );
+      setContractEndDate(
+        new Date(corporate.contractEndDate).toISOString().slice(0, 10),
+      );
       const plans = await insurersApi.getPlans(corporate.insurerId, true);
       const fallbackPlan = plans[0]?.id;
       setPlanOptions(
@@ -225,7 +256,10 @@ export default function CorporateEmployeesPage() {
         setDefaultPlanId(fallbackPlan);
       }
     } catch (err) {
-      console.error('Failed to load default plan for employee onboarding:', err);
+      console.error(
+        "Failed to load default plan for employee onboarding:",
+        err,
+      );
     }
   }, [corporateId]);
 
@@ -259,12 +293,19 @@ export default function CorporateEmployeesPage() {
         limit: 100,
       });
 
-      const mapped = response.items.map((dep) => toUiDependent(dep, employee.name));
+      const mapped = response.items.map((dep) =>
+        toUiDependent(dep, employee.name),
+      );
       setSelectedEmployeeForView({ name: employee.name, dependents: mapped });
       setIsDependentsModalOpen(true);
     } catch (err) {
-      console.error('Failed to load employee dependents:', err);
-      setError(parseApiErrorMessage(err, 'Could not load dependents for this employee.'));
+      console.error("Failed to load employee dependents:", err);
+      setError(
+        parseApiErrorMessage(
+          err,
+          "Could not load dependents for this employee.",
+        ),
+      );
     }
   };
 
@@ -287,7 +328,9 @@ export default function CorporateEmployeesPage() {
     const effectivePlanId = input.planId || defaultPlanId;
 
     if (!effectivePlanId) {
-      setError('No insurer plan is assigned to this corporate yet. Please configure at least one plan first.');
+      setError(
+        "No insurer plan is assigned to this corporate yet. Please configure at least one plan first.",
+      );
       return null;
     }
 
@@ -304,8 +347,8 @@ export default function CorporateEmployeesPage() {
       phone: input.mobile,
       coverageStartDate,
       coverageEndDate,
-      designation: input.designation || 'Employee',
-      department: input.department || 'General',
+      designation: input.designation || "Employee",
+      department: input.department || "General",
       cnic: undefined,
       dob: undefined,
       gender: undefined,
@@ -316,7 +359,9 @@ export default function CorporateEmployeesPage() {
   return (
     <div className="p-4 md:p-8">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-        <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Employees</h1>
+        <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
+          Employees
+        </h1>
         <div className="flex gap-2 w-full sm:w-auto">
           <button
             onClick={() => setIsAddModalOpen(true)}
@@ -333,7 +378,9 @@ export default function CorporateEmployeesPage() {
           <button
             onClick={() => setIsRemoveMode((prev) => !prev)}
             className={`flex-1 sm:flex-initial px-3 py-2 md:px-4 md:py-2 rounded-lg transition-colors text-sm md:text-base ${
-              isRemoveMode ? 'bg-red-600 text-white hover:bg-red-700' : 'bg-black text-white hover:bg-gray-800'
+              isRemoveMode
+                ? "bg-red-600 text-white hover:bg-red-700"
+                : "bg-black text-white hover:bg-gray-800"
             }`}
           >
             − Remove Employee
@@ -356,36 +403,42 @@ export default function CorporateEmployeesPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-6">
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
           <p className="text-sm text-gray-500">Total Employees</p>
-          <p className="text-xl md:text-2xl font-bold text-gray-900">{totalEmployees}</p>
+          <p className="text-xl md:text-2xl font-bold text-gray-900">
+            {totalEmployees}
+          </p>
         </div>
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
           <p className="text-sm text-gray-500">Active Policies</p>
-          <p className="text-xl md:text-2xl font-bold text-green-600">{totalEmployees}</p>
+          <p className="text-xl md:text-2xl font-bold text-green-600">
+            {totalEmployees}
+          </p>
         </div>
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
           <p className="text-sm text-gray-500">Pending Dependent Requests</p>
-          <p className="text-xl md:text-2xl font-bold text-orange-600">{pendingRequests.length}</p>
+          <p className="text-xl md:text-2xl font-bold text-orange-600">
+            {pendingRequests.length}
+          </p>
         </div>
       </div>
 
       <div className="mb-6 border-b border-gray-200">
         <nav className="-mb-px flex space-x-8">
           <button
-            onClick={() => setActiveTab('employees')}
+            onClick={() => setActiveTab("employees")}
             className={`py-4 px-1 border-b-2 font-medium text-sm ${
-              activeTab === 'employees'
-                ? 'border-purple-600 text-purple-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              activeTab === "employees"
+                ? "border-purple-600 text-purple-600"
+                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
             }`}
           >
             Employees
           </button>
           <button
-            onClick={() => setActiveTab('requests')}
+            onClick={() => setActiveTab("requests")}
             className={`py-4 px-1 border-b-2 font-medium text-sm relative ${
-              activeTab === 'requests'
-                ? 'border-purple-600 text-purple-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              activeTab === "requests"
+                ? "border-purple-600 text-purple-600"
+                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
             }`}
           >
             Dependent Requests
@@ -396,11 +449,11 @@ export default function CorporateEmployeesPage() {
             )}
           </button>
           <button
-            onClick={() => setActiveTab('invalid')}
+            onClick={() => setActiveTab("invalid")}
             className={`py-4 px-1 border-b-2 font-medium text-sm relative ${
-              activeTab === 'invalid'
-                ? 'border-purple-600 text-purple-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              activeTab === "invalid"
+                ? "border-purple-600 text-purple-600"
+                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
             }`}
           >
             Invalid Employees
@@ -409,7 +462,7 @@ export default function CorporateEmployeesPage() {
       </div>
 
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-        {activeTab === 'employees' ? (
+        {activeTab === "employees" ? (
           <>
             <div className="p-4 border-b border-gray-200">
               <div className="flex flex-col sm:flex-row gap-4">
@@ -428,7 +481,7 @@ export default function CorporateEmployeesPage() {
                   <option>All Departments</option>
                   {departmentOptions.map((department) => (
                     <option key={department}>
-                      {department === 'People' ? 'Human Resources' : department}
+                      {department === "People" ? "Human Resources" : department}
                     </option>
                   ))}
                 </select>
@@ -439,34 +492,67 @@ export default function CorporateEmployeesPage() {
               <table className="w-full min-w-[800px]">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                    <th className="px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Employee ID</th>
-                    <th className="px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Department</th>
-                    <th className="px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Designation</th>
-                    <th className="px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                    <th className="px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dependents</th>
-                    <th className="px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Policy Status</th>
-                    {isRemoveMode && <th className="px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Remove</th>}
+                    <th className="px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Name
+                    </th>
+                    <th className="px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Employee ID
+                    </th>
+                    <th className="px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Department
+                    </th>
+                    <th className="px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Designation
+                    </th>
+                    <th className="px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Email
+                    </th>
+                    <th className="px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Dependents
+                    </th>
+                    <th className="px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Policy Status
+                    </th>
+                    {isRemoveMode && (
+                      <th className="px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Remove
+                      </th>
+                    )}
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {loading ? (
                     <tr>
-                      <td colSpan={isRemoveMode ? 8 : 7} className="px-4 md:px-6 py-8 text-center text-gray-500">
+                      <td
+                        colSpan={isRemoveMode ? 8 : 7}
+                        className="px-4 md:px-6 py-8 text-center text-gray-500"
+                      >
                         Loading employees...
                       </td>
                     </tr>
                   ) : employees.length > 0 ? (
                     employees.map((employee) => {
-                      const dependentCount = pendingRequests.filter((dep) => dep.employeeId === employee.id).length;
+                      const dependentCount = pendingRequests.filter(
+                        (dep) => dep.employeeId === employee.id,
+                      ).length;
 
                       return (
                         <tr key={employee.id} className="hover:bg-gray-50">
-                          <td className="px-4 md:px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{employee.name}</td>
-                          <td className="px-4 md:px-6 py-4 whitespace-nowrap text-sm text-gray-500">{employee.employeeNumber}</td>
-                          <td className="px-4 md:px-6 py-4 whitespace-nowrap text-sm text-gray-500">{employee.department}</td>
-                          <td className="px-4 md:px-6 py-4 whitespace-nowrap text-sm text-gray-500">{employee.designation}</td>
-                          <td className="px-4 md:px-6 py-4 whitespace-nowrap text-sm text-gray-500">{employee.email}</td>
+                          <td className="px-4 md:px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                            {employee.name}
+                          </td>
+                          <td className="px-4 md:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {employee.employeeNumber}
+                          </td>
+                          <td className="px-4 md:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {employee.department}
+                          </td>
+                          <td className="px-4 md:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {employee.designation}
+                          </td>
+                          <td className="px-4 md:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {employee.email}
+                          </td>
                           <td className="px-4 md:px-6 py-4 whitespace-nowrap text-sm">
                             <button
                               onClick={() => {
@@ -498,7 +584,10 @@ export default function CorporateEmployeesPage() {
                     })
                   ) : (
                     <tr>
-                      <td colSpan={isRemoveMode ? 8 : 7} className="px-4 md:px-6 py-8 text-center text-gray-500">
+                      <td
+                        colSpan={isRemoveMode ? 8 : 7}
+                        className="px-4 md:px-6 py-8 text-center text-gray-500"
+                      >
                         No employees found matching your criteria.
                       </td>
                     </tr>
@@ -507,7 +596,7 @@ export default function CorporateEmployeesPage() {
               </table>
             </div>
           </>
-        ) : activeTab === 'requests' ? (
+        ) : activeTab === "requests" ? (
           <div className="p-4">
             <DependentRequestsTable
               requests={pendingRequests}
@@ -520,7 +609,7 @@ export default function CorporateEmployeesPage() {
         ) : (
           <div className="p-4">
             <InvalidEmployeesTable
-              corporateId={corporateId || ''}
+              corporateId={corporateId || ""}
               reloadKey={invalidReloadKey}
               contractStartDate={contractStartDate}
               contractEndDate={contractEndDate}
@@ -528,11 +617,21 @@ export default function CorporateEmployeesPage() {
           </div>
         )}
 
-        {activeTab === 'employees' && (
+        {activeTab === "employees" && (
           <div className="px-4 md:px-6 py-3 bg-gray-50 border-t border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-3">
             <p className="text-xs md:text-sm text-gray-700 text-center sm:text-left">
-              Showing <span className="font-medium">{Math.max((currentPage - 1) * pageSize + 1, totalEmployees === 0 ? 0 : 1)}</span> to <span className="font-medium">{Math.min(currentPage * pageSize, totalEmployees)}</span> of{' '}
-              <span className="font-medium">{totalEmployees}</span> employees
+              Showing{" "}
+              <span className="font-medium">
+                {Math.max(
+                  (currentPage - 1) * pageSize + 1,
+                  totalEmployees === 0 ? 0 : 1,
+                )}
+              </span>{" "}
+              to{" "}
+              <span className="font-medium">
+                {Math.min(currentPage * pageSize, totalEmployees)}
+              </span>{" "}
+              of <span className="font-medium">{totalEmployees}</span> employees
             </p>
             <div className="flex space-x-2">
               <button
@@ -550,8 +649,8 @@ export default function CorporateEmployeesPage() {
                     onClick={() => setCurrentPage(i + 1)}
                     className={`px-2 md:px-3 py-1 text-xs md:text-sm rounded-md ${
                       currentPage === i + 1
-                        ? 'bg-purple-600 text-white border border-purple-600'
-                        : 'bg-white text-gray-500 border border-gray-300 hover:bg-gray-50'
+                        ? "bg-purple-600 text-white border border-purple-600"
+                        : "bg-white text-gray-500 border border-gray-300 hover:bg-gray-50"
                     }`}
                   >
                     {i + 1}
@@ -560,7 +659,9 @@ export default function CorporateEmployeesPage() {
               </div>
 
               <button
-                onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                onClick={() =>
+                  setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                }
                 disabled={currentPage === totalPages}
                 className="px-2 md:px-3 py-1 text-xs md:text-sm text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50"
               >
@@ -574,7 +675,7 @@ export default function CorporateEmployeesPage() {
       <BulkUploadModal
         isOpen={isBulkUploadOpen}
         onClose={() => setIsBulkUploadOpen(false)}
-        corporateId={corporateId || ''}
+        corporateId={corporateId || ""}
         onUploadComplete={() => {
           // Refresh the employees list and invalid employees
           loadEmployees();
@@ -601,15 +702,24 @@ export default function CorporateEmployeesPage() {
           });
 
           if (!payload) {
-            throw new Error('No valid insurance plan is available for this corporate account.');
+            throw new Error(
+              "No valid insurance plan is available for this corporate account.",
+            );
           }
 
           try {
             await employeesApi.create(payload);
             await loadEmployees();
-            setRemovedEmployeeMessage(`Employee ${employeeData.name} added successfully!`);
+            setRemovedEmployeeMessage(
+              `Employee ${employeeData.name} added successfully!`,
+            );
           } catch (err) {
-            throw new Error(parseApiErrorMessage(err, 'Failed to add employee. Please verify details and try again.'));
+            throw new Error(
+              parseApiErrorMessage(
+                err,
+                "Failed to add employee. Please verify details and try again.",
+              ),
+            );
           }
         }}
         coverageMinDate={contractStartDate}
@@ -620,11 +730,14 @@ export default function CorporateEmployeesPage() {
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-30 z-50">
           <div className="bg-white rounded-xl shadow-lg max-w-sm w-full overflow-hidden">
             <div className="bg-gray-100 px-6 py-4 border-b border-gray-300">
-              <h2 className="text-lg font-bold text-black text-center">Confirm Removal</h2>
+              <h2 className="text-lg font-bold text-black text-center">
+                Confirm Removal
+              </h2>
             </div>
             <div className="p-6 text-black">
               <p className="mb-6 text-center">
-                Are you sure you want to remove <span className="font-semibold">{employeeToRemove.name}</span>?
+                Are you sure you want to remove{" "}
+                <span className="font-semibold">{employeeToRemove.name}</span>?
               </p>
               <div className="flex justify-center gap-3">
                 <button
@@ -637,12 +750,16 @@ export default function CorporateEmployeesPage() {
                   onClick={async () => {
                     try {
                       await employeesApi.remove(employeeToRemove.id);
-                      setRemovedEmployeeMessage(`Employee ${employeeToRemove.name} removed successfully!`);
+                      setRemovedEmployeeMessage(
+                        `Employee ${employeeToRemove.name} removed successfully!`,
+                      );
                       setEmployeeToRemove(null);
                       await loadEmployees();
                       setTimeout(() => setRemovedEmployeeMessage(null), 3000);
                     } catch (err) {
-                      setError(parseApiErrorMessage(err, 'Failed to remove employee.'));
+                      setError(
+                        parseApiErrorMessage(err, "Failed to remove employee."),
+                      );
                     }
                   }}
                   className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors duration-200"
