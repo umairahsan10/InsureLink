@@ -1,6 +1,59 @@
+'use client';
+
+import { useState, FormEvent } from 'react';
 import Link from 'next/link';
 
 export default function OnboardCorporatePage() {
+  const [form, setForm] = useState({
+    companyName: '',
+    industry: '',
+    employeeCount: '',
+    address: '',
+    contactName: '',
+    contactTitle: '',
+    contactEmail: '',
+    contactPhone: '',
+    coverageType: '',
+    additionalInfo: '',
+  });
+  const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    setForm(prev => ({ ...prev, [e.target.id]: e.target.value }));
+  };
+
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    setSubmitting(true);
+    // Simulate submission delay (no backend endpoint for public inquiries)
+    await new Promise(r => setTimeout(r, 1000));
+    setSubmitting(false);
+    setSubmitted(true);
+  };
+
+  if (submitted) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-12 px-4">
+        <div className="max-w-3xl mx-auto">
+          <div className="bg-white rounded-lg shadow-lg p-8 text-center">
+            <div className="text-5xl mb-4">✅</div>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Application Submitted!</h1>
+            <p className="text-gray-600 mb-6">
+              Thank you for your interest. Our team will review your application and get back to you within 2-3 business days.
+            </p>
+            <Link
+              href="/"
+              className="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+            >
+              Return to Home
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-12 px-4">
       <div className="max-w-3xl mx-auto">
@@ -12,7 +65,7 @@ export default function OnboardCorporatePage() {
             Partner with InsureLink to provide comprehensive health insurance for your employees
           </p>
           
-          <form className="space-y-6">
+          <form className="space-y-6" onSubmit={handleSubmit}>
             <section className="space-y-4">
               <h2 className="text-xl font-semibold text-gray-800">Company Information</h2>
               
@@ -23,6 +76,9 @@ export default function OnboardCorporatePage() {
                 <input
                   type="text"
                   id="companyName"
+                  value={form.companyName}
+                  onChange={handleChange}
+                  required
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="Acme Corporation"
                 />
@@ -35,6 +91,9 @@ export default function OnboardCorporatePage() {
                   </label>
                   <select
                     id="industry"
+                    value={form.industry}
+                    onChange={handleChange}
+                    required
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   >
                     <option value="">Select industry</option>
@@ -53,6 +112,9 @@ export default function OnboardCorporatePage() {
                   </label>
                   <select
                     id="employeeCount"
+                    value={form.employeeCount}
+                    onChange={handleChange}
+                    required
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   >
                     <option value="">Select range</option>
@@ -72,6 +134,9 @@ export default function OnboardCorporatePage() {
                 <textarea
                   id="address"
                   rows={3}
+                  value={form.address}
+                  onChange={handleChange}
+                  required
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="Company headquarters address"
                 />
@@ -89,6 +154,9 @@ export default function OnboardCorporatePage() {
                   <input
                     type="text"
                     id="contactName"
+                    value={form.contactName}
+                    onChange={handleChange}
+                    required
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     placeholder="John Doe"
                   />
@@ -101,6 +169,9 @@ export default function OnboardCorporatePage() {
                   <input
                     type="text"
                     id="contactTitle"
+                    value={form.contactTitle}
+                    onChange={handleChange}
+                    required
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     placeholder="HR Manager"
                   />
@@ -115,6 +186,9 @@ export default function OnboardCorporatePage() {
                   <input
                     type="email"
                     id="contactEmail"
+                    value={form.contactEmail}
+                    onChange={handleChange}
+                    required
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     placeholder="john@acme.com"
                   />
@@ -127,6 +201,9 @@ export default function OnboardCorporatePage() {
                   <input
                     type="tel"
                     id="contactPhone"
+                    value={form.contactPhone}
+                    onChange={handleChange}
+                    required
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     placeholder="+1 (555) 123-4567"
                   />
@@ -143,6 +220,9 @@ export default function OnboardCorporatePage() {
                 </label>
                 <select
                   id="coverageType"
+                  value={form.coverageType}
+                  onChange={handleChange}
+                  required
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                   <option value="">Select coverage</option>
@@ -160,6 +240,8 @@ export default function OnboardCorporatePage() {
                 <textarea
                   id="additionalInfo"
                   rows={4}
+                  value={form.additionalInfo}
+                  onChange={handleChange}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="Tell us about any specific requirements or questions you have..."
                 />
@@ -175,9 +257,10 @@ export default function OnboardCorporatePage() {
               </Link>
               <button
                 type="submit"
-                className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                disabled={submitting}
+                className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50"
               >
-                Submit Application
+                {submitting ? 'Submitting...' : 'Submit Application'}
               </button>
             </div>
           </form>

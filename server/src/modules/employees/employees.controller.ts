@@ -95,7 +95,7 @@ export class EmployeesController {
   }
 
   @Auth()
-  @Roles('corporate', 'admin')
+  @Roles('corporate', 'admin', 'insurer')
   @Get()
   async listEmployees(
     @Query() query: ListEmployeesQueryDto,

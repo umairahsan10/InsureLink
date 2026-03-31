@@ -96,7 +96,7 @@ export default function DependentsList({
       <div className="flex items-start justify-between mb-2">
         <div>
           <h3 className="font-semibold text-gray-900">
-            {dependent.firstName} {dependent.lastName}
+            {dependent.name}
           </h3>
           <p className="text-sm text-gray-600">
             {dependent.relationship} • Age {calculateAge(dependent.dateOfBirth)}
@@ -114,7 +114,7 @@ export default function DependentsList({
         {dependent.status === "Pending" && (
           <p>
             <span className="font-medium">Requested:</span>{" "}
-            {formatDate(dependent.requestDate)}
+            {formatDate(dependent.requestedAt)}
           </p>
         )}
         {dependent.status === "Rejected" && dependent.rejectionReason && (
@@ -273,7 +273,7 @@ export default function DependentsList({
                     Full Name
                   </p>
                   <p className="mt-1 text-sm font-medium text-gray-900">
-                    {selectedDependent.firstName} {selectedDependent.lastName}
+                    {selectedDependent.name}
                   </p>
                 </div>
                 <div>
@@ -352,7 +352,7 @@ export default function DependentsList({
                   Requested Date
                 </p>
                 <p className="mt-1 text-sm text-gray-900">
-                  {formatDate(selectedDependent.requestDate)}
+                  {formatDate(selectedDependent.requestedAt)}
                 </p>
               </div>
 

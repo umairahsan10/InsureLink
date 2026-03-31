@@ -2,135 +2,90 @@
 
 import { useState } from "react";
 import HospitalSidebar from "@/components/hospital/HospitalSidebar";
-import employeesData from "@/data/employees.json";
-import plansData from "@/data/plans.json";
-import corporatesData from "@/data/corporates.json";
-import claimsData from "@/data/claims.json";
+import { patientsApi, PatientCoverage } from "@/lib/api/patients";
 
-interface Employee {
+interface PatientResult {
   id: string;
-  employeeNumber: string;
+  patientType: string;
   name: string;
-  email: string;
-  mobile: string;
-  corporateId: string;
-  planId: string;
-  coverageStart: string;
-  coverageEnd: string;
-  designation: string;
-  department: string;
+  email?: string;
+  mobile?: string;
+  cnic?: string;
+  insurance?: string;
+  corporateName?: string;
+  status?: string;
+  age?: number;
+  gender?: string;
 }
 
-interface Plan {
-  id: string;
-  name: string;
-  corporateId: string;
-  sumInsured: number;
-  deductible: number;
-  copayPercent: number;
-  coveredServices: string[];
-  limits: { [key: string]: number };
-  validFrom: string;
-  validUntil: string;
-}
-
-interface Corporate {
-  id: string;
-  name: string;
-  hrContact: {
-    name: string;
-    email: string;
-    phone: string;
-  };
-  totalEmployees: number;
-  plans: string[];
-  contractStart: string;
-  contractEnd: string;
-}
-
-interface Claim {
+interface PatientClaim {
   id: string;
   claimNumber: string;
-  employeeId: string;
-  employeeName: string;
-  corporateId: string;
-  corporateName: string;
-  hospitalId: string;
-  hospitalName: string;
-  planId: string;
   status: string;
-  amountClaimed: number;
-  approvedAmount: number;
-  admissionDate: string;
-  dischargeDate: string;
+  amountClaimed: string;
+  approvedAmount: string;
   createdAt: string;
-  updatedAt: string;
 }
 
 export default function HospitalPatientDetailsPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [searchResults, setSearchResults] = useState<Employee[]>([]);
+  const [searchResults, setSearchResults] = useState<PatientResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
-  const [selectedPatient, setSelectedPatient] = useState<Employee | null>(null);
-  const [filteredClaims, setFilteredClaims] = useState<Claim[]>([]);
+  const [selectedPatient, setSelectedPatient] = useState<PatientResult | null>(null);
+  const [coverage, setCoverage] = useState<PatientCoverage | null>(null);
+  const [claims, setClaims] = useState<PatientClaim[]>([]);
+  const [isLoadingDetails, setIsLoadingDetails] = useState(false);
 
-  const employees = employeesData as Employee[];
-  const plans = plansData as Plan[];
-  const corporates = corporatesData as Corporate[];
-  const claims = claimsData as Claim[];
-
-  const handleSearch = () => {
+  const handleSearch = async () => {
     if (!searchTerm.trim()) return;
 
     setIsSearching(true);
-
-    // Simulate API call delay
-    setTimeout(() => {
-      const results = employees.filter(
-        (employee) =>
-          employee.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          employee.mobile.includes(searchTerm) ||
-          employee.employeeNumber
-            .toLowerCase()
-            .includes(searchTerm.toLowerCase()) ||
-          employee.email.toLowerCase().includes(searchTerm.toLowerCase()),
-      );
-      setSearchResults(results);
+    try {
+      const result = await patientsApi.getPatients({
+        search: searchTerm,
+        limit: 20,
+      });
+      setSearchResults(result.items as unknown as PatientResult[]);
+    } catch (err) {
+      console.error("Search failed:", err);
+      setSearchResults([]);
+    } finally {
       setIsSearching(false);
-    }, 500);
+    }
   };
 
-  const handleSelectPatient = (patient: Employee) => {
+  const handleSelectPatient = async (patient: PatientResult) => {
     setSelectedPatient(patient);
+    setIsLoadingDetails(true);
 
-    // Filter claims for this patient
-    const patientClaims = claims.filter(
-      (claim) => claim.employeeId === patient.id,
-    );
-    setFilteredClaims(patientClaims);
+    try {
+      const [coverageData, claimsData] = await Promise.all([
+        patientsApi.getCoverage(patient.id).catch(() => null),
+        patientsApi.getPatientClaims(patient.id).catch(() => ({ items: [], total: 0 })),
+      ]);
+      setCoverage(coverageData);
+      setClaims(claimsData.items);
+    } catch (err) {
+      console.error("Failed to load patient details:", err);
+    } finally {
+      setIsLoadingDetails(false);
+    }
 
-    // Scroll to top of detailed view
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const handleNewSearch = () => {
     setSelectedPatient(null);
-    setFilteredClaims([]);
+    setCoverage(null);
+    setClaims([]);
     setSearchResults([]);
     setSearchTerm("");
   };
 
-  const getPlanDetails = (planId: string) => {
-    return plans.find((plan) => plan.id === planId);
-  };
-
-  const getCorporateDetails = (corporateId: string) => {
-    return corporates.find((corp) => corp.id === corporateId);
-  };
-
-  const formatCurrency = (amount: number) => {
-    return `Rs. ${amount.toLocaleString()}`;
+  const formatCurrency = (amount: string | number) => {
+    const num = typeof amount === "string" ? parseFloat(amount) : amount;
+    return `Rs. ${num.toLocaleString()}`;
   };
 
   const formatDate = (dateString: string) => {
@@ -259,192 +214,124 @@ export default function HospitalPatientDetailsPage() {
                     </p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-500">Employee Number</p>
-                    <p className="font-semibold text-gray-900">
-                      {selectedPatient.employeeNumber}
+                    <p className="text-sm text-gray-500">Patient Type</p>
+                    <p className="font-semibold text-gray-900 capitalize">
+                      {selectedPatient.patientType}
                     </p>
                   </div>
-                  <div>
-                    <p className="text-sm text-gray-500">Email</p>
-                    <p className="font-semibold text-gray-900">
-                      {selectedPatient.email}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500">Mobile</p>
-                    <p className="font-semibold text-gray-900">
-                      {selectedPatient.mobile}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500">Designation</p>
-                    <p className="font-semibold text-gray-900">
-                      {selectedPatient.designation}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500">Department</p>
-                    <p className="font-semibold text-gray-900">
-                      {selectedPatient.department}
-                    </p>
-                  </div>
+                  {selectedPatient.email && (
+                    <div>
+                      <p className="text-sm text-gray-500">Email</p>
+                      <p className="font-semibold text-gray-900">
+                        {selectedPatient.email}
+                      </p>
+                    </div>
+                  )}
+                  {selectedPatient.mobile && (
+                    <div>
+                      <p className="text-sm text-gray-500">Mobile</p>
+                      <p className="font-semibold text-gray-900">
+                        {selectedPatient.mobile}
+                      </p>
+                    </div>
+                  )}
+                  {selectedPatient.cnic && (
+                    <div>
+                      <p className="text-sm text-gray-500">CNIC</p>
+                      <p className="font-semibold text-gray-900">
+                        {selectedPatient.cnic}
+                      </p>
+                    </div>
+                  )}
+                  {selectedPatient.gender && (
+                    <div>
+                      <p className="text-sm text-gray-500">Gender</p>
+                      <p className="font-semibold text-gray-900">
+                        {selectedPatient.gender}
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
 
-              {/* Insurance Information */}
-              <div className="bg-white rounded-lg shadow-sm p-6">
-                <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
-                  <svg
-                    className="w-6 h-6 mr-2 text-blue-600"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
-                    />
-                  </svg>
-                  Insurance Coverage
-                </h2>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-sm text-gray-500">Coverage Start</p>
-                    <p className="font-semibold text-gray-900">
-                      {formatDate(selectedPatient.coverageStart)}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500">Coverage End</p>
-                    <p className="font-semibold text-gray-900">
-                      {formatDate(selectedPatient.coverageEnd)}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Plan Details */}
-              {(() => {
-                const plan = getPlanDetails(selectedPatient.planId);
-                if (!plan) return null;
-                return (
-                  <div className="bg-white rounded-lg shadow-sm p-6">
-                    <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
-                      <svg
-                        className="w-6 h-6 mr-2 text-purple-600"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                        />
-                      </svg>
-                      Plan Details: {plan.name}
-                    </h2>
-                    <div className="grid grid-cols-2 gap-4 mb-4">
-                      <div>
-                        <p className="text-sm text-gray-500">Sum Insured</p>
-                        <p className="font-semibold text-gray-900">
-                          {formatCurrency(plan.sumInsured)}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-500">Deductible</p>
-                        <p className="font-semibold text-gray-900">
-                          {formatCurrency(plan.deductible)}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-500">Copay</p>
-                        <p className="font-semibold text-gray-900">
-                          {plan.copayPercent}%
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-500">Valid From</p>
-                        <p className="font-semibold text-gray-900">
-                          {formatDate(plan.validFrom)}
-                        </p>
-                      </div>
+              {/* Insurance Coverage */}
+              {coverage && (
+                <div className="bg-white rounded-lg shadow-sm p-6">
+                  <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+                    <svg
+                      className="w-6 h-6 mr-2 text-blue-600"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+                      />
+                    </svg>
+                    Insurance Coverage
+                  </h2>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm text-gray-500">Plan</p>
+                      <p className="font-semibold text-gray-900">
+                        {selectedPatient.insurance || "—"}
+                      </p>
                     </div>
                     <div>
-                      <p className="text-sm text-gray-500 mb-2">
-                        Covered Services
+                      <p className="text-sm text-gray-500">Corporate</p>
+                      <p className="font-semibold text-gray-900">
+                        {selectedPatient.corporateName || "—"}
                       </p>
-                      <div className="flex flex-wrap gap-2">
-                        {plan.coveredServices.map((service) => (
-                          <span
-                            key={service}
-                            className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm"
-                          >
-                            {service}
-                          </span>
-                        ))}
-                      </div>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Total Coverage</p>
+                      <p className="font-semibold text-gray-900">
+                        {formatCurrency(coverage.totalCoverageAmount)}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Used Amount</p>
+                      <p className="font-semibold text-gray-900">
+                        {formatCurrency(coverage.usedAmount)}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Available Amount</p>
+                      <p className="font-semibold text-green-600">
+                        {formatCurrency(coverage.availableAmount)}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Status</p>
+                      <p className="font-semibold text-gray-900">
+                        {coverage.status}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Coverage Start</p>
+                      <p className="font-semibold text-gray-900">
+                        {formatDate(coverage.coverageStartDate)}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Coverage End</p>
+                      <p className="font-semibold text-gray-900">
+                        {formatDate(coverage.coverageEndDate)}
+                      </p>
                     </div>
                   </div>
-                );
-              })()}
+                </div>
+              )}
 
-              {/* Corporate Information */}
-              {(() => {
-                const corporate = getCorporateDetails(
-                  selectedPatient.corporateId,
-                );
-                if (!corporate) return null;
-                return (
-                  <div className="bg-white rounded-lg shadow-sm p-6">
-                    <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
-                      <svg
-                        className="w-6 h-6 mr-2 text-orange-600"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
-                        />
-                      </svg>
-                      Corporate: {corporate.name}
-                    </h2>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <p className="text-sm text-gray-500">HR Contact</p>
-                        <p className="font-semibold text-gray-900">
-                          {corporate.hrContact.name}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-500">Email</p>
-                        <p className="font-semibold text-gray-900">
-                          {corporate.hrContact.email}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-500">Phone</p>
-                        <p className="font-semibold text-gray-900">
-                          {corporate.hrContact.phone}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-500">Total Employees</p>
-                        <p className="font-semibold text-gray-900">
-                          {corporate.totalEmployees}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })()}
+              {isLoadingDetails && (
+                <div className="bg-white rounded-lg shadow-sm p-6 text-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-green-500 mx-auto" />
+                  <p className="text-gray-500 mt-2">Loading details...</p>
+                </div>
+              )}
 
               {/* Claims History */}
               <div className="bg-white rounded-lg shadow-sm p-6">
@@ -462,9 +349,9 @@ export default function HospitalPatientDetailsPage() {
                       d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
                     />
                   </svg>
-                  Claims History ({filteredClaims.length})
+                  Claims History ({claims.length})
                 </h2>
-                {filteredClaims.length === 0 ? (
+                {claims.length === 0 ? (
                   <p className="text-gray-500 text-center py-8">
                     No claims found for this patient.
                   </p>
@@ -477,13 +364,13 @@ export default function HospitalPatientDetailsPage() {
                             Claim Number
                           </th>
                           <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Hospital
-                          </th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Admission Date
+                            Date
                           </th>
                           <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             Amount Claimed
+                          </th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Approved Amount
                           </th>
                           <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             Status
@@ -491,19 +378,19 @@ export default function HospitalPatientDetailsPage() {
                         </tr>
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-200">
-                        {filteredClaims.map((claim) => (
+                        {claims.map((claim) => (
                           <tr key={claim.id} className="hover:bg-gray-50">
                             <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
                               {claim.claimNumber}
                             </td>
                             <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
-                              {claim.hospitalName}
-                            </td>
-                            <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
-                              {formatDate(claim.admissionDate)}
+                              {formatDate(claim.createdAt)}
                             </td>
                             <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
                               {formatCurrency(claim.amountClaimed)}
+                            </td>
+                            <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                              {formatCurrency(claim.approvedAmount)}
                             </td>
                             <td className="px-4 py-3 whitespace-nowrap">
                               <span
@@ -549,10 +436,10 @@ export default function HospitalPatientDetailsPage() {
                           {patient.name}
                         </p>
                         <p className="text-sm text-gray-500">
-                          {patient.email} • {patient.mobile}
+                          {patient.email || ""}{patient.email && patient.mobile ? " • " : ""}{patient.mobile || ""}
                         </p>
                         <p className="text-sm text-gray-500">
-                          #{patient.employeeNumber} • {patient.designation}
+                          {patient.corporateName || ""} • {patient.insurance || ""}
                         </p>
                       </div>
                       <svg

@@ -34,6 +34,13 @@ export interface CorporateStats {
   rejectedClaimsCount: number;
 }
 
+export interface PaginatedCorporates {
+  items: Corporate[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
 export interface UpdateCorporateRequest {
   name?: string;
   address?: string;
@@ -68,6 +75,29 @@ export const corporatesApi = {
 
   async getCorporateStats(corporateId: string): Promise<CorporateStats> {
     const response = await apiFetch<CorporateStats>(`/api/corporates/${corporateId}/stats`);
+    return response.data;
+  },
+
+  async listCorporates(filters?: {
+    search?: string;
+    status?: CorporateStatus;
+    city?: string;
+    insurerId?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<PaginatedCorporates> {
+    const params = new URLSearchParams();
+    if (filters?.search) params.append("search", filters.search);
+    if (filters?.status) params.append("status", filters.status);
+    if (filters?.city) params.append("city", filters.city);
+    if (filters?.insurerId) params.append("insurerId", filters.insurerId);
+    if (filters?.page) params.append("page", String(filters.page));
+    if (filters?.limit) params.append("limit", String(filters.limit));
+
+    const qs = params.toString();
+    const response = await apiFetch<PaginatedCorporates>(
+      `/api/corporates${qs ? `?${qs}` : ""}`,
+    );
     return response.data;
   },
 };

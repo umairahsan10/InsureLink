@@ -8,61 +8,23 @@ import {
   CreateHospitalVisitRequest,
 } from "@/lib/api/hospitals";
 import { dependentsApi, Dependent } from "@/lib/api/dependents";
-import employeesData from "@/data/employees.json";
-import dependentsData from "@/data/dependents.json";
 
 // Helper function to get patient name (employee or dependent)
 const getPatientName = (visit: HospitalVisit): string => {
-  // If visit is for a dependent, show dependent name
   if (visit.dependent) {
     return `${visit.dependent.firstName} ${visit.dependent.lastName}`;
   }
-
-  // If dependent ID exists but not loaded, look up in demo data
-  if (visit.dependentId) {
-    const demoDependency = dependentsData.find(
-      (dep) => dep.id === visit.dependentId,
-    );
-    if (demoDependency) {
-      return demoDependency.name;
-    }
-  }
-
-  // If employee is in response, show employee name
   if (visit.employee?.user) {
     return `${visit.employee.user.firstName} ${visit.employee.user.lastName}`;
   }
-
-  // If employee ID exists but not loaded, look up in demo data
-  if (visit.employeeId) {
-    const demoEmployee = employeesData.find(
-      (emp) => emp.id === visit.employeeId,
-    );
-    if (demoEmployee) {
-      return demoEmployee.name;
-    }
-  }
-
   return "Unknown Patient";
 };
 
-// Helper function to get dependent name from database or demo data
+// Helper function to get dependent name
 const getDependentName = (visit: HospitalVisit): string => {
-  // Check if dependent is in database response
   if (visit.dependent) {
     return `${visit.dependent.firstName} ${visit.dependent.lastName}`;
   }
-
-  // If no dependent in response but dependentId exists, look up in demo data
-  if (visit.dependentId) {
-    const demoDependency = dependentsData.find(
-      (dep) => dep.id === visit.dependentId,
-    );
-    if (demoDependency) {
-      return demoDependency.name;
-    }
-  }
-
   return "—";
 };
 

@@ -1,4 +1,5 @@
 import { apiFetch } from "./client";
+import type { Relationship, Gender, DependentStatus } from "@/types/dependent";
 
 export interface Dependent {
   id: string;
@@ -6,12 +7,12 @@ export interface Dependent {
   employeeName: string;
   corporateId: string;
   name: string;
-  relationship: string;
+  relationship: Relationship;
   dateOfBirth: string;
-  gender: string;
+  gender: Gender;
   cnic: string;
   phoneNumber?: string;
-  status: string;
+  status: DependentStatus;
   requestedAt: string;
   reviewedAt?: string;
   reviewedBy?: string;

@@ -1049,6 +1049,11 @@ export class EmployeesService {
       return;
     }
 
+    if (role === 'insurer') {
+      // Insurer can view employees of corporates linked to them (read-only access checked at controller level)
+      return;
+    }
+
     if (role !== 'corporate') {
       throw new ForbiddenException({ code: 'AUTH_FORBIDDEN', message: 'Insufficient role to manage employees' });
     }

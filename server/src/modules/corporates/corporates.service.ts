@@ -196,16 +196,22 @@ export class CorporatesService {
   }
 
   async listCorporates(query: ListCorporatesQueryDto, actor: CurrentUserDto): Promise<PaginatedCorporateResponseDto> {
-    this.ensureAdmin(actor);
+    // Allow admin or insurer role
+    if (!this.isAdmin(actor) && actor.role !== 'insurer') {
+      throw new ForbiddenException({ code: 'AUTH_FORBIDDEN', message: 'Only admin or insurer can list corporates' });
+    }
 
     const page = query.page ?? 1;
     const limit = query.limit ?? 20;
     const skip = (page - 1) * limit;
 
+    // Insurer users can only see their own corporates
+    const insurerId = actor.role === 'insurer' ? actor.organizationId : query.insurerId;
+
     const where: Prisma.CorporateWhereInput = {
       ...(query.status ? { status: query.status } : {}),
       ...(query.city ? { city: { contains: query.city, mode: 'insensitive' } } : {}),
-      ...(query.insurerId ? { insurerId: query.insurerId } : {}),
+      ...(insurerId ? { insurerId } : {}),
       ...(query.search
         ? {
             OR: [

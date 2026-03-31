@@ -1,19 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import employeesData from '@/data/employees.json';
-import { getApprovedDependents } from '@/utils/dependentHelpers';
+import { employeesApi, Employee } from '@/lib/api/employees';
+import { dependentsApi, Dependent } from '@/lib/api/dependents';
 import EmployeeDependentsModal from '@/components/corporate/EmployeeDependentsModal';
-import { Dependent } from '@/types/dependent';
-
-interface Employee {
-  id: string;
-  name: string;
-  employeeNumber: string;
-  department: string;
-  designation: string;
-  email: string;
-}
 
 interface CorporateEmployeesModalProps {
   isOpen: boolean;
@@ -29,18 +19,35 @@ export default function CorporateEmployeesModal({
   corporateName 
 }: CorporateEmployeesModalProps) {
   const [employees, setEmployees] = useState<Employee[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState<{name: string, dependents: Dependent[]} | null>(null);
   const [isDependentsModalOpen, setIsDependentsModalOpen] = useState(false);
+  const [loadingDependents, setLoadingDependents] = useState<string | null>(null);
 
   useEffect(() => {
     if (isOpen) {
-      // Filter employees for this corporate
-      const corporateEmployees = employeesData.filter(
-        emp => emp.corporateId === corporateId
-      );
-      setEmployees(corporateEmployees as Employee[]);
+      setIsLoading(true);
+      employeesApi
+        .list({ corporateId, limit: 100 })
+        .then((result) => setEmployees(result.items))
+        .catch((err) => console.error("Failed to load employees:", err))
+        .finally(() => setIsLoading(false));
     }
   }, [isOpen, corporateId]);
+
+  const handleViewDependents = async (employee: Employee) => {
+    setLoadingDependents(employee.id);
+    try {
+      const result = await dependentsApi.list({ employeeId: employee.id, limit: 50 });
+      const name = `${employee.firstName}${employee.lastName ? ` ${employee.lastName}` : ''}`;
+      setSelectedEmployee({ name, dependents: result.items });
+      setIsDependentsModalOpen(true);
+    } catch (err) {
+      console.error("Failed to load dependents:", err);
+    } finally {
+      setLoadingDependents(null);
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -69,7 +76,12 @@ export default function CorporateEmployeesModal({
 
           {/* Content */}
           <div className="p-6">
-            {employees.length === 0 ? (
+            {isLoading ? (
+              <div className="text-center py-12">
+                <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500 mx-auto" />
+                <p className="mt-2 text-sm text-gray-500">Loading employees...</p>
+              </div>
+            ) : employees.length === 0 ? (
               <div className="text-center py-12">
                 <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
@@ -101,11 +113,11 @@ export default function CorporateEmployeesModal({
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {employees.map((employee) => {
-                      const dependents = getApprovedDependents(employee.id);
+                      const name = `${employee.firstName}${employee.lastName ? ` ${employee.lastName}` : ''}`;
                       return (
                         <tr key={employee.id} className="hover:bg-gray-50">
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                            {employee.name}
+                            {name}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                             {employee.employeeNumber}
@@ -118,13 +130,11 @@ export default function CorporateEmployeesModal({
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm">
                             <button
-                              onClick={() => {
-                                setSelectedEmployee({ name: employee.name, dependents });
-                                setIsDependentsModalOpen(true);
-                              }}
-                              className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 hover:bg-blue-200"
+                              onClick={() => handleViewDependents(employee)}
+                              disabled={loadingDependents === employee.id}
+                              className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 hover:bg-blue-200 disabled:opacity-50"
                             >
-                              👥 {dependents.length}
+                              👥 {employee.dependentCount}
                             </button>
                           </td>
                         </tr>

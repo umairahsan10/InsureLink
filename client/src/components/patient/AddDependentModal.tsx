@@ -39,6 +39,7 @@ export default function AddDependentModal({
     cnic: "",
     phoneNumber: "",
     coverageStartDate: "",
+    documents: [],
   });
 
   const [errors, setErrors] = useState<FormErrors>({});
@@ -357,6 +358,7 @@ export default function AddDependentModal({
         coverageStartDate: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000)
           .toISOString()
           .split("T")[0],
+        documents: [],
       });
       setCurrentStep("personal");
       setErrors({});
