@@ -4,11 +4,16 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { patientsApi, type PatientProfile } from "@/lib/api/patients";
 import { dependentsApi, type Dependent } from "@/lib/api/dependents";
+import { useNotifications } from "@/hooks/useNotifications";
 import DependentsList from "@/components/patient/DependentsList";
 import AddDependentModal from "@/components/patient/AddDependentModal";
 
 export default function PatientProfilePage() {
   const { user } = useAuth();
+  const { notifications, dismiss } = useNotifications({
+    autoFetch: true,
+    listenForRealtime: true,
+  });
   const [patientData, setPatientData] = useState<PatientProfile | null>(null);
   const [dependents, setDependents] = useState<Dependent[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -16,6 +21,15 @@ export default function PatientProfilePage() {
   const [error, setError] = useState<string | null>(null);
   const [saveLoading, setSaveLoading] = useState(false);
   const [formData, setFormData] = useState({ email: "", mobile: "" });
+  const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
+
+  // Auto-dismiss toast after 4 seconds
+  useEffect(() => {
+    if (toast) {
+      const timer = setTimeout(() => setToast(null), 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [toast]);
 
   // Fetch patient profile and dependents
   useEffect(() => {
@@ -77,7 +91,7 @@ export default function PatientProfilePage() {
               email: formData.email,
               mobile: formData.mobile,
             }
-          : null
+          : null,
       );
 
       // Show success message (you could use a toast here)
@@ -107,6 +121,27 @@ export default function PatientProfilePage() {
     };
     loadDependents();
   };
+
+  // Listen for dependent notification updates and refresh list
+  useEffect(() => {
+    const dependentNotification = notifications.find(
+      (n) => n.category === "dependents",
+    );
+
+    if (dependentNotification && patientData?.id) {
+      const loadDependents = async () => {
+        try {
+          const depRes = await dependentsApi.list({
+            employeeId: patientData.id,
+          });
+          setDependents(depRes.items);
+        } catch (err) {
+          console.error("Failed to reload dependents:", err);
+        }
+      };
+      loadDependents();
+    }
+  }, [notifications, patientData?.id]);
 
   if (loading) {
     return (
@@ -141,6 +176,65 @@ export default function PatientProfilePage() {
       {error && (
         <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
           {error}
+        </div>
+      )}
+
+      {/* Notifications */}
+      {notifications.length > 0 && (
+        <div className="mb-6 space-y-2">
+          {notifications.map((notification) => (
+            <div
+              key={notification.id}
+              className={`p-4 rounded-lg border flex items-start justify-between ${
+                notification.severity === "info"
+                  ? "bg-blue-50 border-blue-200"
+                  : notification.severity === "warning"
+                    ? "bg-yellow-50 border-yellow-200"
+                    : "bg-red-50 border-red-200"
+              }`}
+            >
+              <div className="flex-1">
+                <h3
+                  className={`font-semibold ${
+                    notification.severity === "info"
+                      ? "text-blue-900"
+                      : notification.severity === "warning"
+                        ? "text-yellow-900"
+                        : "text-red-900"
+                  }`}
+                >
+                  {notification.title}
+                </h3>
+                <p
+                  className={`text-sm mt-1 ${
+                    notification.severity === "info"
+                      ? "text-blue-800"
+                      : notification.severity === "warning"
+                        ? "text-yellow-800"
+                        : "text-red-800"
+                  }`}
+                >
+                  {notification.message}
+                </p>
+              </div>
+              <button
+                onClick={() => dismiss(notification.id)}
+                className="ml-4 text-gray-400 hover:text-gray-600 flex-shrink-0"
+              >
+                <svg
+                  className="w-5 h-5"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </button>
+            </div>
+          ))}
         </div>
       )}
 

@@ -12,9 +12,10 @@ interface AddDependentModalProps {
   employeeName: string;
   corporateId: string;
   onSuccess: () => void;
+  onShowToast?: (message: string, type: "success" | "error") => void;
 }
 
-type FormStep = "personal" | "details" | "coverage" | "documents" | "review";
+type FormStep = "personal" | "details" | "coverage" | "review";
 
 interface FormErrors {
   [key: string]: string;
@@ -27,6 +28,7 @@ export default function AddDependentModal({
   employeeName,
   corporateId,
   onSuccess,
+  onShowToast,
 }: AddDependentModalProps) {
   const [currentStep, setCurrentStep] = useState<FormStep>("personal");
   const [formData, setFormData] = useState<DependentFormData>({
@@ -37,13 +39,13 @@ export default function AddDependentModal({
     cnic: "",
     phoneNumber: "",
     coverageStartDate: "",
-    documents: [],
   });
 
   const [errors, setErrors] = useState<FormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
   const [touchedFields, setTouchedFields] = useState<Set<string>>(new Set());
+  const [cnicChecking, setCnicChecking] = useState(false);
   const [toast, setToast] = useState<{
     message: string;
     type: "success" | "error";
@@ -147,11 +149,6 @@ export default function AddDependentModal({
           return "Coverage start date must be in the future";
         }
         break;
-
-      case "documents":
-        if (formData.documents.length === 0)
-          return "At least one document is required";
-        break;
     }
     return undefined;
   };
@@ -179,11 +176,6 @@ export default function AddDependentModal({
         );
         if (coverageError) newErrors.coverageStartDate = coverageError;
         break;
-
-      case "documents":
-        const docsError = validateField("documents", null);
-        if (docsError) newErrors.documents = docsError;
-        break;
     }
 
     setErrors(newErrors);
@@ -191,7 +183,7 @@ export default function AddDependentModal({
   };
 
   const validate = (): boolean => {
-    const newErrors: FormErrors = {};
+    const newErrors: FormErrors = { ...errors };
 
     const nameError = validateField("name", formData.name);
     const dobError = validateField("dateOfBirth", formData.dateOfBirth);
@@ -200,13 +192,11 @@ export default function AddDependentModal({
       "coverageStartDate",
       formData.coverageStartDate,
     );
-    const docsError = validateField("documents", null);
 
     if (nameError) newErrors.name = nameError;
     if (dobError) newErrors.dateOfBirth = dobError;
     if (cnicError) newErrors.cnic = cnicError;
     if (coverageError) newErrors.coverageStartDate = coverageError;
-    if (docsError) newErrors.documents = docsError;
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -235,90 +225,77 @@ export default function AddDependentModal({
         return newErrors;
       });
     }
-  };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    setIsDirty(true);
-
-    // Validate file sizes and types
-    const validFiles = files.filter((file) => {
-      const validTypes = [
-        "application/pdf",
-        "image/jpeg",
-        "image/jpg",
-        "image/png",
-      ];
-      const maxSize = 5 * 1024 * 1024; // 5MB
-
-      if (!validTypes.includes(file.type)) {
-        setToast({
-          message: `${file.name} is not a valid file type (PDF, JPG, PNG)`,
-          type: "error",
-        });
-        return false;
-      }
-      if (file.size > maxSize) {
-        setToast({
-          message: `${file.name} exceeds 5MB size limit`,
-          type: "error",
-        });
-        return false;
-      }
-      return true;
-    });
-
-    if (formData.documents.length + validFiles.length > 3) {
-      setToast({ message: "Maximum 3 documents allowed", type: "error" });
-      return;
-    }
-
-    setFormData((prev) => ({
-      ...prev,
-      documents: [...prev.documents, ...validFiles],
-    }));
-
-    if (errors.documents) {
-      setErrors((prev) => {
-        const newErrors = { ...prev };
-        delete newErrors.documents;
-        return newErrors;
-      });
+    // Auto-check CNIC when 15 characters are entered
+    if (name === "cnic" && value.length === 15) {
+      handleCnicCheck(value);
     }
   };
 
-  const removeDocument = (index: number) => {
-    setFormData((prev) => ({
-      ...prev,
-      documents: prev.documents.filter((_, i) => i !== index),
-    }));
-    setIsDirty(true);
+  const handleCnicCheck = async (cnic: string) => {
+    const trimmedCnic = cnic.trim();
+
+    if (!trimmedCnic) return;
+
+    // Check format first
+    const formatError = validateField("cnic", trimmedCnic);
+    if (formatError) return;
+
+    // Check if CNIC is available
+    setCnicChecking(true);
+    try {
+      const result = await dependentsApi.checkCnicAvailability(trimmedCnic);
+      if (!result.available) {
+        setErrors((prev) => ({
+          ...prev,
+          cnic: "This CNIC/ID number is already registered",
+        }));
+      }
+    } catch (error) {
+      console.error("Error checking CNIC:", error);
+    } finally {
+      setCnicChecking(false);
+    }
   };
 
-  const handleNextStep = () => {
-    if (validateStep(currentStep)) {
-      const steps: FormStep[] = [
-        "personal",
-        "details",
-        "coverage",
-        "documents",
-        "review",
-      ];
-      const currentIndex = steps.indexOf(currentStep);
-      if (currentIndex < steps.length - 1) {
-        setCurrentStep(steps[currentIndex + 1]);
+  const handleCnicBlur = async () => {
+    // If CNIC is already being checked (auto-check on complete), skip
+    if (cnicChecking) return;
+    
+    const cnic = formData.cnic.trim();
+    if (cnic && cnic.length === 15) {
+      await handleCnicCheck(cnic);
+    }
+  };
+
+  const handleNextStep = async () => {
+    if (!validateStep(currentStep)) return;
+
+    // If leaving details step, verify CNIC is available (only if not already auto-checked)
+    if (currentStep === "details") {
+      const cnic = formData.cnic.trim();
+      
+      // Only check if CNIC is incomplete (less than 15 chars) - auto-check handles 15 char case
+      if (cnic && cnic.length < 15) {
+        // Treat incomplete CNIC as an error in validation
+        return;
       }
+      
+      // If CNIC is complete but has an error, don't proceed
+      if (cnic && errors.cnic) {
+        return;
+      }
+    }
+
+    const steps: FormStep[] = ["personal", "details", "coverage", "review"];
+    const currentIndex = steps.indexOf(currentStep);
+    if (currentIndex < steps.length - 1) {
+      setCurrentStep(steps[currentIndex + 1]);
     }
   };
 
   const handlePrevStep = () => {
-    const steps: FormStep[] = [
-      "personal",
-      "details",
-      "coverage",
-      "documents",
-      "review",
-    ];
+    const steps: FormStep[] = ["personal", "details", "coverage", "review"];
     const currentIndex = steps.indexOf(currentStep);
     if (currentIndex > 0) {
       setCurrentStep(steps[currentIndex - 1]);
@@ -355,10 +332,18 @@ export default function AddDependentModal({
         sessionStorage.removeItem(`dependent_form_${employeeId}`);
       }
 
-      setToast({
-        message: "Dependent request submitted successfully!",
-        type: "success",
-      });
+      const successMessage = "Dependent request submitted successfully!";
+      
+      // Use parent callback if available, otherwise show local toast
+      if (onShowToast) {
+        onShowToast(successMessage, "success");
+      } else {
+        setToast({
+          message: successMessage,
+          type: "success",
+        });
+      }
+
       onSuccess();
 
       // Reset form
@@ -372,13 +357,13 @@ export default function AddDependentModal({
         coverageStartDate: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000)
           .toISOString()
           .split("T")[0],
-        documents: [],
       });
       setCurrentStep("personal");
       setErrors({});
       setTouchedFields(new Set());
       setIsDirty(false);
 
+      // Close modal immediately (parent callback handles the toast now)
       onClose();
     } catch (error) {
       console.error("Failed to add dependent:", error);
@@ -398,7 +383,6 @@ export default function AddDependentModal({
     { id: "personal", label: "Personal Info", icon: "👤" },
     { id: "details", label: "Details", icon: "📋" },
     { id: "coverage", label: "Coverage", icon: "📅" },
-    { id: "documents", label: "Documents", icon: "📄" },
     { id: "review", label: "Review", icon: "✓" },
   ];
 
@@ -573,9 +557,10 @@ export default function AddDependentModal({
             name="cnic"
             value={formData.cnic}
             onChange={handleInputChange}
-            onBlur={() =>
-              setTouchedFields((prev) => new Set([...prev, "cnic"]))
-            }
+            onBlur={() => {
+              setTouchedFields((prev) => new Set([...prev, "cnic"]));
+              handleCnicBlur();
+            }}
             className={`w-full px-4 py-3 border rounded-lg text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono ${
               touchedFields.has("cnic") && errors.cnic
                 ? "border-red-500"
@@ -583,7 +568,29 @@ export default function AddDependentModal({
             }`}
             placeholder="12345-6789012-3"
             maxLength={15}
+            disabled={cnicChecking}
           />
+          {cnicChecking && (
+            <p className="text-blue-500 text-sm mt-2 flex items-center">
+              <svg className="animate-spin h-4 w-4 mr-1" viewBox="0 0 24 24">
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                  fill="none"
+                ></circle>
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                ></path>
+              </svg>
+              Checking CNIC...
+            </p>
+          )}
           {touchedFields.has("cnic") && errors.cnic && (
             <p className="text-red-500 text-sm mt-2 flex items-center">
               <svg
@@ -716,129 +723,6 @@ export default function AddDependentModal({
     </div>
   );
 
-  const renderDocuments = () => (
-    <div className="space-y-6">
-      <h3 className="text-lg font-semibold text-gray-900">
-        Supporting Documents
-      </h3>
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Upload Documents *
-        </label>
-        <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-400 transition-colors">
-          <input
-            type="file"
-            id="documents"
-            multiple
-            accept=".pdf,.jpg,.jpeg,.png"
-            onChange={handleFileChange}
-            className="hidden"
-          />
-          <label htmlFor="documents" className="cursor-pointer block">
-            <div className="text-blue-500 mb-2">
-              <svg
-                className="mx-auto h-12 w-12"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={1.5}
-                  d="M12 4v16m8-8H4"
-                />
-              </svg>
-            </div>
-            <p className="text-sm font-medium text-gray-700">
-              Click to upload or drag and drop
-            </p>
-            <p className="text-xs text-gray-500 mt-1">
-              PDF, JPG, PNG up to 5MB each (max 3 files)
-            </p>
-          </label>
-        </div>
-        {errors.documents && (
-          <p className="text-red-500 text-sm mt-2 flex items-center">
-            <svg
-              className="w-4 h-4 mr-1"
-              fill="currentColor"
-              viewBox="0 0 20 20"
-            >
-              <path
-                fillRule="evenodd"
-                d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
-                clipRule="evenodd"
-              />
-            </svg>
-            {errors.documents}
-          </p>
-        )}
-
-        {/* Uploaded Files */}
-        {formData.documents.length > 0 && (
-          <div className="mt-6">
-            <h4 className="text-sm font-semibold text-gray-900 mb-3">
-              Uploaded Files ({formData.documents.length}/3)
-            </h4>
-            <div className="space-y-2">
-              {formData.documents.map((file, index) => (
-                <div
-                  key={index}
-                  className="flex items-center justify-between bg-gray-50 p-4 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors"
-                >
-                  <div className="flex items-center flex-1">
-                    <svg
-                      className="w-5 h-5 text-blue-500 mr-3"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
-                      />
-                    </svg>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-gray-900">
-                        {file.name}
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        {(file.size / 1024 / 1024).toFixed(2)} MB
-                      </p>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => removeDocument(index)}
-                    className="text-red-500 hover:text-red-700 hover:bg-red-50 p-2 rounded-lg transition-colors"
-                  >
-                    <svg
-                      className="w-5 h-5"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                      />
-                    </svg>
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-
   const renderReview = () => (
     <div className="space-y-6">
       <h3 className="text-lg font-semibold text-gray-900">
@@ -911,7 +795,7 @@ export default function AddDependentModal({
           <h4 className="font-semibold text-gray-900 mb-3">
             Coverage Information
           </h4>
-          <div className="grid grid-cols-2 gap-4 text-sm">
+          <div className="grid grid-cols-1 gap-4 text-sm">
             <div>
               <p className="text-gray-500">Coverage Start Date</p>
               <p className="font-medium text-gray-900">
@@ -925,44 +809,8 @@ export default function AddDependentModal({
                 )}
               </p>
             </div>
-            <div>
-              <p className="text-gray-500">Documents Uploaded</p>
-              <p className="font-medium text-green-700">
-                {formData.documents.length} file(s)
-              </p>
-            </div>
           </div>
         </div>
-
-        {/* Documents */}
-        {formData.documents.length > 0 && (
-          <div className="bg-gray-50 rounded-lg p-4">
-            <h4 className="font-semibold text-gray-900 mb-3">
-              Uploaded Documents
-            </h4>
-            <ul className="space-y-2">
-              {formData.documents.map((file, index) => (
-                <li
-                  key={index}
-                  className="flex items-center text-sm text-gray-700"
-                >
-                  <svg
-                    className="w-4 h-4 text-blue-500 mr-2"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                  {file.name} ({(file.size / 1024 / 1024).toFixed(2)} MB)
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
 
         <div className="bg-green-50 border border-green-200 rounded-lg p-4">
           <p className="text-sm text-green-800 flex items-start">
@@ -995,8 +843,6 @@ export default function AddDependentModal({
         return renderDetails();
       case "coverage":
         return renderCoverage();
-      case "documents":
-        return renderDocuments();
       case "review":
         return renderReview();
     }
@@ -1164,22 +1010,47 @@ export default function AddDependentModal({
             <button
               type="button"
               onClick={handleNextStep}
-              className="px-6 py-3 bg-blue-600 text-white hover:bg-blue-700 rounded-lg transition-colors font-medium flex items-center"
+              disabled={cnicChecking}
+              className="px-6 py-3 bg-blue-600 text-white hover:bg-blue-700 rounded-lg transition-colors font-medium flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Next
-              <svg
-                className="w-4 h-4 ml-2"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 5l7 7-7 7"
-                />
-              </svg>
+              {cnicChecking ? (
+                <>
+                  <svg className="animate-spin h-4 w-4 mr-2" viewBox="0 0 24 24">
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                      fill="none"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
+                  </svg>
+                  Verifying CNIC...
+                </>
+              ) : (
+                <>
+                  Next
+                  <svg
+                    className="w-4 h-4 ml-2"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 5l7 7-7 7"
+                    />
+                  </svg>
+                </>
+              )}
             </button>
           )}
         </div>

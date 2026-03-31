@@ -110,8 +110,12 @@ export function useNotifications(
       process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3001";
     const token = getAccessToken();
 
-    if (!token) return;
+    if (!token) {
+      console.warn('[useNotifications] No auth token found');
+      return;
+    }
 
+    console.log('[useNotifications] Connecting to socket.io at', baseUrl);
     const socket = io(baseUrl, {
       auth: { token },
       transports: ["websocket", "polling"],
@@ -120,15 +124,22 @@ export function useNotifications(
     socketRef.current = socket;
 
     socket.on("connect", () => {
+      console.log('[useNotifications] Socket connected');
       setIsConnected(true);
     });
 
     socket.on("disconnect", () => {
+      console.log('[useNotifications] Socket disconnected');
       setIsConnected(false);
+    });
+
+    socket.on("connect_error", (error: any) => {
+      console.error('[useNotifications] Socket connection error:', error);
     });
 
     // Listen for real-time notification events
     socket.on("notification", (notification: any) => {
+      console.log('[useNotifications] Received notification:', notification);
       const newNotification: AlertNotification = {
         id: notification.id,
         title: notification.title,
@@ -146,6 +157,7 @@ export function useNotifications(
     });
 
     return () => {
+      console.log('[useNotifications] Cleaning up socket connection');
       socket.disconnect();
       socketRef.current = null;
       setIsConnected(false);

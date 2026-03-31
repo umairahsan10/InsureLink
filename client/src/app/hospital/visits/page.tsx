@@ -460,7 +460,7 @@ export default function HospitalVisitsPage() {
                       </option>
                       {availableDependents.map((dep) => (
                         <option key={dep.id} value={dep.id}>
-                          {dep.firstName} {dep.lastName} ({dep.relationship})
+                          {dep.name} ({dep.relationship})
                         </option>
                       ))}
                     </select>

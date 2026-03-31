@@ -3,18 +3,21 @@ import { apiFetch } from "./client";
 export interface Dependent {
   id: string;
   employeeId: string;
+  employeeName: string;
   corporateId: string;
-  firstName: string;
-  lastName: string;
+  name: string;
   relationship: string;
   dateOfBirth: string;
   gender: string;
-  cnic?: string;
+  cnic: string;
   phoneNumber?: string;
   status: string;
-  requestDate: string;
-  reviewedDate?: string;
+  requestedAt: string;
+  reviewedAt?: string;
+  reviewedBy?: string;
   rejectionReason?: string;
+  documents: string[];
+  coverageStartDate: string;
 }
 
 export interface PaginatedDependents {
@@ -93,6 +96,13 @@ export const dependentsApi = {
       method: "PATCH",
       body: JSON.stringify({ rejectionReason }),
     });
+    return res.data;
+  },
+
+  async checkCnicAvailability(cnic: string): Promise<{ available: boolean }> {
+    const res = await apiFetch<{ available: boolean }>(
+      `${BASE}/check-cnic/${cnic}`,
+    );
     return res.data;
   },
 };
