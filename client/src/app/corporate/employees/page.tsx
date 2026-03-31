@@ -401,19 +401,19 @@ export default function CorporateEmployeesPage() {
       )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-6">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+        <div className="bg-white rounded-xl border border-gray-100 p-4">
           <p className="text-sm text-gray-500">Total Employees</p>
           <p className="text-xl md:text-2xl font-bold text-gray-900">
             {totalEmployees}
           </p>
         </div>
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+        <div className="bg-white rounded-xl border border-gray-100 p-4">
           <p className="text-sm text-gray-500">Active Policies</p>
           <p className="text-xl md:text-2xl font-bold text-green-600">
             {totalEmployees}
           </p>
         </div>
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+        <div className="bg-white rounded-xl border border-gray-100 p-4">
           <p className="text-sm text-gray-500">Pending Dependent Requests</p>
           <p className="text-xl md:text-2xl font-bold text-orange-600">
             {pendingRequests.length}
@@ -461,7 +461,7 @@ export default function CorporateEmployeesPage() {
         </nav>
       </div>
 
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+      <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
         {activeTab === "employees" ? (
           <>
             <div className="p-4 border-b border-gray-200">
@@ -727,7 +727,7 @@ export default function CorporateEmployeesPage() {
       />
 
       {employeeToRemove && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-30 z-50">
+        <div className="fixed inset-0 flex items-center justify-center modal-backdrop z-50">
           <div className="bg-white rounded-xl shadow-lg max-w-sm w-full overflow-hidden">
             <div className="bg-gray-100 px-6 py-4 border-b border-gray-300">
               <h2 className="text-lg font-bold text-black text-center">

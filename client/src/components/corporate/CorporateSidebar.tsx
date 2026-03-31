@@ -82,7 +82,7 @@ export default function CorporateSidebar() {
   return (
     <>
       {/* Mobile Overlay - visible only on mobile when sidebar is open */}
-      <div className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-40 hidden" id="sidebar-overlay"></div>
+      <div className="md:hidden fixed inset-0 modal-backdrop z-40 hidden" id="sidebar-overlay"></div>
       
       {/* Sidebar */}
       <div className="fixed left-0 top-0 h-screen w-64 bg-purple-100 shadow-lg flex flex-col transform -translate-x-full md:translate-x-0 transition-transform duration-300 z-50" id="sidebar">

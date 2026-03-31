@@ -73,7 +73,7 @@ export default function AuditLogsPage() {
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-100 py-12 px-4">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="bg-white rounded-lg shadow-lg p-8 mb-6">
+        <div className="bg-white rounded-2xl border border-gray-100 p-8 mb-6">
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold text-gray-900 mb-2">
@@ -93,7 +93,7 @@ export default function AuditLogsPage() {
         </div>
 
         {/* Filters */}
-        <div className="bg-white rounded-lg shadow p-4 mb-6 flex flex-wrap gap-4 items-end">
+        <div className="bg-white rounded-xl border border-gray-100 p-4 mb-6 flex flex-wrap gap-4 items-end">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Entity Type
@@ -136,7 +136,7 @@ export default function AuditLogsPage() {
         </div>
 
         {/* Table */}
-        <div className="bg-white rounded-lg shadow-lg overflow-hidden">
+        <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
           {error && (
             <div className="p-4 bg-red-50 border-b border-red-200">
               <p className="text-sm text-red-800">{error}</p>

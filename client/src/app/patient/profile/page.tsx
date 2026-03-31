@@ -239,7 +239,7 @@ export default function PatientProfilePage() {
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
-        <div className="lg:col-span-2 bg-white rounded-lg shadow p-4 sm:p-6">
+        <div className="lg:col-span-2 bg-white rounded-xl border border-gray-100 p-4 sm:p-6">
           <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-4">
             Personal Information
           </h2>
@@ -314,7 +314,7 @@ export default function PatientProfilePage() {
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow p-4 sm:p-6">
+        <div className="bg-white rounded-xl border border-gray-100 p-4 sm:p-6">
           <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-4">
             Insurance Details
           </h2>

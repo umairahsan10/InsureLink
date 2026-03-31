@@ -42,14 +42,14 @@ export default function BaseModal({
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
       {/* Overlay */}
       <div
-        className="absolute inset-0 bg-black/50"
+        className="absolute inset-0 modal-backdrop animate-modal-overlay"
         onClick={onClose}
         aria-hidden="true"
       />
 
       {/* Modal */}
       <div
-        className={`relative bg-white rounded-lg shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto ${sizeClasses[size]}`}
+        className={`relative bg-white rounded-xl shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto animate-modal-content ${sizeClasses[size]}`}
       >
         <div className="bg-white px-4 pt-5 pb-4 sm:p-6">
           <div className="flex items-center justify-between mb-4">

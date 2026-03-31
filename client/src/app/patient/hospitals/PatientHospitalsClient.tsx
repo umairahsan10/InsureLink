@@ -154,9 +154,9 @@ export default function PatientHospitalsClient() {
     return (
       <div className="min-h-screen bg-gray-50 p-4 sm:p-6">
         <div className="mx-auto max-w-7xl space-y-4">
-          <div className="h-6 w-48 animate-pulse rounded bg-gray-200" />
-          <div className="h-32 animate-pulse rounded-xl bg-white shadow-sm" />
-          <div className="h-64 animate-pulse rounded-xl bg-white shadow-sm" />
+          <div className="h-6 w-48 skeleton-shimmer rounded bg-gray-200" />
+          <div className="h-32 skeleton-shimmer rounded-xl bg-white border border-gray-100" />
+          <div className="h-64 skeleton-shimmer rounded-xl bg-white border border-gray-100" />
         </div>
       </div>
     );
@@ -203,8 +203,8 @@ export default function PatientHospitalsClient() {
             {activeTab === 'finder' ? (
               loadingNearby ? (
                 <div className="space-y-3">
-                  <div className="h-10 animate-pulse rounded bg-gray-100" />
-                  <div className="h-64 animate-pulse rounded bg-gray-100" />
+                  <div className="h-10 skeleton-shimmer rounded bg-gray-100" />
+                  <div className="h-64 skeleton-shimmer rounded bg-gray-100" />
                 </div>
               ) : (
                 <HospitalFinderPanel hospitals={typedNearbyHospitals} />

@@ -36,7 +36,7 @@ export default function OnboardCorporatePage() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-12 px-4">
         <div className="max-w-3xl mx-auto">
-          <div className="bg-white rounded-lg shadow-lg p-8 text-center">
+          <div className="bg-white rounded-2xl border border-gray-100 p-8 text-center">
             <div className="text-5xl mb-4">✅</div>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Application Submitted!</h1>
             <p className="text-gray-600 mb-6">
@@ -57,7 +57,7 @@ export default function OnboardCorporatePage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-12 px-4">
       <div className="max-w-3xl mx-auto">
-        <div className="bg-white rounded-lg shadow-lg p-8">
+        <div className="bg-white rounded-2xl border border-gray-100 p-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
             Corporate Onboarding
           </h1>

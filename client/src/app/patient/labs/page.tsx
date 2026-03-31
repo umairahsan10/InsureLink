@@ -87,15 +87,15 @@ export default function PatientLabsPage() {
 
         {/* Statistics Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+          <div className="bg-white rounded-xl border border-gray-100 p-4">
             <p className="text-sm text-gray-500 mb-1">Total Labs</p>
             <p className="text-2xl font-bold text-gray-900">{labs.length}</p>
           </div>
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+          <div className="bg-white rounded-xl border border-gray-100 p-4">
             <p className="text-sm text-gray-500 mb-1">Cities Covered</p>
             <p className="text-2xl font-bold text-blue-600">{cities.length}</p>
           </div>
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+          <div className="bg-white rounded-xl border border-gray-100 p-4">
             <p className="text-sm text-gray-500 mb-1">Filtered Results</p>
             <p className="text-2xl font-bold text-green-600">{filteredLabs.length}</p>
           </div>
@@ -108,7 +108,7 @@ export default function PatientLabsPage() {
         )}
 
         {/* Filters */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
+        <div className="bg-white rounded-xl border border-gray-100 p-4 mb-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Search Labs</label>
@@ -157,7 +157,7 @@ export default function PatientLabsPage() {
             {Object.entries(labsByCity)
               .sort(([cityA], [cityB]) => cityA.localeCompare(cityB))
               .map(([city, labs]) => (
-                <div key={city} className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                <div key={city} className="bg-white rounded-xl border border-gray-100 overflow-hidden">
                   {/* City Header */}
                   <div className="bg-gray-50 border-b border-gray-200 px-6 py-4">
                     <div className="flex items-center">
@@ -214,7 +214,7 @@ export default function PatientLabsPage() {
               ))}
           </div>
         ) : (
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
+          <div className="bg-white rounded-xl border border-gray-100 p-12 text-center">
             <div className="text-gray-400 text-6xl mb-4">🏥</div>
             <h3 className="text-lg font-medium text-gray-900 mb-2">No labs found</h3>
             <p className="text-gray-500 mb-4">

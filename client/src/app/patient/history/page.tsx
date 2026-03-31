@@ -167,23 +167,23 @@ export default function PatientHistoryPage() {
 
         {/* Statistics Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+          <div className="bg-white rounded-xl border border-gray-100 p-4">
             <p className="text-sm text-gray-500 mb-1">Total Claims</p>
             <p className="text-2xl font-bold text-gray-900">{allClaims.length}</p>
           </div>
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+          <div className="bg-white rounded-xl border border-gray-100 p-4">
             <p className="text-sm text-gray-500 mb-1">Approved</p>
             <p className="text-2xl font-bold text-green-600">
               {allClaims.filter((c) => c.claimStatus === "Approved").length}
             </p>
           </div>
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+          <div className="bg-white rounded-xl border border-gray-100 p-4">
             <p className="text-sm text-gray-500 mb-1">Pending</p>
             <p className="text-2xl font-bold text-yellow-600">
               {allClaims.filter((c) => c.claimStatus === "Pending").length}
             </p>
           </div>
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+          <div className="bg-white rounded-xl border border-gray-100 p-4">
             <p className="text-sm text-gray-500 mb-1">Total Amount</p>
             <p className="text-2xl font-bold text-blue-600">
               Rs.{" "}
@@ -196,7 +196,7 @@ export default function PatientHistoryPage() {
         </div>
 
         {/* Filters */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
+        <div className="bg-white rounded-xl border border-gray-100 p-4 mb-6">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -246,7 +246,7 @@ export default function PatientHistoryPage() {
         </div>
 
         {/* Claims List */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+        <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
           {filteredClaims.length > 0 ? (
             <div className="divide-y divide-gray-200">
               {displayedClaims.map((claim: Claim) => (
@@ -330,7 +330,7 @@ export default function PatientHistoryPage() {
 
         {/* Pagination */}
         {filteredClaims.length > 0 && (
-          <div className="mt-6 bg-white rounded-lg shadow-sm border border-gray-200 px-6 py-3">
+          <div className="mt-6 bg-white rounded-xl border border-gray-100 px-6 py-3">
             <div className="flex flex-col sm:flex-row items-center sm:justify-between gap-3">
               <div className="flex items-center space-x-4">
                 <p className="text-sm text-gray-700">

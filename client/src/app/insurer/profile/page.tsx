@@ -175,7 +175,7 @@ export default function InsurerProfilePage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-6">
-            <div className="bg-white rounded-lg shadow p-6">
+            <div className="bg-white rounded-xl border border-gray-100 p-6">
               <h2 className="text-xl font-semibold mb-4 text-gray-900">
                 Company Information
               </h2>
@@ -272,7 +272,7 @@ export default function InsurerProfilePage() {
               </div>
             </div>
 
-            <div className="bg-white rounded-lg shadow p-6">
+            <div className="bg-white rounded-xl border border-gray-100 p-6">
               <h2 className="text-xl font-semibold mb-4 text-gray-900">
                 Coverage Details
               </h2>
@@ -381,7 +381,7 @@ export default function InsurerProfilePage() {
           </div>
 
           <div className="space-y-6">
-            <div className="bg-white rounded-lg shadow p-6">
+            <div className="bg-white rounded-xl border border-gray-100 p-6">
               <h2 className="text-xl font-semibold mb-4 text-gray-900">
                 Account Status
               </h2>
@@ -416,7 +416,7 @@ export default function InsurerProfilePage() {
               </div>
             </div>
 
-            <div className="bg-white rounded-lg shadow p-6">
+            <div className="bg-white rounded-xl border border-gray-100 p-6">
               <h2 className="text-xl font-semibold mb-4 text-gray-900">
                 Network Overview
               </h2>
@@ -442,7 +442,7 @@ export default function InsurerProfilePage() {
               </div>
             </div>
 
-            <div className="bg-white rounded-lg shadow p-6">
+            <div className="bg-white rounded-xl border border-gray-100 p-6">
               <h2 className="text-xl font-semibold mb-4 text-gray-900">
                 Quick Links
               </h2>

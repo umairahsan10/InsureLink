@@ -1,7 +1,10 @@
+'use client';
+
 import { ReactNode } from 'react';
 import { AlertNotification } from '@/types';
 import Sidebar from './Sidebar';
 import Topbar from './Topbar';
+import PageTransition from '@/components/ui/PageTransition';
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -34,7 +37,9 @@ export default function DashboardLayout({
         />
         
         <main className="flex-1 overflow-auto">
-          {children}
+          <PageTransition>
+            {children}
+          </PageTransition>
         </main>
       </div>
     </div>

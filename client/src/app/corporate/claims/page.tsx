@@ -126,31 +126,31 @@ export default function CorporateClaimsPage() {
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+        <div className="bg-white rounded-xl border border-gray-100 p-4">
           <p className="text-sm text-gray-500">Total Claims</p>
           <p className="text-2xl font-bold text-gray-900">
             {normalizedClaims.length}
           </p>
         </div>
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+        <div className="bg-white rounded-xl border border-gray-100 p-4">
           <p className="text-sm text-gray-500">Pending</p>
           <p className="text-2xl font-bold text-yellow-600">
             {normalizedClaims.filter((claim) => claim.status === "Pending").length}
           </p>
         </div>
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+        <div className="bg-white rounded-xl border border-gray-100 p-4">
           <p className="text-sm text-gray-500">Approved</p>
           <p className="text-2xl font-bold text-green-600">
             {normalizedClaims.filter((claim) => claim.status === "Approved").length}
           </p>
         </div>
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+        <div className="bg-white rounded-xl border border-gray-100 p-4">
           <p className="text-sm text-gray-500">Total Amount</p>
           <p className="text-2xl font-bold text-blue-600">{formatPKR(totalClaimedAmount)}</p>
         </div>
       </div>
 
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+      <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
         <div className="p-4 border-b border-gray-200">
           <div className="flex gap-4">
             <input

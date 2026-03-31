@@ -286,23 +286,23 @@ export default function InsurerPlansPage() {
 
         {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <div className="bg-white rounded-lg shadow p-4">
+          <div className="bg-white rounded-xl border border-gray-100 p-4">
             <p className="text-sm text-gray-500">Total Plans</p>
             <p className="text-2xl font-bold text-gray-900">{plans.length}</p>
           </div>
-          <div className="bg-white rounded-lg shadow p-4">
+          <div className="bg-white rounded-xl border border-gray-100 p-4">
             <p className="text-sm text-gray-500">Active Plans</p>
             <p className="text-2xl font-bold text-green-600">
               {plans.filter((p) => p.isActive).length}
             </p>
           </div>
-          <div className="bg-white rounded-lg shadow p-4">
+          <div className="bg-white rounded-xl border border-gray-100 p-4">
             <p className="text-sm text-gray-500">Inactive Plans</p>
             <p className="text-2xl font-bold text-yellow-600">
               {plans.filter((p) => !p.isActive).length}
             </p>
           </div>
-          <div className="bg-white rounded-lg shadow p-4">
+          <div className="bg-white rounded-xl border border-gray-100 p-4">
             <p className="text-sm text-gray-500">Avg. Sum Insured</p>
             <p className="text-2xl font-bold text-blue-600">
               {plans.length > 0
@@ -315,7 +315,7 @@ export default function InsurerPlansPage() {
         </div>
 
         {/* Filters */}
-        <div className="bg-white rounded-lg shadow overflow-hidden">
+        <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
           <div className="p-4 border-b border-gray-200">
             <div className="flex gap-4">
               <input
@@ -479,7 +479,7 @@ export default function InsurerPlansPage() {
 
         {/* Detail Drawer */}
         {selectedPlan && (
-          <div className="fixed inset-0 z-50 flex justify-end bg-black/40">
+          <div className="fixed inset-0 z-50 flex justify-end modal-backdrop">
             <div className="bg-white w-full max-w-md shadow-xl overflow-y-auto">
               <div className="p-6">
                 <div className="flex justify-between items-center mb-6">
@@ -572,7 +572,7 @@ export default function InsurerPlansPage() {
 
         {/* Create / Edit Modal */}
         {showModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="fixed inset-0 z-50 flex items-center justify-center modal-backdrop">
             <div className="bg-white rounded-xl shadow-xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
               <div className="p-6">
                 <h2 className="text-xl font-bold text-gray-900 mb-4">

@@ -103,15 +103,15 @@ export default function CorporatePlansPage() {
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+        <div className="bg-white rounded-xl border border-gray-100 p-4">
           <p className="text-sm text-gray-500">Active Plans</p>
           <p className="text-2xl font-bold text-gray-900">{totals.activePlans}</p>
         </div>
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+        <div className="bg-white rounded-xl border border-gray-100 p-4">
           <p className="text-sm text-gray-500">Covered Employees</p>
           <p className="text-2xl font-bold text-gray-900">{totals.enrolledEmployees}</p>
         </div>
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+        <div className="bg-white rounded-xl border border-gray-100 p-4">
           <p className="text-sm text-gray-500">Average Coverage</p>
           <p className="text-2xl font-bold text-blue-600">{formatPKR(totals.averageCoverage)}</p>
         </div>
@@ -131,7 +131,7 @@ export default function CorporatePlansPage() {
             const featureCount = parseFeatureCount(plan.coveredServices);
 
             return (
-              <div key={plan.id} className="bg-white rounded-lg shadow-lg overflow-hidden flex flex-col">
+              <div key={plan.id} className="bg-white rounded-xl border border-gray-100 overflow-hidden flex flex-col">
                 <div className="bg-blue-600 text-white p-6">
                   <div className="flex items-center justify-between mb-2">
                     <h2 className="text-2xl font-bold">{plan.planName}</h2>

@@ -100,7 +100,7 @@ export default function HospitalDashboardPage() {
     <div className="p-4 lg:p-6">
       {/* Overview Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 mb-6 lg:mb-8">
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="bg-white rounded-xl border border-gray-100 p-6">
           <div className="flex items-center">
             <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
               <svg
@@ -128,7 +128,7 @@ export default function HospitalDashboardPage() {
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="bg-white rounded-xl border border-gray-100 p-6">
           <div className="flex items-center">
             <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
               <svg
@@ -156,7 +156,7 @@ export default function HospitalDashboardPage() {
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="bg-white rounded-xl border border-gray-100 p-6">
           <div className="flex items-center">
             <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
               <svg
@@ -184,7 +184,7 @@ export default function HospitalDashboardPage() {
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="bg-white rounded-xl border border-gray-100 p-6">
           <div className="flex items-center">
             <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
               <svg
@@ -216,7 +216,7 @@ export default function HospitalDashboardPage() {
       {/* Middle Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6 mb-6 lg:mb-8">
         {/* Patient Verification */}
-        <div className="bg-white rounded-lg shadow p-4 lg:p-6">
+        <div className="bg-white rounded-xl border border-gray-100 p-4 lg:p-6">
           <div className="flex items-center mb-4">
             <svg
               className="w-5 h-5 text-gray-600 mr-2"
@@ -259,7 +259,7 @@ export default function HospitalDashboardPage() {
         </div>
 
         {/* Quick Actions */}
-        <div className="bg-white rounded-lg shadow p-4 lg:p-6">
+        <div className="bg-white rounded-xl border border-gray-100 p-4 lg:p-6">
           <h2 className="text-base lg:text-lg font-semibold text-gray-900 mb-4">
             Quick Actions
           </h2>
@@ -326,7 +326,7 @@ export default function HospitalDashboardPage() {
       </div>
 
       {/* Recent Claims Table */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
+      <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
         <div className="p-4 lg:p-6 border-b border-gray-200">
           <div className="flex items-center justify-between">
             <h2 className="text-base lg:text-lg font-semibold text-gray-900">

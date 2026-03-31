@@ -144,7 +144,7 @@ export default function HospitalPatientDetailsPage() {
         {/* Page Content */}
         <main className="flex-1 p-4 lg:p-6">
           {/* Search Section - Always Visible */}
-          <div className="bg-white rounded-lg shadow-sm p-4 lg:p-6 mb-4 lg:mb-6">
+          <div className="bg-white rounded-xl border border-gray-100 p-4 lg:p-6 mb-4 lg:mb-6">
             <div className="flex gap-3">
               <input
                 type="text"
@@ -189,7 +189,7 @@ export default function HospitalPatientDetailsPage() {
               </button>
 
               {/* Personal Information */}
-              <div className="bg-white rounded-lg shadow-sm p-6">
+              <div className="bg-white rounded-xl border border-gray-100 p-6">
                 <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
                   <svg
                     className="w-6 h-6 mr-2 text-green-600"
@@ -256,7 +256,7 @@ export default function HospitalPatientDetailsPage() {
 
               {/* Insurance Coverage */}
               {coverage && (
-                <div className="bg-white rounded-lg shadow-sm p-6">
+                <div className="bg-white rounded-xl border border-gray-100 p-6">
                   <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
                     <svg
                       className="w-6 h-6 mr-2 text-blue-600"
@@ -327,14 +327,14 @@ export default function HospitalPatientDetailsPage() {
               )}
 
               {isLoadingDetails && (
-                <div className="bg-white rounded-lg shadow-sm p-6 text-center">
+                <div className="bg-white rounded-xl border border-gray-100 p-6 text-center">
                   <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-green-500 mx-auto" />
                   <p className="text-gray-500 mt-2">Loading details...</p>
                 </div>
               )}
 
               {/* Claims History */}
-              <div className="bg-white rounded-lg shadow-sm p-6">
+              <div className="bg-white rounded-xl border border-gray-100 p-6">
                 <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
                   <svg
                     className="w-6 h-6 mr-2 text-red-600"
@@ -419,7 +419,7 @@ export default function HospitalPatientDetailsPage() {
 
           {/* Search Results */}
           {!selectedPatient && searchResults.length > 0 && (
-            <div className="bg-white rounded-lg shadow-sm p-6">
+            <div className="bg-white rounded-xl border border-gray-100 p-6">
               <h2 className="text-xl font-semibold text-gray-900 mb-4">
                 Search Results ({searchResults.length})
               </h2>
@@ -467,7 +467,7 @@ export default function HospitalPatientDetailsPage() {
             searchTerm &&
             searchResults.length === 0 &&
             !isSearching && (
-              <div className="bg-white rounded-lg shadow-sm p-6 text-center">
+              <div className="bg-white rounded-xl border border-gray-100 p-6 text-center">
                 <svg
                   className="w-12 h-12 mx-auto text-gray-400 mb-4"
                   fill="none"

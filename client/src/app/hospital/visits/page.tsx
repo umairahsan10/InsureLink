@@ -205,19 +205,19 @@ export default function HospitalVisitsPage() {
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div className="bg-white rounded-lg shadow p-4">
+        <div className="bg-white rounded-xl border border-gray-100 p-4">
           <p className="text-sm text-gray-500">Total Visits</p>
           <p className="text-2xl font-bold text-gray-900">{visits.length}</p>
         </div>
-        <div className="bg-white rounded-lg shadow p-4">
+        <div className="bg-white rounded-xl border border-gray-100 p-4">
           <p className="text-sm text-gray-500">Today&apos;s Visits</p>
           <p className="text-2xl font-bold text-green-600">{todayVisits}</p>
         </div>
-        <div className="bg-white rounded-lg shadow p-4">
+        <div className="bg-white rounded-xl border border-gray-100 p-4">
           <p className="text-sm text-gray-500">Currently Admitted</p>
           <p className="text-2xl font-bold text-blue-600">{activeVisits}</p>
         </div>
-        <div className="bg-white rounded-lg shadow p-4">
+        <div className="bg-white rounded-xl border border-gray-100 p-4">
           <p className="text-sm text-gray-500">Discharged</p>
           <p className="text-2xl font-bold text-gray-400">
             {visits.length - activeVisits}
@@ -226,7 +226,7 @@ export default function HospitalVisitsPage() {
       </div>
 
       {/* Filter + Table */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
+      <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
         <div className="p-4 border-b border-gray-200">
           <input
             type="text"
@@ -361,7 +361,7 @@ export default function HospitalVisitsPage() {
 
       {/* Create Visit Modal */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+        <div className="fixed inset-0 z-50 flex items-center justify-center modal-backdrop">
           <div className="bg-white rounded-xl shadow-xl w-full max-w-md mx-4">
             <div className="p-6">
               <h2 className="text-xl font-bold text-gray-900 mb-4">

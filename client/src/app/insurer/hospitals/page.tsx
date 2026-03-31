@@ -125,13 +125,13 @@ export default function InsurerHospitalsPage() {
         )}
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <div className="bg-white rounded-lg shadow p-4">
+          <div className="bg-white rounded-xl border border-gray-100 p-4">
             <p className="text-sm text-gray-500">Total Hospitals</p>
             <p className="text-2xl font-bold text-gray-900">
               {hospitalData.length}
             </p>
           </div>
-          <div className="bg-white rounded-lg shadow p-4">
+          <div className="bg-white rounded-xl border border-gray-100 p-4">
             <p className="text-sm text-gray-500">Active Partners</p>
             <p className="text-2xl font-bold text-green-600">
               {
@@ -140,7 +140,7 @@ export default function InsurerHospitalsPage() {
               }
             </p>
           </div>
-          <div className="bg-white rounded-lg shadow p-4">
+          <div className="bg-white rounded-xl border border-gray-100 p-4">
             <p className="text-sm text-gray-500">Pending Approval</p>
             <p className="text-2xl font-bold text-yellow-600">
               {
@@ -149,13 +149,13 @@ export default function InsurerHospitalsPage() {
               }
             </p>
           </div>
-          <div className="bg-white rounded-lg shadow p-4">
+          <div className="bg-white rounded-xl border border-gray-100 p-4">
             <p className="text-sm text-gray-500">Cities Covered</p>
             <p className="text-2xl font-bold text-blue-600">{locations.length}</p>
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow overflow-hidden">
+        <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
           <div className="p-4 border-b border-gray-200">
             <div className="flex gap-4">
               <input

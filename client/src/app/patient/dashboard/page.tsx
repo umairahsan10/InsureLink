@@ -8,6 +8,7 @@ import { formatPKR } from "@/lib/format";
 import { claimsApi } from "@/lib/api/claims";
 import { patientsApi } from "@/lib/api/patients";
 import { useAuth } from "@/contexts/AuthContext";
+import { StaggerContainer, StaggerItem } from "@/components/ui/PageTransition";
 
 interface PatientData {
   totalClaims: number;
@@ -143,22 +144,26 @@ export default function PatientDashboardPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-slate-50 p-4 sm:p-5">
-        <div className="mb-8 h-12 w-48 bg-gray-200 rounded animate-pulse" />
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-slate-50 p-4 sm:p-6 md:p-8">
+        <div className="mb-8 h-12 w-48 skeleton-shimmer rounded-xl" />
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           {[...Array(4)].map((_, i) => (
             <div
               key={i}
-              className="bg-white rounded-lg shadow p-6 h-28 animate-pulse"
+              className="bg-white rounded-xl border border-gray-100 p-6 h-28 skeleton-shimmer"
             />
           ))}
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+          <div className="lg:col-span-2 bg-white rounded-xl border border-gray-100 p-6 h-64 skeleton-shimmer" />
+          <div className="bg-white rounded-xl border border-gray-100 p-6 h-64 skeleton-shimmer" />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-slate-50 p-4 sm:p-5">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-slate-50 p-4 sm:p-6 md:p-8">
       {/* Page Header */}
       <div className="mb-6 sm:mb-8">
         <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1">
@@ -171,10 +176,10 @@ export default function PatientDashboardPage() {
       </div>
 
       {/* Overview Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
+      <StaggerContainer className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
         {/* Total Claims Card */}
-        <div
-          className="group relative bg-white rounded-lg shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden"
+        <StaggerItem>
+          <div className="group relative bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden"
           onMouseEnter={() => setHoveredCard("total")}
           onMouseLeave={() => setHoveredCard(null)}
         >
@@ -208,11 +213,11 @@ export default function PatientDashboardPage() {
             <p className="text-xs text-gray-500">This year</p>
           </div>
           <div className="absolute bottom-0 left-0 h-1 w-full bg-gradient-to-r from-blue-500 to-blue-600" />
-        </div>
+        </div></StaggerItem>
 
         {/* Approved Claims Card */}
-        <div
-          className="group relative bg-white rounded-lg shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden"
+        <StaggerItem>
+          <div className="group relative bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden"
           onMouseEnter={() => setHoveredCard("approved")}
           onMouseLeave={() => setHoveredCard(null)}
         >
@@ -248,11 +253,11 @@ export default function PatientDashboardPage() {
             </p>
           </div>
           <div className="absolute bottom-0 left-0 h-1 w-full bg-gradient-to-r from-green-500 to-green-600" />
-        </div>
+        </div></StaggerItem>
 
         {/* Total Reimbursed Card */}
-        <div
-          className="group relative bg-white rounded-lg shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden"
+        <StaggerItem>
+          <div className="group relative bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden"
           onMouseEnter={() => setHoveredCard("reimbursed")}
           onMouseLeave={() => setHoveredCard(null)}
         >
@@ -286,11 +291,11 @@ export default function PatientDashboardPage() {
             <p className="text-xs text-gray-500">This year</p>
           </div>
           <div className="absolute bottom-0 left-0 h-1 w-full bg-gradient-to-r from-emerald-500 to-emerald-600" />
-        </div>
+        </div></StaggerItem>
 
         {/* Pending Claims Card */}
-        <div
-          className="group relative bg-white rounded-lg shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden"
+        <StaggerItem>
+          <div className="group relative bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden"
           onMouseEnter={() => setHoveredCard("pending")}
           onMouseLeave={() => setHoveredCard(null)}
         >
@@ -324,8 +329,8 @@ export default function PatientDashboardPage() {
             <p className="text-xs text-gray-500">Awaiting review</p>
           </div>
           <div className="absolute bottom-0 left-0 h-1 w-full bg-gradient-to-r from-amber-500 to-amber-600" />
-        </div>
-      </div>
+        </div></StaggerItem>
+      </StaggerContainer>
 
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">

@@ -59,7 +59,7 @@ export default function BulkUploadModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 p-4">
+    <div className="fixed inset-0 flex items-center justify-center modal-backdrop animate-modal-overlay z-50 p-4">
       <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
         <div className="p-6">
           <h2 className="text-xl font-semibold mb-4 text-gray-900">Bulk Upload Employees</h2>
