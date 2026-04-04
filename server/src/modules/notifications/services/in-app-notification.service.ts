@@ -29,6 +29,12 @@ export class InAppNotificationService {
       ...data,
     });
 
+    console.log(`[Notification] Sending notification to user ${userId}:`, {
+      id: notification.id,
+      title: notification.title,
+      message: notification.message,
+    });
+
     // Push via WebSocket
     this.appGateway.sendToUser(userId, 'notification', {
       id: notification.id,

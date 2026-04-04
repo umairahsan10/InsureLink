@@ -14,9 +14,15 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUserDto } from '../auth/dto/current-user.dto';
 import { CreateDependentDto } from './dto/create-dependent.dto';
-import { DependentResponseDto, PaginatedDependentsResponseDto } from './dto/dependent-response.dto';
+import {
+  DependentResponseDto,
+  PaginatedDependentsResponseDto,
+} from './dto/dependent-response.dto';
 import { ListDependentsQueryDto } from './dto/list-dependents-query.dto';
-import { RejectDependentDto, UpdateDependentStatusDto } from './dto/review-dependent.dto';
+import {
+  RejectDependentDto,
+  UpdateDependentStatusDto,
+} from './dto/review-dependent.dto';
 import { UpdateDependentDto } from './dto/update-dependent.dto';
 
 @Controller({ path: 'dependents', version: '1' })
@@ -28,6 +34,13 @@ export class DependentsController {
     @Param('employeeNumber') employeeNumber: string,
   ) {
     return this.dependentsService.getDependentsByEmployeeNumber(employeeNumber);
+  }
+
+  @Get('check-cnic/:cnic')
+  async checkCnicAvailability(
+    @Param('cnic') cnic: string,
+  ): Promise<{ available: boolean }> {
+    return this.dependentsService.checkCnicAvailability(cnic);
   }
 
   @Auth()

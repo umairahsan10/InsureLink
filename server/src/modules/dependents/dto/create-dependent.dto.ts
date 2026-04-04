@@ -1,5 +1,12 @@
 import { Gender, Relationship } from '@prisma/client';
-import { IsDateString, IsEnum, IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
+import {
+  IsDateString,
+  IsEnum,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  MaxLength,
+} from 'class-validator';
 
 export class CreateDependentDto {
   @IsString()
