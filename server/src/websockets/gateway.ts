@@ -56,6 +56,7 @@ export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   sendToUser(userId: string, event: string, payload: any) {
+    console.log(`[WebSocket] Sending event '${event}' to user ${userId}:`, payload);
     this.server.to(`user:${userId}`).emit(event, payload);
   }
 }

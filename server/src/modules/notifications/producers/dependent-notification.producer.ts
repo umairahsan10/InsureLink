@@ -10,7 +10,8 @@ export interface DependentApprovedEvent {
   dependentId: string;
   employeeId: string;
   dependentName: string;
-  approverName?: string;
+  approverId: string;
+  approverEmail: string;
 }
 
 export interface DependentRejectedEvent {
@@ -30,23 +31,41 @@ export class DependentNotificationProducer {
   @OnEvent('dependent.approved')
   async handleDependentApproved(event: DependentApprovedEvent) {
     try {
-      const employee = await this.prisma.employee.findUnique({
-        where: { id: event.employeeId },
-        select: { userId: true },
-      });
+      console.log('[DependentApproval] Event received:', event);
 
-      if (!employee?.userId) return;
+      const [employee, approver] = await Promise.all([
+        this.prisma.employee.findUnique({
+          where: { id: event.employeeId },
+          select: { userId: true },
+        }),
+        this.prisma.user.findUnique({
+          where: { id: event.approverId },
+          select: { firstName: true, lastName: true, email: true },
+        }),
+      ]);
+
+      console.log('[DependentApproval] Employee lookup result:', { employee, approver });
+
+      if (!employee?.userId) {
+        console.warn(`Employee not found for dependent approval: ${event.employeeId}`);
+        return;
+      }
+
+      const approverName = approver
+        ? `${approver.firstName} ${approver.lastName}`.trim()
+        : 'Administrator';
 
       await this.inAppNotificationService.send(employee.userId, {
         notificationType: NotificationType.dependent_request,
         title: 'Dependent Approved',
         message: DependentApprovedTemplate.generate({
           dependentName: event.dependentName,
-          approverName: event.approverName,
+          approverName,
         }),
         severity: Severity.info,
         relatedEntityId: event.dependentId,
         relatedEntityType: 'Dependent',
+        actionUrl: '/patient/profile',
         category: 'dependents',
       });
     } catch (err) {
@@ -74,6 +93,7 @@ export class DependentNotificationProducer {
         severity: Severity.warning,
         relatedEntityId: event.dependentId,
         relatedEntityType: 'Dependent',
+        actionUrl: '/patient/profile',
         category: 'dependents',
       });
     } catch (err) {
