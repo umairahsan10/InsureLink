@@ -64,7 +64,7 @@ export async function apiFetch<T>(
     process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3001";
   const url = `${baseUrl}${path}`;
   let token = getAccessToken();
-  
+
   // Only set Content-Type to application/json if body is not FormData
   const isFormData = options.body instanceof FormData;
   const headers: Record<string, string> = {
@@ -109,7 +109,24 @@ export async function apiFetch<T>(
 
   if (!res.ok) {
     const text = await res.text();
-    throw new Error(text || `Request failed with ${res.status}`);
+
+    // Try to parse error response as JSON
+    let errorMessage = `Request failed with status ${res.status}`;
+    try {
+      const errorData = JSON.parse(text);
+      if (errorData.message) {
+        errorMessage = errorData.message;
+      }
+    } catch {
+      // If JSON parsing fails, use the raw text
+      if (text) {
+        errorMessage = text;
+      }
+    }
+
+    const error = new Error(errorMessage);
+    (error as any).statusCode = res.status;
+    throw error;
   }
   const contentType = res.headers.get("content-type");
   const raw =

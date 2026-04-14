@@ -444,7 +444,7 @@ export default function InsurerPlansPage() {
                 <button
                   onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
                   disabled={currentPage === 1}
-                  className="px-3 py-1 text-sm border border-gray-300 rounded-md disabled:opacity-50 hover:bg-gray-50"
+                  className="px-3 py-1 text-sm text-gray-700 border border-gray-300 rounded-md disabled:opacity-50 disabled:text-gray-400 hover:bg-gray-50"
                 >
                   Previous
                 </button>
@@ -456,7 +456,7 @@ export default function InsurerPlansPage() {
                       className={`px-3 py-1 text-sm border rounded-md ${
                         currentPage === page
                           ? "bg-red-500 text-white border-red-500"
-                          : "border-gray-300 hover:bg-gray-50"
+                          : "text-gray-700 border-gray-300 hover:bg-gray-50"
                       }`}
                     >
                       {page}
@@ -468,7 +468,7 @@ export default function InsurerPlansPage() {
                     setCurrentPage((p) => Math.min(p + 1, totalPages))
                   }
                   disabled={currentPage === totalPages}
-                  className="px-3 py-1 text-sm border border-gray-300 rounded-md disabled:opacity-50 hover:bg-gray-50"
+                  className="px-3 py-1 text-sm text-gray-700 border border-gray-300 rounded-md disabled:opacity-50 disabled:text-gray-400 hover:bg-gray-50"
                 >
                   Next
                 </button>

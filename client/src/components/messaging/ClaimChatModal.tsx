@@ -35,8 +35,18 @@ export default function ClaimChatModal({
 
   // Socket.IO real-time connection
   const handleNewMessage = useCallback((message: ClaimMessage) => {
-    addRealtimeMessage(claimId, message);
-  }, [claimId, addRealtimeMessage]);
+    const viewingOpenChat = isOpen && !isMinimized;
+
+    addRealtimeMessage(claimId, message, {
+      incrementUnread: !viewingOpenChat,
+      currentUserId: user?.id,
+    });
+
+    // If the chat is currently visible, keep backend unread state in sync.
+    if (viewingOpenChat && message.senderId !== user?.id) {
+      void markAsRead(claimId);
+    }
+  }, [claimId, addRealtimeMessage, isOpen, isMinimized, user?.id, markAsRead]);
 
   const handleMessageRead = useCallback((data: { claimId: string; readBy: string }) => {
     if (data.readBy !== user?.id) {

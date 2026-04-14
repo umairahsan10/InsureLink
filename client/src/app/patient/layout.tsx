@@ -1,5 +1,5 @@
 "use client";
-import { ReactNode } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import DashboardLayout from "@/components/layouts/DashboardLayout";
 import { useNotifications } from "@/hooks/useNotifications";
@@ -9,13 +9,17 @@ import { AlertNotification } from "@/types";
 export default function PatientLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
   const { user } = useAuth();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
   const { notifications, dismiss, markAsRead } = useNotifications();
 
   const handleSelectNotification = (notification: AlertNotification) => {
     if (!notification.isRead) {
       markAsRead(notification.id);
     }
-    
+
     // Use actionUrl if provided, otherwise fall back to category-based routing
     if (notification.actionUrl) {
       router.push(notification.actionUrl);
@@ -33,7 +37,7 @@ export default function PatientLayout({ children }: { children: ReactNode }) {
   return (
     <DashboardLayout
       userRole="patient"
-      userName={user?.name || "Patient"}
+      userName={mounted ? user?.name || "Patient" : "Patient"}
       notifications={notifications}
       onNotificationSelect={handleSelectNotification}
       onNotificationDismiss={handleDismissNotification}

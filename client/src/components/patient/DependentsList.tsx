@@ -88,6 +88,23 @@ export default function DependentsList({
     });
   };
 
+  const getDependentDisplayName = (dependent: Dependent) => {
+    const trimmedName = dependent.name?.trim();
+    if (trimmedName) {
+      return trimmedName;
+    }
+
+    const dependentWithParts = dependent as Dependent & {
+      firstName?: string;
+      lastName?: string;
+    };
+    const firstName = dependentWithParts.firstName?.trim() || "";
+    const lastName = dependentWithParts.lastName?.trim() || "";
+    const combined = [firstName, lastName].filter(Boolean).join(" ");
+
+    return combined || "Not provided";
+  };
+
   const DependentCard = ({ dependent }: { dependent: Dependent }) => (
     <div
       onClick={() => setSelectedDependent(dependent)}
@@ -96,7 +113,7 @@ export default function DependentsList({
       <div className="flex items-start justify-between mb-2">
         <div>
           <h3 className="font-semibold text-gray-900">
-            {dependent.name}
+            {getDependentDisplayName(dependent)}
           </h3>
           <p className="text-sm text-gray-600">
             {dependent.relationship} • Age {calculateAge(dependent.dateOfBirth)}
@@ -273,7 +290,7 @@ export default function DependentsList({
                     Full Name
                   </p>
                   <p className="mt-1 text-sm font-medium text-gray-900">
-                    {selectedDependent.name}
+                    {getDependentDisplayName(selectedDependent)}
                   </p>
                 </div>
                 <div>

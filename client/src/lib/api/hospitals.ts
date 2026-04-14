@@ -175,7 +175,7 @@ export const hospitalsApi = {
   }): Promise<Hospital[]> {
     const q = new URLSearchParams();
     if (params?.page) q.append("page", String(params.page));
-    if (params?.limit) q.append("limit", String(params.limit));
+    if (params?.limit) q.append("limit", String(Math.min(params.limit, 100)));
     if (params?.city) q.append("city", params.city);
     if (params?.isActive !== undefined)
       q.append("isActive", String(params.isActive));

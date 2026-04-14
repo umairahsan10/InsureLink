@@ -35,8 +35,10 @@ export default function InsurerHospitalsPage() {
     setIsLoading(true);
     setError("");
     try {
-      const data = await hospitalsApi.getHospitals();
-      const hospitals: Hospital[] = Array.isArray(data) ? data : (data as any).data ?? [];
+      const data = await hospitalsApi.getHospitals({ page: 1, limit: 100 });
+      const hospitals: Hospital[] = Array.isArray(data)
+        ? data
+        : (data as any).hospitals ?? (data as any).data?.hospitals ?? (data as any).data ?? [];
       const mapped: HospitalRow[] = hospitals.map((h) => ({
         id: h.id,
         name: h.hospitalName,
@@ -49,7 +51,8 @@ export default function InsurerHospitalsPage() {
         type: h.hospitalType,
       }));
       setHospitalData(mapped);
-    } catch {
+    } catch (err) {
+      console.error("Failed to load insurer hospitals:", err);
       setError("Failed to load hospitals.");
     } finally {
       setIsLoading(false);
@@ -278,7 +281,7 @@ export default function InsurerHospitalsPage() {
                     setCurrentPage((prev) => Math.max(prev - 1, 1))
                   }
                   disabled={currentPage === 1}
-                  className="px-3 py-1 text-sm border border-gray-300 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                  className="px-3 py-1 text-sm text-gray-700 border border-gray-300 rounded-md disabled:opacity-50 disabled:text-gray-400 disabled:cursor-not-allowed hover:bg-gray-50"
                 >
                   Previous
                 </button>
@@ -291,7 +294,7 @@ export default function InsurerHospitalsPage() {
                         className={`px-3 py-1 text-sm border rounded-md ${
                           currentPage === page
                             ? "bg-blue-500 text-white border-blue-500"
-                            : "border-gray-300 hover:bg-gray-50"
+                            : "text-gray-700 border-gray-300 hover:bg-gray-50"
                         }`}
                       >
                         {page}
@@ -304,7 +307,7 @@ export default function InsurerHospitalsPage() {
                     setCurrentPage((prev) => Math.min(prev + 1, totalPages))
                   }
                   disabled={currentPage === totalPages}
-                  className="px-3 py-1 text-sm border border-gray-300 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                  className="px-3 py-1 text-sm text-gray-700 border border-gray-300 rounded-md disabled:opacity-50 disabled:text-gray-400 disabled:cursor-not-allowed hover:bg-gray-50"
                 >
                   Next
                 </button>

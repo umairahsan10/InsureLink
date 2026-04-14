@@ -14,7 +14,11 @@ interface ClaimsMessagingContextType {
   getMessages: (claimId: string) => ClaimMessage[];
   fetchMessages: (claimId: string, page?: number, limit?: number) => Promise<void>;
   fetchUnreadCount: (claimId: string) => Promise<number>;
-  addRealtimeMessage: (claimId: string, message: ClaimMessage) => void;
+  addRealtimeMessage: (
+    claimId: string,
+    message: ClaimMessage,
+    options?: { incrementUnread?: boolean; currentUserId?: string },
+  ) => void;
   markMessagesReadLocally: (claimId: string) => void;
 }
 
@@ -152,7 +156,11 @@ export function ClaimsMessagingProvider({ children }: { children: React.ReactNod
    * Add a message received via WebSocket in real time.
    * Skips if we already have it (e.g. from our own send).
    */
-  const addRealtimeMessage = useCallback((claimId: string, message: ClaimMessage) => {
+  const addRealtimeMessage = useCallback((
+    claimId: string,
+    message: ClaimMessage,
+    options?: { incrementUnread?: boolean; currentUserId?: string },
+  ) => {
     if (processedMessageIds.current.has(message.id)) return;
     processedMessageIds.current.add(message.id);
 
@@ -165,13 +173,18 @@ export function ClaimsMessagingProvider({ children }: { children: React.ReactNod
       return newMap;
     });
 
-    // Increment unread count for incoming messages
-    setUnreadCounts((prev) => {
-      const newMap = new Map(prev);
-      const current = newMap.get(claimId) || 0;
-      newMap.set(claimId, current + 1);
-      return newMap;
-    });
+    const incrementUnread = options?.incrementUnread ?? true;
+    const isFromCurrentUser = !!options?.currentUserId && message.senderId === options.currentUserId;
+
+    // Increment unread count only for incoming messages from other users
+    if (incrementUnread && !isFromCurrentUser) {
+      setUnreadCounts((prev) => {
+        const newMap = new Map(prev);
+        const current = newMap.get(claimId) || 0;
+        newMap.set(claimId, current + 1);
+        return newMap;
+      });
+    }
   }, []);
 
   /**
