@@ -10,7 +10,11 @@ import { ClaimStatus, CorporateStatus, Prisma, UserRole } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { CurrentUserDto } from '../auth/dto/current-user.dto';
-import { CorporateResponseDto, CorporateStatsResponseDto, PaginatedCorporateResponseDto } from './dto/corporate-response.dto';
+import {
+  CorporateResponseDto,
+  CorporateStatsResponseDto,
+  PaginatedCorporateResponseDto,
+} from './dto/corporate-response.dto';
 import { CreateCorporateDto } from './dto/create-corporate.dto';
 import { ListCorporatesQueryDto } from './dto/list-corporates-query.dto';
 import { UpdateCorporateStatusDto } from './dto/update-corporate-status.dto';
@@ -22,7 +26,10 @@ export class CorporatesService {
 
   constructor(private readonly prisma: PrismaService) {}
 
-  async createCorporate(dto: CreateCorporateDto, actor: CurrentUserDto): Promise<CorporateResponseDto> {
+  async createCorporate(
+    dto: CreateCorporateDto,
+    actor: CurrentUserDto,
+  ): Promise<CorporateResponseDto> {
     this.ensureAdmin(actor);
 
     const startDate = new Date(dto.contractStartDate);
@@ -40,7 +47,10 @@ export class CorporatesService {
     });
 
     if (!insurer) {
-      throw new NotFoundException({ code: 'NOT_FOUND', message: 'Insurer not found' });
+      throw new NotFoundException({
+        code: 'NOT_FOUND',
+        message: 'Insurer not found',
+      });
     }
 
     try {
@@ -79,7 +89,9 @@ export class CorporatesService {
         return corporate;
       });
 
-      this.logger.log(`createCorporate success actorId=${actor.id} corporateId=${result.id}`);
+      this.logger.log(
+        `createCorporate success actorId=${actor.id} corporateId=${result.id}`,
+      );
       return this.toCorporateResponse(result);
     } catch (error: unknown) {
       this.handleConflictErrors(error);
@@ -87,38 +99,67 @@ export class CorporatesService {
     }
   }
 
-  async getCorporateById(id: string, actor: CurrentUserDto): Promise<CorporateResponseDto> {
+  async getCorporateById(
+    id: string,
+    actor: CurrentUserDto,
+  ): Promise<CorporateResponseDto> {
     const corporate = await this.prisma.corporate.findUnique({ where: { id } });
     if (!corporate) {
-      throw new NotFoundException({ code: 'NOT_FOUND', message: 'Corporate not found' });
+      throw new NotFoundException({
+        code: 'NOT_FOUND',
+        message: 'Corporate not found',
+      });
     }
 
     if (!this.isAdmin(actor) && corporate.userId !== actor.id) {
-      throw new ForbiddenException({ code: 'AUTH_FORBIDDEN', message: 'You cannot access this corporate' });
+      throw new ForbiddenException({
+        code: 'AUTH_FORBIDDEN',
+        message: 'You cannot access this corporate',
+      });
     }
 
     return this.toCorporateResponse(corporate);
   }
 
-  async updateCorporate(id: string, dto: UpdateCorporateDto, actor: CurrentUserDto): Promise<CorporateResponseDto> {
+  async updateCorporate(
+    id: string,
+    dto: UpdateCorporateDto,
+    actor: CurrentUserDto,
+  ): Promise<CorporateResponseDto> {
     const corporate = await this.prisma.corporate.findUnique({ where: { id } });
     if (!corporate) {
-      throw new NotFoundException({ code: 'NOT_FOUND', message: 'Corporate not found' });
+      throw new NotFoundException({
+        code: 'NOT_FOUND',
+        message: 'Corporate not found',
+      });
     }
 
     if (!this.isAdmin(actor) && corporate.userId !== actor.id) {
-      throw new ForbiddenException({ code: 'AUTH_FORBIDDEN', message: 'You cannot update this corporate' });
+      throw new ForbiddenException({
+        code: 'AUTH_FORBIDDEN',
+        message: 'You cannot update this corporate',
+      });
     }
 
     if (dto.insurerId) {
-      const insurer = await this.prisma.insurer.findUnique({ where: { id: dto.insurerId }, select: { id: true } });
+      const insurer = await this.prisma.insurer.findUnique({
+        where: { id: dto.insurerId },
+        select: { id: true },
+      });
       if (!insurer) {
-        throw new NotFoundException({ code: 'NOT_FOUND', message: 'Insurer not found' });
+        throw new NotFoundException({
+          code: 'NOT_FOUND',
+          message: 'Insurer not found',
+        });
       }
     }
 
-    const nextStart = dto.contractStartDate ? new Date(dto.contractStartDate) : corporate.contractStartDate;
-    const nextEnd = dto.contractEndDate ? new Date(dto.contractEndDate) : corporate.contractEndDate;
+    const nextStart = dto.contractStartDate
+      ? new Date(dto.contractStartDate)
+      : corporate.contractStartDate;
+    const nextEnd = dto.contractEndDate
+      ? new Date(dto.contractEndDate)
+      : corporate.contractEndDate;
     if (nextEnd <= nextStart) {
       throw new BadRequestException({
         code: 'VALIDATION_FAILED',
@@ -127,7 +168,10 @@ export class CorporatesService {
     }
 
     // Reject contract updates that would invalidate existing employee coverage windows.
-    if (dto.contractStartDate !== undefined || dto.contractEndDate !== undefined) {
+    if (
+      dto.contractStartDate !== undefined ||
+      dto.contractEndDate !== undefined
+    ) {
       const invalidEmployee = await this.prisma.employee.findFirst({
         where: {
           corporateId: id,
@@ -162,13 +206,25 @@ export class CorporatesService {
           ...(dto.address !== undefined ? { address: dto.address } : {}),
           ...(dto.city !== undefined ? { city: dto.city } : {}),
           ...(dto.province !== undefined ? { province: dto.province } : {}),
-          ...(dto.employeeCount !== undefined ? { employeeCount: dto.employeeCount } : {}),
+          ...(dto.employeeCount !== undefined
+            ? { employeeCount: dto.employeeCount }
+            : {}),
           ...(dto.insurerId !== undefined ? { insurerId: dto.insurerId } : {}),
-          ...(dto.contactName !== undefined ? { contactName: dto.contactName } : {}),
-          ...(dto.contactEmail !== undefined ? { contactEmail: dto.contactEmail } : {}),
-          ...(dto.contactPhone !== undefined ? { contactPhone: dto.contactPhone } : {}),
-          ...(dto.contractStartDate !== undefined ? { contractStartDate: new Date(dto.contractStartDate) } : {}),
-          ...(dto.contractEndDate !== undefined ? { contractEndDate: new Date(dto.contractEndDate) } : {}),
+          ...(dto.contactName !== undefined
+            ? { contactName: dto.contactName }
+            : {}),
+          ...(dto.contactEmail !== undefined
+            ? { contactEmail: dto.contactEmail }
+            : {}),
+          ...(dto.contactPhone !== undefined
+            ? { contactPhone: dto.contactPhone }
+            : {}),
+          ...(dto.contractStartDate !== undefined
+            ? { contractStartDate: new Date(dto.contractStartDate) }
+            : {}),
+          ...(dto.contractEndDate !== undefined
+            ? { contractEndDate: new Date(dto.contractEndDate) }
+            : {}),
           ...(dto.status !== undefined ? { status: dto.status } : {}),
         },
       });
@@ -180,11 +236,18 @@ export class CorporatesService {
     }
   }
 
-  async updateCorporateStatus(id: string, dto: UpdateCorporateStatusDto, actor: CurrentUserDto): Promise<CorporateResponseDto> {
+  async updateCorporateStatus(
+    id: string,
+    dto: UpdateCorporateStatusDto,
+    actor: CurrentUserDto,
+  ): Promise<CorporateResponseDto> {
     this.ensureAdmin(actor);
     const corporate = await this.prisma.corporate.findUnique({ where: { id } });
     if (!corporate) {
-      throw new NotFoundException({ code: 'NOT_FOUND', message: 'Corporate not found' });
+      throw new NotFoundException({
+        code: 'NOT_FOUND',
+        message: 'Corporate not found',
+      });
     }
 
     const updated = await this.prisma.corporate.update({
@@ -195,10 +258,16 @@ export class CorporatesService {
     return this.toCorporateResponse(updated);
   }
 
-  async listCorporates(query: ListCorporatesQueryDto, actor: CurrentUserDto): Promise<PaginatedCorporateResponseDto> {
+  async listCorporates(
+    query: ListCorporatesQueryDto,
+    actor: CurrentUserDto,
+  ): Promise<PaginatedCorporateResponseDto> {
     // Allow admin or insurer role
     if (!this.isAdmin(actor) && actor.role !== 'insurer') {
-      throw new ForbiddenException({ code: 'AUTH_FORBIDDEN', message: 'Only admin or insurer can list corporates' });
+      throw new ForbiddenException({
+        code: 'AUTH_FORBIDDEN',
+        message: 'Only admin or insurer can list corporates',
+      });
     }
 
     const page = query.page ?? 1;
@@ -206,11 +275,14 @@ export class CorporatesService {
     const skip = (page - 1) * limit;
 
     // Insurer users can only see their own corporates
-    const insurerId = actor.role === 'insurer' ? actor.organizationId : query.insurerId;
+    const insurerId =
+      actor.role === 'insurer' ? actor.organizationId : query.insurerId;
 
     const where: Prisma.CorporateWhereInput = {
       ...(query.status ? { status: query.status } : {}),
-      ...(query.city ? { city: { contains: query.city, mode: 'insensitive' } } : {}),
+      ...(query.city
+        ? { city: { contains: query.city, mode: 'insensitive' } }
+        : {}),
       ...(insurerId ? { insurerId } : {}),
       ...(query.search
         ? {
@@ -223,7 +295,7 @@ export class CorporatesService {
         : {}),
     };
 
-    const [items, total] = await this.prisma.$transaction([
+    const [items, total] = await Promise.all([
       this.prisma.corporate.findMany({
         where,
         skip,
@@ -241,48 +313,57 @@ export class CorporatesService {
     };
   }
 
-  async getCorporateStats(id: string, actor: CurrentUserDto): Promise<CorporateStatsResponseDto> {
+  async getCorporateStats(
+    id: string,
+    actor: CurrentUserDto,
+  ): Promise<CorporateStatsResponseDto> {
     const corporate = await this.prisma.corporate.findUnique({ where: { id } });
     if (!corporate) {
-      throw new NotFoundException({ code: 'NOT_FOUND', message: 'Corporate not found' });
+      throw new NotFoundException({
+        code: 'NOT_FOUND',
+        message: 'Corporate not found',
+      });
     }
 
     if (!this.isAdmin(actor) && corporate.userId !== actor.id) {
-      throw new ForbiddenException({ code: 'AUTH_FORBIDDEN', message: 'You cannot access this corporate stats' });
+      throw new ForbiddenException({
+        code: 'AUTH_FORBIDDEN',
+        message: 'You cannot access this corporate stats',
+      });
     }
 
-    const [
-      activeEmployees,
-      activeDependents,
-      employeeSums,
-      claimCounts,
-    ] = await Promise.all([
-      this.prisma.employee.count({
-        where: { corporateId: id, status: 'Active' },
-      }),
-      this.prisma.dependent.count({
-        where: { employee: { corporateId: id }, status: { in: ['Approved', 'Active'] } },
-      }),
-      this.prisma.employee.aggregate({
-        where: { corporateId: id },
-        _sum: {
-          coverageAmount: true,
-          usedAmount: true,
-        },
-      }),
-      this.prisma.claim.groupBy({
-        by: ['claimStatus'],
-        where: { corporateId: id },
-        _count: { _all: true },
-      }),
-    ]);
+    const [activeEmployees, activeDependents, employeeSums, claimCounts] =
+      await Promise.all([
+        this.prisma.employee.count({
+          where: { corporateId: id, status: 'Active' },
+        }),
+        this.prisma.dependent.count({
+          where: {
+            employee: { corporateId: id },
+            status: { in: ['Approved', 'Active'] },
+          },
+        }),
+        this.prisma.employee.aggregate({
+          where: { corporateId: id },
+          _sum: {
+            coverageAmount: true,
+            usedAmount: true,
+          },
+        }),
+        this.prisma.claim.groupBy({
+          by: ['claimStatus'],
+          where: { corporateId: id },
+          _count: { _all: true },
+        }),
+      ]);
 
     const claimMap = new Map<ClaimStatus, number>();
     for (const row of claimCounts) {
       claimMap.set(row.claimStatus, row._count._all);
     }
 
-    const totalCoverage = employeeSums._sum.coverageAmount ?? new Prisma.Decimal(0);
+    const totalCoverage =
+      employeeSums._sum.coverageAmount ?? new Prisma.Decimal(0);
     const usedCoverage = employeeSums._sum.usedAmount ?? new Prisma.Decimal(0);
 
     return {
@@ -354,9 +435,17 @@ export class CorporatesService {
   }
 
   private handleConflictErrors(error: unknown): never {
-    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
-      const target = Array.isArray(error.meta?.target) ? error.meta.target.join(', ') : 'unique field';
-      throw new ConflictException({ code: 'CONFLICT', message: `Duplicate value for ${target}` });
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === 'P2002'
+    ) {
+      const target = Array.isArray(error.meta?.target)
+        ? error.meta.target.join(', ')
+        : 'unique field';
+      throw new ConflictException({
+        code: 'CONFLICT',
+        message: `Duplicate value for ${target}`,
+      });
     }
 
     throw error;

@@ -26,7 +26,10 @@ import {
 } from './dto/bulk-import.dto';
 import { CreateEmployeeDto } from './dto/create-employee.dto';
 import { EmployeeCoverageDto } from './dto/employee-coverage.dto';
-import { EmployeeResponseDto, PaginatedEmployeesResponseDto } from './dto/employee-response.dto';
+import {
+  EmployeeResponseDto,
+  PaginatedEmployeesResponseDto,
+} from './dto/employee-response.dto';
 import { ListEmployeesQueryDto } from './dto/list-employees-query.dto';
 import { UpdateEmployeeDto } from './dto/update-employee.dto';
 
@@ -47,14 +50,22 @@ export class EmployeesService {
     private readonly fileUploadService: FileUploadService,
   ) {}
 
-  async createEmployee(dto: CreateEmployeeDto, actor: CurrentUserDto): Promise<EmployeeResponseDto> {
+  async createEmployee(
+    dto: CreateEmployeeDto,
+    actor: CurrentUserDto,
+  ): Promise<EmployeeResponseDto> {
     const corporate = await this.ensureCorporateAccess(dto.corporateId, actor);
     const plan = await this.ensureValidPlan(dto.planId, corporate.insurerId);
     await this.assertCreateUniqueFields(dto);
 
     const startDate = new Date(dto.coverageStartDate);
     const endDate = new Date(dto.coverageEndDate);
-    this.ensureCoverageDateWithinContract(startDate, endDate, corporate.contractStartDate, corporate.contractEndDate);
+    this.ensureCoverageDateWithinContract(
+      startDate,
+      endDate,
+      corporate.contractStartDate,
+      corporate.contractEndDate,
+    );
 
     try {
       const passwordHash = await bcrypt.hash(dto.password, 10);
@@ -110,23 +121,36 @@ export class EmployeesService {
     }
   }
 
-  async getEmployeeById(id: string, actor: CurrentUserDto): Promise<EmployeeResponseDto> {
+  async getEmployeeById(
+    id: string,
+    actor: CurrentUserDto,
+  ): Promise<EmployeeResponseDto> {
     const employee = await this.prisma.employee.findUnique({
       where: { id },
       include: { user: true, dependents: { select: { id: true } } },
     });
 
     if (!employee) {
-      throw new NotFoundException({ code: 'NOT_FOUND', message: 'Employee not found' });
+      throw new NotFoundException({
+        code: 'NOT_FOUND',
+        message: 'Employee not found',
+      });
     }
 
     this.ensureEmployeeAccess(employee, actor);
     return this.toEmployeeResponse(employee);
   }
 
-  async getEmployeeByNumber(corporateId: string, employeeNumber: string, actor: CurrentUserDto): Promise<EmployeeResponseDto> {
+  async getEmployeeByNumber(
+    corporateId: string,
+    employeeNumber: string,
+    actor: CurrentUserDto,
+  ): Promise<EmployeeResponseDto> {
     if (!corporateId || !employeeNumber) {
-      throw new BadRequestException({ code: 'VALIDATION_FAILED', message: 'corporateId and employeeNumber are required' });
+      throw new BadRequestException({
+        code: 'VALIDATION_FAILED',
+        message: 'corporateId and employeeNumber are required',
+      });
     }
 
     const employee = await this.prisma.employee.findFirst({
@@ -141,38 +165,66 @@ export class EmployeesService {
     });
 
     if (!employee) {
-      throw new NotFoundException({ code: 'NOT_FOUND', message: 'Employee not found' });
+      throw new NotFoundException({
+        code: 'NOT_FOUND',
+        message: 'Employee not found',
+      });
     }
 
     this.ensureEmployeeAccess(employee, actor);
     return this.toEmployeeResponse(employee);
   }
 
-  async updateEmployee(id: string, dto: UpdateEmployeeDto, actor: CurrentUserDto): Promise<EmployeeResponseDto> {
+  async updateEmployee(
+    id: string,
+    dto: UpdateEmployeeDto,
+    actor: CurrentUserDto,
+  ): Promise<EmployeeResponseDto> {
     const existing = await this.prisma.employee.findUnique({
       where: { id },
       include: { user: true },
     });
 
     if (!existing) {
-      throw new NotFoundException({ code: 'NOT_FOUND', message: 'Employee not found' });
+      throw new NotFoundException({
+        code: 'NOT_FOUND',
+        message: 'Employee not found',
+      });
     }
 
     this.ensureEmployeeManageAccess(existing.corporateId, actor);
 
     const planId = dto.planId ?? existing.planId;
-    const plan = await this.ensureValidPlan(planId, undefined, existing.corporateId);
+    const plan = await this.ensureValidPlan(
+      planId,
+      undefined,
+      existing.corporateId,
+    );
 
-    const corporate = await this.prisma.corporate.findUnique({ where: { id: existing.corporateId } });
+    const corporate = await this.prisma.corporate.findUnique({
+      where: { id: existing.corporateId },
+    });
     if (!corporate) {
-      throw new NotFoundException({ code: 'NOT_FOUND', message: 'Corporate not found' });
+      throw new NotFoundException({
+        code: 'NOT_FOUND',
+        message: 'Corporate not found',
+      });
     }
 
     await this.assertUpdateUniqueFields(id, existing.userId, dto);
 
-    const startDate = dto.coverageStartDate ? new Date(dto.coverageStartDate) : existing.coverageStartDate;
-    const endDate = dto.coverageEndDate ? new Date(dto.coverageEndDate) : existing.coverageEndDate;
-    this.ensureCoverageDateWithinContract(startDate, endDate, corporate.contractStartDate, corporate.contractEndDate);
+    const startDate = dto.coverageStartDate
+      ? new Date(dto.coverageStartDate)
+      : existing.coverageStartDate;
+    const endDate = dto.coverageEndDate
+      ? new Date(dto.coverageEndDate)
+      : existing.coverageEndDate;
+    this.ensureCoverageDateWithinContract(
+      startDate,
+      endDate,
+      corporate.contractStartDate,
+      corporate.contractEndDate,
+    );
 
     try {
       const updated = await this.prisma.$transaction(async (tx) => {
@@ -191,8 +243,12 @@ export class EmployeesService {
             where: { id: existing.userId },
             data: {
               ...(dto.email !== undefined ? { email: dto.email } : {}),
-              ...(dto.password !== undefined ? { passwordHash: await bcrypt.hash(dto.password, 10) } : {}),
-              ...(dto.firstName !== undefined ? { firstName: dto.firstName } : {}),
+              ...(dto.password !== undefined
+                ? { passwordHash: await bcrypt.hash(dto.password, 10) }
+                : {}),
+              ...(dto.firstName !== undefined
+                ? { firstName: dto.firstName }
+                : {}),
               ...(dto.lastName !== undefined ? { lastName: dto.lastName } : {}),
               ...(dto.phone !== undefined ? { phone: dto.phone } : {}),
               ...(dto.dob !== undefined ? { dob: new Date(dto.dob) } : {}),
@@ -206,14 +262,26 @@ export class EmployeesService {
         return tx.employee.update({
           where: { id },
           data: {
-            ...(dto.employeeNumber !== undefined ? { employeeNumber: dto.employeeNumber } : {}),
+            ...(dto.employeeNumber !== undefined
+              ? { employeeNumber: dto.employeeNumber }
+              : {}),
             ...(dto.planId !== undefined ? { planId: dto.planId } : {}),
-            ...(dto.designation !== undefined ? { designation: dto.designation } : {}),
-            ...(dto.department !== undefined ? { department: dto.department } : {}),
-            ...(dto.coverageStartDate !== undefined ? { coverageStartDate: new Date(dto.coverageStartDate) } : {}),
-            ...(dto.coverageEndDate !== undefined ? { coverageEndDate: new Date(dto.coverageEndDate) } : {}),
+            ...(dto.designation !== undefined
+              ? { designation: dto.designation }
+              : {}),
+            ...(dto.department !== undefined
+              ? { department: dto.department }
+              : {}),
+            ...(dto.coverageStartDate !== undefined
+              ? { coverageStartDate: new Date(dto.coverageStartDate) }
+              : {}),
+            ...(dto.coverageEndDate !== undefined
+              ? { coverageEndDate: new Date(dto.coverageEndDate) }
+              : {}),
             ...(dto.status !== undefined ? { status: dto.status } : {}),
-            ...(dto.planId !== undefined ? { coverageAmount: plan.sumInsured } : {}),
+            ...(dto.planId !== undefined
+              ? { coverageAmount: plan.sumInsured }
+              : {}),
           },
           include: { user: true, dependents: { select: { id: true } } },
         });
@@ -233,10 +301,16 @@ export class EmployeesService {
     }
   }
 
-  async deleteEmployee(id: string, actor: CurrentUserDto): Promise<{ success: boolean }> {
+  async deleteEmployee(
+    id: string,
+    actor: CurrentUserDto,
+  ): Promise<{ success: boolean }> {
     const existing = await this.prisma.employee.findUnique({ where: { id } });
     if (!existing) {
-      throw new NotFoundException({ code: 'NOT_FOUND', message: 'Employee not found' });
+      throw new NotFoundException({
+        code: 'NOT_FOUND',
+        message: 'Employee not found',
+      });
     }
 
     this.ensureEmployeeManageAccess(existing.corporateId, actor);
@@ -245,15 +319,22 @@ export class EmployeesService {
     return { success: true };
   }
 
-  async listEmployees(query: ListEmployeesQueryDto, actor: CurrentUserDto): Promise<PaginatedEmployeesResponseDto> {
+  async listEmployees(
+    query: ListEmployeesQueryDto,
+    actor: CurrentUserDto,
+  ): Promise<PaginatedEmployeesResponseDto> {
     const page = query.page ?? 1;
     const limit = query.limit ?? 20;
     const skip = (page - 1) * limit;
 
-    const corporateId = query.corporateId ?? (await this.resolveCorporateIdForActor(actor));
+    const corporateId =
+      query.corporateId ?? (await this.resolveCorporateIdForActor(actor));
 
     if (!corporateId) {
-      throw new BadRequestException({ code: 'VALIDATION_FAILED', message: 'corporateId is required' });
+      throw new BadRequestException({
+        code: 'VALIDATION_FAILED',
+        message: 'corporateId is required',
+      });
     }
 
     this.ensureEmployeeManageAccess(corporateId, actor);
@@ -261,20 +342,36 @@ export class EmployeesService {
     const where: Prisma.EmployeeWhereInput = {
       corporateId,
       ...(query.status ? { status: query.status } : {}),
-      ...(query.department ? { department: { equals: query.department, mode: 'insensitive' } } : {}),
+      ...(query.department
+        ? { department: { equals: query.department, mode: 'insensitive' } }
+        : {}),
       ...(query.search
         ? {
             OR: [
-              { employeeNumber: { contains: query.search, mode: 'insensitive' } },
-              { user: { firstName: { contains: query.search, mode: 'insensitive' } } },
-              { user: { lastName: { contains: query.search, mode: 'insensitive' } } },
-              { user: { email: { contains: query.search, mode: 'insensitive' } } },
+              {
+                employeeNumber: { contains: query.search, mode: 'insensitive' },
+              },
+              {
+                user: {
+                  firstName: { contains: query.search, mode: 'insensitive' },
+                },
+              },
+              {
+                user: {
+                  lastName: { contains: query.search, mode: 'insensitive' },
+                },
+              },
+              {
+                user: {
+                  email: { contains: query.search, mode: 'insensitive' },
+                },
+              },
             ],
           }
         : {}),
     };
 
-    const [items, total] = await this.prisma.$transaction([
+    const [items, total] = await Promise.all([
       this.prisma.employee.findMany({
         where,
         skip,
@@ -293,14 +390,20 @@ export class EmployeesService {
     };
   }
 
-  async getEmployeeCoverage(id: string, actor: CurrentUserDto): Promise<EmployeeCoverageDto> {
+  async getEmployeeCoverage(
+    id: string,
+    actor: CurrentUserDto,
+  ): Promise<EmployeeCoverageDto> {
     const employee = await this.prisma.employee.findUnique({
       where: { id },
       include: { user: true, plan: true },
     });
 
     if (!employee) {
-      throw new NotFoundException({ code: 'NOT_FOUND', message: 'Employee not found' });
+      throw new NotFoundException({
+        code: 'NOT_FOUND',
+        message: 'Employee not found',
+      });
     }
 
     this.ensureEmployeeAccess(employee, actor);
@@ -311,21 +414,30 @@ export class EmployeesService {
       planName: employee.plan.planName,
       totalCoverageAmount: employee.coverageAmount.toFixed(2),
       usedAmount: employee.usedAmount.toFixed(2),
-      availableAmount: employee.coverageAmount.sub(employee.usedAmount).toFixed(2),
+      availableAmount: employee.coverageAmount
+        .sub(employee.usedAmount)
+        .toFixed(2),
       coverageStartDate: employee.coverageStartDate,
       coverageEndDate: employee.coverageEndDate,
       status: employee.status,
     };
   }
 
-  async validateBulkImport(dto: ValidateBulkImportDto, actor: CurrentUserDto): Promise<BulkImportValidationResponseDto> {
+  async validateBulkImport(
+    dto: ValidateBulkImportDto,
+    actor: CurrentUserDto,
+  ): Promise<BulkImportValidationResponseDto> {
     await this.ensureCorporateAccess(dto.corporateId, actor);
 
     const results = await Promise.all(
-      dto.rows.map(async (row, index) => this.validateImportRow(row, index + 2, dto.corporateId)),
+      dto.rows.map(async (row, index) =>
+        this.validateImportRow(row, index + 2, dto.corporateId),
+      ),
     );
 
-    const validRows = results.filter((item) => item.valid && item.normalized).map((item) => item.normalized as BulkImportEmployeeRowDto);
+    const validRows = results
+      .filter((item) => item.valid && item.normalized)
+      .map((item) => item.normalized as BulkImportEmployeeRowDto);
     const invalidCount = results.filter((item) => !item.valid).length;
 
     const importToken = randomUUID();
@@ -344,19 +456,31 @@ export class EmployeesService {
     };
   }
 
-  async commitBulkImport(dto: CommitBulkImportDto, actor: CurrentUserDto): Promise<{ importedCount: number; skippedCount: number }> {
+  async commitBulkImport(
+    dto: CommitBulkImportDto,
+    actor: CurrentUserDto,
+  ): Promise<{ importedCount: number; skippedCount: number }> {
     const pending = this.pendingImports.get(dto.importToken);
     if (!pending) {
-      throw new NotFoundException({ code: 'NOT_FOUND', message: 'Bulk import token not found or expired' });
+      throw new NotFoundException({
+        code: 'NOT_FOUND',
+        message: 'Bulk import token not found or expired',
+      });
     }
 
     if (pending.actorId !== actor.id) {
-      throw new ForbiddenException({ code: 'AUTH_FORBIDDEN', message: 'You are not allowed to commit this import' });
+      throw new ForbiddenException({
+        code: 'AUTH_FORBIDDEN',
+        message: 'You are not allowed to commit this import',
+      });
     }
 
     if (dto.mode === 'cancel') {
       this.pendingImports.delete(dto.importToken);
-      return { importedCount: 0, skippedCount: pending.validRows.length + pending.invalidRowsCount };
+      return {
+        importedCount: 0,
+        skippedCount: pending.validRows.length + pending.invalidRowsCount,
+      };
     }
 
     if (dto.mode === 'all_or_nothing' && pending.invalidRowsCount > 0) {
@@ -399,17 +523,26 @@ export class EmployeesService {
     dto: UploadCsvDto,
     actor: CurrentUserDto,
   ): Promise<{ uploadId: string; validCount: number; invalidCount: number }> {
-    this.logger.log(`Bulk import started by user=${actor.id}, corporate=${dto.corporateId}, file=${file?.originalname}`);
+    this.logger.log(
+      `Bulk import started by user=${actor.id}, corporate=${dto.corporateId}, file=${file?.originalname}`,
+    );
 
     await this.ensureCorporateAccess(dto.corporateId, actor);
 
     if (!file || !file.buffer || file.size === 0) {
-      this.logger.warn(`Bulk import failed: no file provided. actor=${actor.id}`);
-      throw new BadRequestException({ code: 'NO_FILE', message: 'No file provided' });
+      this.logger.warn(
+        `Bulk import failed: no file provided. actor=${actor.id}`,
+      );
+      throw new BadRequestException({
+        code: 'NO_FILE',
+        message: 'No file provided',
+      });
     }
 
     const fileExtension = file.originalname.toLowerCase().split('.').pop();
-    this.logger.log(`Bulk import file info: extension=${fileExtension}, size=${file.size}`);
+    this.logger.log(
+      `Bulk import file info: extension=${fileExtension}, size=${file.size}`,
+    );
 
     let rows: BulkImportEmployeeRowDto[];
     try {
@@ -420,18 +553,28 @@ export class EmployeesService {
         rows = this.parseExcel(file.buffer);
       } else {
         this.logger.warn(`Bulk import unsupported file type: ${fileExtension}`);
-        throw new BadRequestException({ code: 'INVALID_FILE_TYPE', message: 'Only CSV and Excel files are supported' });
+        throw new BadRequestException({
+          code: 'INVALID_FILE_TYPE',
+          message: 'Only CSV and Excel files are supported',
+        });
       }
 
       this.logger.log(`Parsed ${rows.length} rows from uploaded file`);
     } catch (error) {
       this.logger.error('Bulk import parse error', error);
-      throw new BadRequestException({ code: 'INVALID_FILE', message: 'Failed to parse upload file', details: error instanceof Error ? error.message : String(error) });
+      throw new BadRequestException({
+        code: 'INVALID_FILE',
+        message: 'Failed to parse upload file',
+        details: error instanceof Error ? error.message : String(error),
+      });
     }
 
     let uploadResult;
     try {
-      uploadResult = await this.fileUploadService.uploadFile(file, 'csv-uploads');
+      uploadResult = await this.fileUploadService.uploadFile(
+        file,
+        'csv-uploads',
+      );
     } catch (error) {
       this.logger.error('Supabase upload error inside bulk import', error);
       throw new InternalServerErrorException({
@@ -454,16 +597,22 @@ export class EmployeesService {
 
     // Validate rows
     const validationResults = await Promise.all(
-      rows.map(async (row, index) => this.validateImportRow(row, index + 2, dto.corporateId)),
+      rows.map(async (row, index) =>
+        this.validateImportRow(row, index + 2, dto.corporateId),
+      ),
     );
 
-    const validRows = validationResults.filter((item) => item.valid && item.normalized).map((item) => item.normalized as BulkImportEmployeeRowDto);
+    const validRows = validationResults
+      .filter((item) => item.valid && item.normalized)
+      .map((item) => item.normalized as BulkImportEmployeeRowDto);
     const invalidRows = validationResults.filter((item) => !item.valid);
 
     // Store invalid rows
     for (const invalid of invalidRows) {
-      const rowData = invalid.normalized ?? invalid as unknown as BulkImportEmployeeRowDto;
-      const rowPlanId = rowData.planId || '00000000-0000-0000-0000-000000000000';
+      const rowData =
+        invalid.normalized ?? (invalid as unknown as BulkImportEmployeeRowDto);
+      const rowPlanId =
+        rowData.planId || '00000000-0000-0000-0000-000000000000';
 
       try {
         await this.prisma.invalidEmployeeUpload.create({
@@ -495,14 +644,18 @@ export class EmployeesService {
           },
         });
       } catch (createInvalidErr) {
-        this.logger.error(`Failed to persist invalid row for employeeNumber=${rowData.employeeNumber}`, createInvalidErr);
+        this.logger.error(
+          `Failed to persist invalid row for employeeNumber=${rowData.employeeNumber}`,
+          createInvalidErr,
+        );
       }
     }
 
     // Create valid employees
     let validCount = 0;
     if (validRows.length > 0) {
-      this.logger.log(`Attempting to create ${validRows.length} valid employee(s)
+      this.logger
+        .log(`Attempting to create ${validRows.length} valid employee(s)
 `);
     }
     for (const row of validRows) {
@@ -527,7 +680,9 @@ export class EmployeesService {
           actor,
         );
         validCount += 1;
-        this.logger.log(`Created employee: ${row.email} (${row.employeeNumber})`);
+        this.logger.log(
+          `Created employee: ${row.email} (${row.employeeNumber})`,
+        );
       } catch (error) {
         this.logger.error(`Failed to create employee ${row.email}`, error);
 
@@ -562,7 +717,10 @@ export class EmployeesService {
             },
           });
         } catch (invalidPersistErr) {
-          this.logger.error(`Failed to persist failed valid row for ${row.email}`, invalidPersistErr);
+          this.logger.error(
+            `Failed to persist failed valid row for ${row.email}`,
+            invalidPersistErr,
+          );
         }
       }
     }
@@ -581,23 +739,40 @@ export class EmployeesService {
   }
 
   private parseCsv(content: string): BulkImportEmployeeRowDto[] {
-    const lines = content.split('\n').filter(line => line.trim());
+    const lines = content.split('\n').filter((line) => line.trim());
     if (lines.length < 2) {
-      throw new BadRequestException({ code: 'INVALID_CSV', message: 'CSV must have at least a header row and one data row' });
+      throw new BadRequestException({
+        code: 'INVALID_CSV',
+        message: 'CSV must have at least a header row and one data row',
+      });
     }
 
-    const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
-    const requiredHeaders = ['employeeNumber', 'firstName', 'email', 'phone', 'password', 'designation', 'department', 'planId', 'coverageStartDate', 'coverageEndDate'];
+    const headers = lines[0].split(',').map((h) => h.trim().replace(/"/g, ''));
+    const requiredHeaders = [
+      'employeeNumber',
+      'firstName',
+      'email',
+      'phone',
+      'password',
+      'designation',
+      'department',
+      'planId',
+      'coverageStartDate',
+      'coverageEndDate',
+    ];
 
     for (const required of requiredHeaders) {
       if (!headers.includes(required)) {
-        throw new BadRequestException({ code: 'INVALID_CSV', message: `Missing required header: ${required}` });
+        throw new BadRequestException({
+          code: 'INVALID_CSV',
+          message: `Missing required header: ${required}`,
+        });
       }
     }
 
     const rows: BulkImportEmployeeRowDto[] = [];
     for (let i = 1; i < lines.length; i++) {
-      const values = lines[i].split(',').map(v => v.trim().replace(/"/g, ''));
+      const values = lines[i].split(',').map((v) => v.trim().replace(/"/g, ''));
       if (values.length !== headers.length) continue; // Skip malformed rows
 
       const row: any = {};
@@ -614,23 +789,43 @@ export class EmployeesService {
   private parseExcel(buffer: Buffer): BulkImportEmployeeRowDto[] {
     const workbook = XLSX.read(buffer, { type: 'buffer' });
     const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-    
+
     if (!worksheet) {
-      throw new BadRequestException({ code: 'INVALID_EXCEL', message: 'Excel file has no sheets' });
+      throw new BadRequestException({
+        code: 'INVALID_EXCEL',
+        message: 'Excel file has no sheets',
+      });
     }
 
     const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
-    
+
     if (jsonData.length < 1) {
-      throw new BadRequestException({ code: 'INVALID_EXCEL', message: 'Excel sheet must have at least one data row' });
+      throw new BadRequestException({
+        code: 'INVALID_EXCEL',
+        message: 'Excel sheet must have at least one data row',
+      });
     }
 
-    const requiredHeaders = ['employeeNumber', 'firstName', 'email', 'phone', 'password', 'designation', 'department', 'planId', 'coverageStartDate', 'coverageEndDate'];
+    const requiredHeaders = [
+      'employeeNumber',
+      'firstName',
+      'email',
+      'phone',
+      'password',
+      'designation',
+      'department',
+      'planId',
+      'coverageStartDate',
+      'coverageEndDate',
+    ];
     const headers = Object.keys(jsonData[0] || {});
 
     for (const required of requiredHeaders) {
-      if (!headers.some(h => h.toLowerCase() === required.toLowerCase())) {
-        throw new BadRequestException({ code: 'INVALID_EXCEL', message: `Missing required header: ${required}` });
+      if (!headers.some((h) => h.toLowerCase() === required.toLowerCase())) {
+        throw new BadRequestException({
+          code: 'INVALID_EXCEL',
+          message: `Missing required header: ${required}`,
+        });
       }
     }
 
@@ -640,12 +835,12 @@ export class EmployeesService {
       const headerMap: { [key: string]: string } = {};
 
       // Create a case-insensitive header map
-      Object.keys(row).forEach(key => {
+      Object.keys(row).forEach((key) => {
         headerMap[key.toLowerCase()] = key;
       });
 
       // Map data using case-insensitive headers
-      requiredHeaders.forEach(field => {
+      requiredHeaders.forEach((field) => {
         const mappedKey = headerMap[field.toLowerCase()];
         if (mappedKey) {
           normalizedRow[field] = row[mappedKey];
@@ -653,9 +848,11 @@ export class EmployeesService {
       });
 
       // Also include optional fields if present
-      Object.keys(row).forEach(key => {
+      Object.keys(row).forEach((key) => {
         const lowerKey = key.toLowerCase();
-        if (!Object.values(headerMap).some(v => v.toLowerCase() === lowerKey)) {
+        if (
+          !Object.values(headerMap).some((v) => v.toLowerCase() === lowerKey)
+        ) {
           normalizedRow[key] = row[key];
         }
       });
@@ -666,7 +863,10 @@ export class EmployeesService {
     return rows;
   }
 
-  async getInvalidUploads(dto: GetInvalidUploadsDto, actor: CurrentUserDto): Promise<any[]> {
+  async getInvalidUploads(
+    dto: GetInvalidUploadsDto,
+    actor: CurrentUserDto,
+  ): Promise<any[]> {
     await this.ensureCorporateAccess(dto.corporateId, actor);
 
     const invalidUploads = await this.prisma.invalidEmployeeUpload.findMany({
@@ -682,7 +882,7 @@ export class EmployeesService {
       orderBy: { createdAt: 'desc' },
     });
 
-    return invalidUploads.map(upload => ({
+    return invalidUploads.map((upload) => ({
       id: upload.id,
       uploadId: upload.employeeUploadId,
       fileName: upload.employeeUpload.originalFileName,
@@ -706,39 +906,60 @@ export class EmployeesService {
     }));
   }
 
-  async resubmitInvalidUpload(dto: ResubmitInvalidUploadDto, actor: CurrentUserDto): Promise<{ success: boolean; message: string }> {
-    this.logger.log(`Starting resubmission for invalid upload: ${dto.invalidUploadId}`);
-    
+  async resubmitInvalidUpload(
+    dto: ResubmitInvalidUploadDto,
+    actor: CurrentUserDto,
+  ): Promise<{ success: boolean; message: string }> {
+    this.logger.log(
+      `Starting resubmission for invalid upload: ${dto.invalidUploadId}`,
+    );
+
     const invalidUpload = await this.prisma.invalidEmployeeUpload.findUnique({
       where: { id: dto.invalidUploadId },
       include: { employeeUpload: true },
     });
 
     if (!invalidUpload) {
-      throw new NotFoundException({ code: 'NOT_FOUND', message: 'Invalid upload record not found' });
+      throw new NotFoundException({
+        code: 'NOT_FOUND',
+        message: 'Invalid upload record not found',
+      });
     }
 
     await this.ensureCorporateAccess(invalidUpload.corporateId, actor);
-    this.logger.log(`Resubmitting employee: ${invalidUpload.email}, Plan: ${invalidUpload.planId}`);
+    this.logger.log(
+      `Resubmitting employee: ${invalidUpload.email}, Plan: ${invalidUpload.planId}`,
+    );
 
     // Validate the data again (in case plan or corporate constraints changed)
-    const validation = await this.validateImportRow({
-      employeeNumber: invalidUpload.employeeNumber,
-      firstName: invalidUpload.firstName,
-      lastName: invalidUpload.lastName || undefined,
-      email: invalidUpload.email,
-      phone: invalidUpload.phone,
-      password: invalidUpload.password, // Use stored password from invalid upload
-      designation: invalidUpload.designation,
-      department: invalidUpload.department,
-      planId: invalidUpload.planId,
-      coverageStartDate: invalidUpload.coverageStartDate.toISOString().split('T')[0],
-      coverageEndDate: invalidUpload.coverageEndDate.toISOString().split('T')[0],
-      dob: invalidUpload.dob?.toISOString().split('T')[0],
-      cnic: invalidUpload.cnic || undefined,
-    }, 1, invalidUpload.corporateId, invalidUpload.id); // Pass the current invalid upload ID to exclude it
+    const validation = await this.validateImportRow(
+      {
+        employeeNumber: invalidUpload.employeeNumber,
+        firstName: invalidUpload.firstName,
+        lastName: invalidUpload.lastName || undefined,
+        email: invalidUpload.email,
+        phone: invalidUpload.phone,
+        password: invalidUpload.password, // Use stored password from invalid upload
+        designation: invalidUpload.designation,
+        department: invalidUpload.department,
+        planId: invalidUpload.planId,
+        coverageStartDate: invalidUpload.coverageStartDate
+          .toISOString()
+          .split('T')[0],
+        coverageEndDate: invalidUpload.coverageEndDate
+          .toISOString()
+          .split('T')[0],
+        dob: invalidUpload.dob?.toISOString().split('T')[0],
+        cnic: invalidUpload.cnic || undefined,
+      },
+      1,
+      invalidUpload.corporateId,
+      invalidUpload.id,
+    ); // Pass the current invalid upload ID to exclude it
 
-    this.logger.log(`Validation result: ${validation.valid}, Errors: ${validation.errors?.join(', ')}`);
+    this.logger.log(
+      `Validation result: ${validation.valid}, Errors: ${validation.errors?.join(', ')}`,
+    );
 
     if (!validation.valid) {
       throw new BadRequestException({
@@ -755,12 +976,15 @@ export class EmployeesService {
         where: { email: invalidUpload.email },
         select: { id: true, email: true },
       });
-      
+
       if (existingUser) {
-        this.logger.log(`User ${invalidUpload.email} already exists with ID: ${existingUser.id}`);
+        this.logger.log(
+          `User ${invalidUpload.email} already exists with ID: ${existingUser.id}`,
+        );
         throw new BadRequestException({
           code: 'DUPLICATE_USER',
-          message: 'User with this email already exists. Please use a different email address.',
+          message:
+            'User with this email already exists. Please use a different email address.',
         });
       }
 
@@ -772,19 +996,29 @@ export class EmployeesService {
           email: invalidUpload.email,
           password: invalidUpload.password, // Use stored password from invalid upload
           firstName: invalidUpload.firstName,
-          ...(invalidUpload.lastName ? { lastName: invalidUpload.lastName } : {}),
+          ...(invalidUpload.lastName
+            ? { lastName: invalidUpload.lastName }
+            : {}),
           phone: invalidUpload.phone,
           designation: invalidUpload.designation,
           department: invalidUpload.department,
-          coverageStartDate: invalidUpload.coverageStartDate.toISOString().split('T')[0],
-          coverageEndDate: invalidUpload.coverageEndDate.toISOString().split('T')[0],
-          ...(invalidUpload.dob ? { dob: invalidUpload.dob.toISOString().split('T')[0] } : {}),
+          coverageStartDate: invalidUpload.coverageStartDate
+            .toISOString()
+            .split('T')[0],
+          coverageEndDate: invalidUpload.coverageEndDate
+            .toISOString()
+            .split('T')[0],
+          ...(invalidUpload.dob
+            ? { dob: invalidUpload.dob.toISOString().split('T')[0] }
+            : {}),
           ...(invalidUpload.cnic ? { cnic: invalidUpload.cnic } : {}),
         },
         actor,
       );
 
-      this.logger.log(`Created employee: ${newEmployee.id} for ${invalidUpload.email}`);
+      this.logger.log(
+        `Created employee: ${newEmployee.id} for ${invalidUpload.email}`,
+      );
 
       // Delete the invalid upload record
       await this.prisma.invalidEmployeeUpload.delete({
@@ -795,47 +1029,65 @@ export class EmployeesService {
 
       return { success: true, message: 'Employee created successfully' };
     } catch (createError) {
-      this.logger.error(`Failed to create employee for ${invalidUpload.email}:`, createError);
-      
+      this.logger.error(
+        `Failed to create employee for ${invalidUpload.email}:`,
+        createError,
+      );
+
       // Check if it's a duplicate user error
-      if (createError.message?.includes('Unique constraint') || createError.message?.includes('duplicate key')) {
+      if (
+        createError.message?.includes('Unique constraint') ||
+        createError.message?.includes('duplicate key')
+      ) {
         throw new BadRequestException({
           code: 'DUPLICATE_USER',
-          message: 'User with this email already exists. Please use a different email address.',
+          message:
+            'User with this email already exists. Please use a different email address.',
         });
       }
-      
+
       throw createError;
     }
   }
 
-  async updateInvalidUpload(dto: UpdateInvalidUploadDto, actor: CurrentUserDto): Promise<{ success: boolean; message: string }> {
+  async updateInvalidUpload(
+    dto: UpdateInvalidUploadDto,
+    actor: CurrentUserDto,
+  ): Promise<{ success: boolean; message: string }> {
     const invalidUpload = await this.prisma.invalidEmployeeUpload.findUnique({
       where: { id: dto.invalidUploadId },
     });
 
     if (!invalidUpload) {
-      throw new NotFoundException({ code: 'NOT_FOUND', message: 'Invalid upload record not found' });
+      throw new NotFoundException({
+        code: 'NOT_FOUND',
+        message: 'Invalid upload record not found',
+      });
     }
 
     await this.ensureCorporateAccess(invalidUpload.corporateId, actor);
 
     // Validate the updated data
-    const validation = await this.validateImportRow({
-      employeeNumber: dto.employeeNumber,
-      firstName: dto.firstName,
-      lastName: dto.lastName,
-      email: dto.email,
-      phone: dto.phone,
-      password: dto.password,
-      designation: dto.designation,
-      department: dto.department,
-      planId: dto.planId,
-      coverageStartDate: dto.coverageStartDate,
-      coverageEndDate: dto.coverageEndDate,
-      dob: dto.dob,
-      cnic: dto.cnic,
-    }, 1, invalidUpload.corporateId, invalidUpload.id); // Pass the current invalid upload ID to exclude it
+    const validation = await this.validateImportRow(
+      {
+        employeeNumber: dto.employeeNumber,
+        firstName: dto.firstName,
+        lastName: dto.lastName,
+        email: dto.email,
+        phone: dto.phone,
+        password: dto.password,
+        designation: dto.designation,
+        department: dto.department,
+        planId: dto.planId,
+        coverageStartDate: dto.coverageStartDate,
+        coverageEndDate: dto.coverageEndDate,
+        dob: dto.dob,
+        cnic: dto.cnic,
+      },
+      1,
+      invalidUpload.corporateId,
+      invalidUpload.id,
+    ); // Pass the current invalid upload ID to exclude it
 
     // Update the invalid upload record with new data and updated error messages
     await this.prisma.invalidEmployeeUpload.update({
@@ -859,43 +1111,65 @@ export class EmployeesService {
     });
 
     if (validation.valid) {
-      return { success: true, message: 'Employee data is now valid. You can resubmit to create the employee.' };
+      return {
+        success: true,
+        message:
+          'Employee data is now valid. You can resubmit to create the employee.',
+      };
     } else {
-      return { 
-        success: true, 
-        message: `Updated with ${validation.errors.length} remaining validation error(s). Please fix these issues before resubmitting.` 
+      return {
+        success: true,
+        message: `Updated with ${validation.errors.length} remaining validation error(s). Please fix these issues before resubmitting.`,
       };
     }
   }
 
-  async deleteInvalidUpload(invalidUploadId: string, actor: CurrentUserDto): Promise<{ success: boolean; message: string }> {
+  async deleteInvalidUpload(
+    invalidUploadId: string,
+    actor: CurrentUserDto,
+  ): Promise<{ success: boolean; message: string }> {
     this.logger.log(`Starting deletion for invalid upload: ${invalidUploadId}`);
-    
+
     const invalidUpload = await this.prisma.invalidEmployeeUpload.findUnique({
       where: { id: invalidUploadId },
     });
 
     if (!invalidUpload) {
-      throw new NotFoundException({ code: 'NOT_FOUND', message: 'Invalid upload record not found' });
+      throw new NotFoundException({
+        code: 'NOT_FOUND',
+        message: 'Invalid upload record not found',
+      });
     }
 
     await this.ensureCorporateAccess(invalidUpload.corporateId, actor);
-    
-    this.logger.log(`Deleting invalid upload for employee: ${invalidUpload.email}`);
+
+    this.logger.log(
+      `Deleting invalid upload for employee: ${invalidUpload.email}`,
+    );
 
     // Delete the invalid upload record
     await this.prisma.invalidEmployeeUpload.delete({
       where: { id: invalidUploadId },
     });
 
-    this.logger.log(`Successfully deleted invalid upload record: ${invalidUploadId}`);
+    this.logger.log(
+      `Successfully deleted invalid upload record: ${invalidUploadId}`,
+    );
 
-    return { success: true, message: 'Invalid employee record deleted successfully' };
+    return {
+      success: true,
+      message: 'Invalid employee record deleted successfully',
+    };
   }
 
-  async deleteAllInvalidUploads(corporateId: string, actor: CurrentUserDto): Promise<{ success: boolean; message: string; deletedCount: number }> {
-    this.logger.log(`Starting deletion of all invalid uploads for corporate: ${corporateId}`);
-    
+  async deleteAllInvalidUploads(
+    corporateId: string,
+    actor: CurrentUserDto,
+  ): Promise<{ success: boolean; message: string; deletedCount: number }> {
+    this.logger.log(
+      `Starting deletion of all invalid uploads for corporate: ${corporateId}`,
+    );
+
     await this.ensureCorporateAccess(corporateId, actor);
 
     // Delete all invalid uploads for this corporate
@@ -903,15 +1177,29 @@ export class EmployeesService {
       where: { corporateId },
     });
 
-    this.logger.log(`Successfully deleted ${result.count} invalid upload records for corporate: ${corporateId}`);
+    this.logger.log(
+      `Successfully deleted ${result.count} invalid upload records for corporate: ${corporateId}`,
+    );
 
-    return { success: true, message: `Deleted ${result.count} invalid employee records`, deletedCount: result.count };
+    return {
+      success: true,
+      message: `Deleted ${result.count} invalid employee records`,
+      deletedCount: result.count,
+    };
   }
 
-  async updateUsedAmount(employeeId: string, approvedAmount: Prisma.Decimal): Promise<void> {
-    const employee = await this.prisma.employee.findUnique({ where: { id: employeeId } });
+  async updateUsedAmount(
+    employeeId: string,
+    approvedAmount: Prisma.Decimal,
+  ): Promise<void> {
+    const employee = await this.prisma.employee.findUnique({
+      where: { id: employeeId },
+    });
     if (!employee) {
-      throw new NotFoundException({ code: 'NOT_FOUND', message: 'Employee not found' });
+      throw new NotFoundException({
+        code: 'NOT_FOUND',
+        message: 'Employee not found',
+      });
     }
 
     const nextUsed = employee.usedAmount.add(approvedAmount);
@@ -933,7 +1221,12 @@ export class EmployeesService {
     rowIndex: number,
     corporateId: string,
     excludeInvalidUploadId?: string, // Add parameter to exclude current invalid upload
-  ): Promise<{ rowIndex: number; valid: boolean; errors: string[]; normalized: BulkImportEmployeeRowDto }> {
+  ): Promise<{
+    rowIndex: number;
+    valid: boolean;
+    errors: string[];
+    normalized: BulkImportEmployeeRowDto;
+  }> {
     const errors: string[] = [];
 
     // Get corporate to check contract dates early
@@ -956,7 +1249,9 @@ export class EmployeesService {
         if (coverageEnd <= coverageStart) {
           errors.push('coverageEndDate must be after coverageStartDate');
         } else if (coverageStart < contractStart || coverageEnd > contractEnd) {
-          errors.push(`Employee coverage dates must be within corporate contract dates (${contractStart.toISOString().split('T')[0]} to ${contractEnd.toISOString().split('T')[0]})`);
+          errors.push(
+            `Employee coverage dates must be within corporate contract dates (${contractStart.toISOString().split('T')[0]} to ${contractEnd.toISOString().split('T')[0]})`,
+          );
         }
       } catch (error) {
         errors.push('Invalid date format in coverage dates');
@@ -972,22 +1267,26 @@ export class EmployeesService {
     }
 
     // Check for duplicate email in users table, but exclude current invalid upload if provided
-    let duplicateUserQuery: any = { where: { email: row.email }, select: { id: true } };
+    let duplicateUserQuery: any = {
+      where: { email: row.email },
+      select: { id: true },
+    };
     if (excludeInvalidUploadId) {
       // Also check if this email exists in invalid uploads (excluding current one)
-      const duplicateInvalidUpload = await this.prisma.invalidEmployeeUpload.findFirst({
-        where: {
-          email: row.email,
-          id: { not: excludeInvalidUploadId },
-          corporateId,
-        },
-        select: { id: true },
-      });
+      const duplicateInvalidUpload =
+        await this.prisma.invalidEmployeeUpload.findFirst({
+          where: {
+            email: row.email,
+            id: { not: excludeInvalidUploadId },
+            corporateId,
+          },
+          select: { id: true },
+        });
       if (duplicateInvalidUpload) {
         errors.push('Duplicate email already exists in this upload batch');
       }
     }
-    
+
     const duplicateUser = await this.prisma.user.findUnique(duplicateUserQuery);
     if (duplicateUser) {
       errors.push('Duplicate email already exists');
@@ -996,13 +1295,20 @@ export class EmployeesService {
     let planId = row.planId;
     let plan: { id: string } | null = null;
     try {
-      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      const uuidRegex =
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
       if (uuidRegex.test(row.planId)) {
-        const planLookup = await this.prisma.plan.findUnique({ where: { id: row.planId }, select: { id: true } });
+        const planLookup = await this.prisma.plan.findUnique({
+          where: { id: row.planId },
+          select: { id: true },
+        });
         plan = planLookup ? { id: planLookup.id } : null;
       } else {
-        const planLookup = await this.prisma.plan.findUnique({ where: { planCode: row.planId }, select: { id: true } });
+        const planLookup = await this.prisma.plan.findUnique({
+          where: { planCode: row.planId },
+          select: { id: true },
+        });
         plan = planLookup ? { id: planLookup.id } : null;
       }
 
@@ -1033,17 +1339,29 @@ export class EmployeesService {
     };
   }
 
-  private async ensureCorporateAccess(corporateId: string, actor: CurrentUserDto) {
-    const corporate = await this.prisma.corporate.findUnique({ where: { id: corporateId } });
+  private async ensureCorporateAccess(
+    corporateId: string,
+    actor: CurrentUserDto,
+  ) {
+    const corporate = await this.prisma.corporate.findUnique({
+      where: { id: corporateId },
+    });
     if (!corporate) {
-      throw new NotFoundException({ code: 'NOT_FOUND', message: 'Corporate not found' });
+      throw new NotFoundException({
+        code: 'NOT_FOUND',
+        message: 'Corporate not found',
+      });
     }
 
     this.ensureEmployeeManageAccess(corporateId, actor, corporate.userId);
     return corporate;
   }
 
-  private ensureEmployeeManageAccess(corporateId: string, actor: CurrentUserDto, corporateUserId?: string): void {
+  private ensureEmployeeManageAccess(
+    corporateId: string,
+    actor: CurrentUserDto,
+    corporateUserId?: string,
+  ): void {
     const role = actor.role as unknown as string;
     if (role === 'admin') {
       return;
@@ -1055,11 +1373,17 @@ export class EmployeesService {
     }
 
     if (role !== 'corporate') {
-      throw new ForbiddenException({ code: 'AUTH_FORBIDDEN', message: 'Insufficient role to manage employees' });
+      throw new ForbiddenException({
+        code: 'AUTH_FORBIDDEN',
+        message: 'Insufficient role to manage employees',
+      });
     }
 
     if (corporateUserId && corporateUserId !== actor.id) {
-      throw new ForbiddenException({ code: 'AUTH_FORBIDDEN', message: 'You can only manage your own corporate employees' });
+      throw new ForbiddenException({
+        code: 'AUTH_FORBIDDEN',
+        message: 'You can only manage your own corporate employees',
+      });
     }
   }
 
@@ -1080,10 +1404,15 @@ export class EmployeesService {
       return;
     }
 
-    throw new ForbiddenException({ code: 'AUTH_FORBIDDEN', message: 'You are not allowed to access this employee' });
+    throw new ForbiddenException({
+      code: 'AUTH_FORBIDDEN',
+      message: 'You are not allowed to access this employee',
+    });
   }
 
-  private async resolveCorporateIdForActor(actor: CurrentUserDto): Promise<string | undefined> {
+  private async resolveCorporateIdForActor(
+    actor: CurrentUserDto,
+  ): Promise<string | undefined> {
     const role = actor.role as unknown as string;
     if (role !== 'corporate') {
       return undefined;
@@ -1096,16 +1425,29 @@ export class EmployeesService {
     return corporate?.id;
   }
 
-  private async ensureValidPlan(planId: string, insurerId?: string, corporateId?: string) {
+  private async ensureValidPlan(
+    planId: string,
+    insurerId?: string,
+    corporateId?: string,
+  ) {
     const plan = await this.prisma.plan.findUnique({ where: { id: planId } });
     if (!plan) {
-      throw new NotFoundException({ code: 'NOT_FOUND', message: 'Plan not found' });
+      throw new NotFoundException({
+        code: 'NOT_FOUND',
+        message: 'Plan not found',
+      });
     }
 
     if (corporateId) {
-      const corporate = await this.prisma.corporate.findUnique({ where: { id: corporateId }, select: { insurerId: true } });
+      const corporate = await this.prisma.corporate.findUnique({
+        where: { id: corporateId },
+        select: { insurerId: true },
+      });
       if (!corporate) {
-        throw new NotFoundException({ code: 'NOT_FOUND', message: 'Corporate not found' });
+        throw new NotFoundException({
+          code: 'NOT_FOUND',
+          message: 'Corporate not found',
+        });
       }
       insurerId = corporate.insurerId;
     }
@@ -1127,13 +1469,17 @@ export class EmployeesService {
     contractEnd: Date,
   ): void {
     if (coverageEnd <= coverageStart) {
-      throw new BadRequestException({ code: 'VALIDATION_FAILED', message: 'coverageEndDate must be after coverageStartDate' });
+      throw new BadRequestException({
+        code: 'VALIDATION_FAILED',
+        message: 'coverageEndDate must be after coverageStartDate',
+      });
     }
 
     if (coverageStart < contractStart || coverageEnd > contractEnd) {
       throw new BadRequestException({
         code: 'COVERAGE_DATE_OUT_OF_CONTRACT_RANGE',
-        message: 'Employee coverage dates must be within corporate contract dates',
+        message:
+          'Employee coverage dates must be within corporate contract dates',
       });
     }
   }
@@ -1156,6 +1502,7 @@ export class EmployeesService {
     user: {
       firstName: string;
       lastName: string | null;
+      cnic: string | null;
       email: string;
       phone: string;
     };
@@ -1169,6 +1516,7 @@ export class EmployeesService {
       employeeNumber: employee.employeeNumber,
       firstName: employee.user.firstName,
       ...(employee.user.lastName ? { lastName: employee.user.lastName } : {}),
+      ...(employee.user.cnic ? { cnic: employee.user.cnic } : {}),
       email: employee.user.email,
       phone: employee.user.phone,
       designation: employee.designation,
@@ -1177,7 +1525,9 @@ export class EmployeesService {
       coverageEndDate: employee.coverageEndDate,
       coverageAmount: employee.coverageAmount.toFixed(2),
       usedAmount: employee.usedAmount.toFixed(2),
-      availableAmount: employee.coverageAmount.sub(employee.usedAmount).toFixed(2),
+      availableAmount: employee.coverageAmount
+        .sub(employee.usedAmount)
+        .toFixed(2),
       status: employee.status,
       dependentCount: employee.dependents.length,
       createdAt: employee.createdAt,
@@ -1189,10 +1539,15 @@ export class EmployeesService {
     error: unknown,
     context?: {
       action: string;
-      fields?: Partial<Record<'email' | 'employeeNumber' | 'cnic', string | undefined>>;
+      fields?: Partial<
+        Record<'email' | 'employeeNumber' | 'cnic', string | undefined>
+      >;
     },
   ): never {
-    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === 'P2002'
+    ) {
       const rawTargets = Array.isArray(error.meta?.target)
         ? error.meta.target.map((item) => String(item))
         : [];
@@ -1208,7 +1563,11 @@ export class EmployeesService {
 
       const message = duplicateFields.length
         ? `Duplicate value for ${duplicateFields
-            .map((item) => (item.value !== undefined ? `${item.field} (${item.value})` : item.field))
+            .map((item) =>
+              item.value !== undefined
+                ? `${item.field} (${item.value})`
+                : item.field,
+            )
             .join(', ')}`
         : 'Duplicate value for unique field';
 
@@ -1229,7 +1588,9 @@ export class EmployeesService {
     throw error;
   }
 
-  private async assertCreateUniqueFields(dto: CreateEmployeeDto): Promise<void> {
+  private async assertCreateUniqueFields(
+    dto: CreateEmployeeDto,
+  ): Promise<void> {
     const [emailExists, employeeNumberExists, cnicExists] = await Promise.all([
       this.prisma.user.findUnique({
         where: { email: dto.email },
@@ -1247,7 +1608,10 @@ export class EmployeesService {
         : Promise.resolve(null),
     ]);
 
-    const duplicates: Array<{ field: 'email' | 'employeeNumber' | 'cnic'; value?: string }> = [];
+    const duplicates: Array<{
+      field: 'email' | 'employeeNumber' | 'cnic';
+      value?: string;
+    }> = [];
 
     if (emailExists) {
       duplicates.push({ field: 'email', value: dto.email });
@@ -1271,7 +1635,11 @@ export class EmployeesService {
     userId: string,
     dto: UpdateEmployeeDto,
   ): Promise<void> {
-    const checks: Promise<{ field: 'email' | 'employeeNumber' | 'cnic'; conflict: boolean; value?: string }>[] = [];
+    const checks: Promise<{
+      field: 'email' | 'employeeNumber' | 'cnic';
+      conflict: boolean;
+      value?: string;
+    }>[] = [];
 
     if (dto.email !== undefined) {
       checks.push(
@@ -1283,7 +1651,11 @@ export class EmployeesService {
             },
             select: { id: true },
           })
-          .then((row) => ({ field: 'email' as const, conflict: !!row, value: dto.email })),
+          .then((row) => ({
+            field: 'email' as const,
+            conflict: !!row,
+            value: dto.email,
+          })),
       );
     }
 
@@ -1315,7 +1687,11 @@ export class EmployeesService {
             },
             select: { id: true },
           })
-          .then((row) => ({ field: 'cnic' as const, conflict: !!row, value: dto.cnic })),
+          .then((row) => ({
+            field: 'cnic' as const,
+            conflict: !!row,
+            value: dto.cnic,
+          })),
       );
     }
 
@@ -1326,7 +1702,10 @@ export class EmployeesService {
     const results = await Promise.all(checks);
     const duplicates = results
       .filter((item) => item.conflict)
-      .map((item) => ({ field: item.field, ...(item.value !== undefined ? { value: item.value } : {}) }));
+      .map((item) => ({
+        field: item.field,
+        ...(item.value !== undefined ? { value: item.value } : {}),
+      }));
 
     if (duplicates.length > 0) {
       this.throwDuplicateConflict('updateEmployee', duplicates);
@@ -1335,7 +1714,10 @@ export class EmployeesService {
 
   private throwDuplicateConflict(
     action: string,
-    duplicateFields: Array<{ field: 'email' | 'employeeNumber' | 'cnic'; value?: string }>,
+    duplicateFields: Array<{
+      field: 'email' | 'employeeNumber' | 'cnic';
+      value?: string;
+    }>,
   ): never {
     this.logger.warn(
       `${action} conflict (pre-check): ${JSON.stringify({
@@ -1344,7 +1726,9 @@ export class EmployeesService {
     );
 
     const message = `Duplicate value for ${duplicateFields
-      .map((item) => (item.value !== undefined ? `${item.field} (${item.value})` : item.field))
+      .map((item) =>
+        item.value !== undefined ? `${item.field} (${item.value})` : item.field,
+      )
       .join(', ')}`;
 
     throw new ConflictException({
@@ -1354,7 +1738,9 @@ export class EmployeesService {
     });
   }
 
-  private normalizeUniqueTargets(rawTargets: string[]): Array<'email' | 'employeeNumber' | 'cnic'> {
+  private normalizeUniqueTargets(
+    rawTargets: string[],
+  ): Array<'email' | 'employeeNumber' | 'cnic'> {
     const normalized = new Set<'email' | 'employeeNumber' | 'cnic'>();
 
     for (const target of rawTargets) {

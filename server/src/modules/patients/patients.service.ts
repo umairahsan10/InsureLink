@@ -8,7 +8,14 @@ import { PrismaService } from '../../common/prisma/prisma.service';
 import { CurrentUserDto } from '../auth/dto/current-user.dto';
 import { ListPatientsQueryDto } from './dto/list-patients-query.dto';
 import { PatientCoverageDto } from './dto/patient-coverage.dto';
-import { PaginatedPatientsDto, PatientClaimsDto, PatientSummaryDto, PatientVisitsDto } from './dto/patient-response.dto';
+import {
+  PaginatedPatientsDto,
+  PatientClaimsDto,
+  PatientSummaryDto,
+  PatientVisitsDto,
+} from './dto/patient-response.dto';
+import { VerifyPatientDto } from './dto/verify-patient.dto';
+import { VerifyPatientResponseDto } from './dto/verify-patient-response.dto';
 
 @Injectable()
 export class PatientsService {
@@ -81,7 +88,10 @@ export class PatientsService {
     };
   }
 
-  async listPatients(query: ListPatientsQueryDto, actor: CurrentUserDto): Promise<PaginatedPatientsDto> {
+  async listPatients(
+    query: ListPatientsQueryDto,
+    actor: CurrentUserDto,
+  ): Promise<PaginatedPatientsDto> {
     this.ensurePatientsReadAccess(actor);
 
     const page = query.page ?? 1;
@@ -91,15 +101,48 @@ export class PatientsService {
       ...(query.search
         ? {
             OR: [
-              { user: { firstName: { contains: query.search, mode: 'insensitive' as const } } },
-              { user: { lastName: { contains: query.search, mode: 'insensitive' as const } } },
-              { user: { email: { contains: query.search, mode: 'insensitive' as const } } },
-              { employeeNumber: { contains: query.search, mode: 'insensitive' as const } },
+              {
+                user: {
+                  firstName: {
+                    contains: query.search,
+                    mode: 'insensitive' as const,
+                  },
+                },
+              },
+              {
+                user: {
+                  lastName: {
+                    contains: query.search,
+                    mode: 'insensitive' as const,
+                  },
+                },
+              },
+              {
+                user: {
+                  email: {
+                    contains: query.search,
+                    mode: 'insensitive' as const,
+                  },
+                },
+              },
+              {
+                employeeNumber: {
+                  contains: query.search,
+                  mode: 'insensitive' as const,
+                },
+              },
             ],
           }
         : {}),
       ...(query.insurance
-        ? { plan: { planName: { equals: query.insurance, mode: 'insensitive' as const } } }
+        ? {
+            plan: {
+              planName: {
+                equals: query.insurance,
+                mode: 'insensitive' as const,
+              },
+            },
+          }
         : {}),
       ...(query.status
         ? {
@@ -115,9 +158,21 @@ export class PatientsService {
       ...(query.search
         ? {
             OR: [
-              { firstName: { contains: query.search, mode: 'insensitive' as const } },
-              { lastName: { contains: query.search, mode: 'insensitive' as const } },
-              { cnic: { contains: query.search, mode: 'insensitive' as const } },
+              {
+                firstName: {
+                  contains: query.search,
+                  mode: 'insensitive' as const,
+                },
+              },
+              {
+                lastName: {
+                  contains: query.search,
+                  mode: 'insensitive' as const,
+                },
+              },
+              {
+                cnic: { contains: query.search, mode: 'insensitive' as const },
+              },
             ],
           }
         : {}),
@@ -126,11 +181,26 @@ export class PatientsService {
             status:
               query.status === 'Active'
                 ? { in: [DependentStatus.Approved, DependentStatus.Active] }
-                : { in: [DependentStatus.Pending, DependentStatus.Rejected, DependentStatus.Inactive] },
+                : {
+                    in: [
+                      DependentStatus.Pending,
+                      DependentStatus.Rejected,
+                      DependentStatus.Inactive,
+                    ],
+                  },
           }
         : {}),
       ...(query.insurance
-        ? { employee: { plan: { planName: { equals: query.insurance, mode: 'insensitive' as const } } } }
+        ? {
+            employee: {
+              plan: {
+                planName: {
+                  equals: query.insurance,
+                  mode: 'insensitive' as const,
+                },
+              },
+            },
+          }
         : {}),
     };
 
@@ -172,7 +242,9 @@ export class PatientsService {
       corporateName: item.corporate.name,
       insurance: item.plan.planName,
       status: item.status === 'Active' ? 'Active' : 'Inactive',
-      ...(item.hospitalVisits[0] ? { lastVisit: item.hospitalVisits[0].visitDate.toISOString() } : {}),
+      ...(item.hospitalVisits[0]
+        ? { lastVisit: item.hospitalVisits[0].visitDate.toISOString() }
+        : {}),
       hasActiveClaims: false,
     }));
 
@@ -187,10 +259,13 @@ export class PatientsService {
       corporateName: item.employee.corporate.name,
       insurance: item.employee.plan.planName,
       status:
-        item.status === DependentStatus.Approved || item.status === DependentStatus.Active
+        item.status === DependentStatus.Approved ||
+        item.status === DependentStatus.Active
           ? 'Active'
           : 'Inactive',
-      ...(item.hospitalVisits[0] ? { lastVisit: item.hospitalVisits[0].visitDate.toISOString() } : {}),
+      ...(item.hospitalVisits[0]
+        ? { lastVisit: item.hospitalVisits[0].visitDate.toISOString() }
+        : {}),
       hasActiveClaims: false,
     }));
 
@@ -246,7 +321,10 @@ export class PatientsService {
     });
 
     if (!dependent) {
-      throw new NotFoundException({ code: 'NOT_FOUND', message: 'Patient not found' });
+      throw new NotFoundException({
+        code: 'NOT_FOUND',
+        message: 'Patient not found',
+      });
     }
 
     return {
@@ -266,13 +344,19 @@ export class PatientsService {
     };
   }
 
-  async getPatientCoverage(id: string, actor: CurrentUserDto): Promise<PatientCoverageDto> {
+  async getPatientCoverage(
+    id: string,
+    actor: CurrentUserDto,
+  ): Promise<PatientCoverageDto> {
     this.ensurePatientsReadAccess(actor);
 
     const employee = await this.prisma.employee.findUnique({ where: { id } });
     if (employee) {
       const now = new Date();
-      const isActive = employee.status === 'Active' && now >= employee.coverageStartDate && now <= employee.coverageEndDate;
+      const isActive =
+        employee.status === 'Active' &&
+        now >= employee.coverageStartDate &&
+        now <= employee.coverageEndDate;
       const available = employee.coverageAmount.sub(employee.usedAmount);
       const hasAvailable = available.greaterThan(0);
       const isEligible = isActive && hasAvailable;
@@ -281,7 +365,11 @@ export class PatientsService {
         patientId: employee.id,
         patientType: 'employee',
         isEligible,
-        reason: isEligible ? 'Coverage active' : hasAvailable ? 'Coverage inactive or expired' : 'Coverage limit exhausted',
+        reason: isEligible
+          ? 'Coverage active'
+          : hasAvailable
+            ? 'Coverage inactive or expired'
+            : 'Coverage limit exhausted',
         totalCoverageAmount: employee.coverageAmount.toFixed(2),
         usedAmount: employee.usedAmount.toFixed(2),
         availableAmount: available.toFixed(2),
@@ -296,20 +384,33 @@ export class PatientsService {
     });
 
     if (!dependent) {
-      throw new NotFoundException({ code: 'NOT_FOUND', message: 'Patient not found' });
+      throw new NotFoundException({
+        code: 'NOT_FOUND',
+        message: 'Patient not found',
+      });
     }
 
     const now = new Date();
     const isDependentActive = ['Approved', 'Active'].includes(dependent.status);
-    const isEmployeeCoverageActive = dependent.employee.status === 'Active' && now >= dependent.employee.coverageStartDate && now <= dependent.employee.coverageEndDate;
-    const available = dependent.employee.coverageAmount.sub(dependent.employee.usedAmount);
-    const isEligible = isDependentActive && isEmployeeCoverageActive && available.greaterThan(0);
+    const isEmployeeCoverageActive =
+      dependent.employee.status === 'Active' &&
+      now >= dependent.employee.coverageStartDate &&
+      now <= dependent.employee.coverageEndDate;
+    const available = dependent.employee.coverageAmount.sub(
+      dependent.employee.usedAmount,
+    );
+    const isEligible =
+      isDependentActive && isEmployeeCoverageActive && available.greaterThan(0);
 
     return {
       patientId: dependent.id,
       patientType: 'dependent',
       isEligible,
-      reason: isEligible ? 'Coverage active' : available.greaterThan(0) ? 'Dependent inactive or coverage expired' : 'Coverage limit exhausted',
+      reason: isEligible
+        ? 'Coverage active'
+        : available.greaterThan(0)
+          ? 'Dependent inactive or coverage expired'
+          : 'Coverage limit exhausted',
       totalCoverageAmount: dependent.employee.coverageAmount.toFixed(2),
       usedAmount: dependent.employee.usedAmount.toFixed(2),
       availableAmount: available.toFixed(2),
@@ -318,7 +419,10 @@ export class PatientsService {
     };
   }
 
-  async getPatientClaims(id: string, actor: CurrentUserDto): Promise<PatientClaimsDto> {
+  async getPatientClaims(
+    id: string,
+    actor: CurrentUserDto,
+  ): Promise<PatientClaimsDto> {
     this.ensurePatientsReadAccess(actor);
 
     const claims = await this.prisma.claim.findMany({
@@ -343,7 +447,10 @@ export class PatientsService {
     };
   }
 
-  async getPatientVisits(id: string, actor: CurrentUserDto): Promise<PatientVisitsDto> {
+  async getPatientVisits(
+    id: string,
+    actor: CurrentUserDto,
+  ): Promise<PatientVisitsDto> {
     this.ensurePatientsReadAccess(actor);
 
     const visits = await this.prisma.hospitalVisit.findMany({
@@ -373,10 +480,58 @@ export class PatientsService {
     };
   }
 
+  async verifyPatient(
+    dto: VerifyPatientDto,
+  ): Promise<VerifyPatientResponseDto> {
+    const cnic = dto.cnic.trim();
+
+    // Check if CNIC exists in users table (for employees)
+    const userWithCnic = await this.prisma.user.findFirst({
+      where: { cnic: { equals: cnic, mode: 'insensitive' } },
+    });
+
+    if (userWithCnic) {
+      return {
+        id: userWithCnic.id,
+        firstName: userWithCnic.firstName,
+        lastName: userWithCnic.lastName || '',
+        email: userWithCnic.email,
+        phone: userWithCnic.phone || '',
+        cnic: userWithCnic.cnic || '',
+      };
+    }
+
+    // Check if CNIC exists in dependents table
+    const dependent = await this.prisma.dependent.findFirst({
+      where: { cnic: { equals: cnic, mode: 'insensitive' } },
+    });
+
+    if (dependent) {
+      return {
+        id: dependent.id,
+        firstName: dependent.firstName,
+        lastName: dependent.lastName,
+        email: '', // Dependents may not have email
+        phone: dependent.phoneNumber || '',
+        cnic: dependent.cnic || '',
+      };
+    }
+
+    throw new NotFoundException({
+      code: 'PATIENT_NOT_FOUND',
+      message: `No patient found with CNIC: ${cnic}`,
+    });
+  }
+
   private ensurePatientsReadAccess(actor: CurrentUserDto): void {
     const role = actor.role as unknown as string;
-    if (!['admin', 'corporate', 'hospital', 'insurer', 'patient'].includes(role)) {
-      throw new ForbiddenException({ code: 'AUTH_FORBIDDEN', message: 'Insufficient role for patient access' });
+    if (
+      !['admin', 'corporate', 'hospital', 'insurer', 'patient'].includes(role)
+    ) {
+      throw new ForbiddenException({
+        code: 'AUTH_FORBIDDEN',
+        message: 'Insufficient role for patient access',
+      });
     }
   }
 
@@ -390,4 +545,3 @@ export class PatientsService {
     return age;
   }
 }
-

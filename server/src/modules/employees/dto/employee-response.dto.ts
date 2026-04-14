@@ -8,6 +8,7 @@ export class EmployeeResponseDto {
   employeeNumber: string;
   firstName: string;
   lastName?: string;
+  cnic?: string;
   email: string;
   phone: string;
   designation: string;
