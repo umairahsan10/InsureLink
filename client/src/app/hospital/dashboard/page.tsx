@@ -14,6 +14,10 @@ import { claimsApi, type Claim as ApiClaim } from "@/lib/api/claims";
 export default function HospitalDashboardPage() {
   const [cnicNumber, setCnicNumber] = useState("");
   const [isVerifying, setIsVerifying] = useState(false);
+  const [verifyMessage, setVerifyMessage] = useState<{
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
   const [selectedClaimId, setSelectedClaimId] = useState<string | null>(null);
   const [isClaimDetailsOpen, setIsClaimDetailsOpen] = useState(false);
   const [isClaimEditOpen, setIsClaimEditOpen] = useState(false);
@@ -32,7 +36,12 @@ export default function HospitalDashboardPage() {
     setIsLoadingClaims(true);
     try {
       const [allRes, pendingRes, approvedRes] = await Promise.all([
-        claimsApi.getClaims({ limit: 10, page: 1, sortBy: "createdAt", order: "desc" }),
+        claimsApi.getClaims({
+          limit: 10,
+          page: 1,
+          sortBy: "createdAt",
+          order: "desc",
+        }),
         claimsApi.getClaims({ status: "Pending", limit: 1, page: 1 }),
         claimsApi.getClaims({ status: "Approved", limit: 1, page: 1 }),
       ]);
@@ -58,16 +67,30 @@ export default function HospitalDashboardPage() {
     if (!cnicNumber.trim()) return;
 
     setIsVerifying(true);
+    setVerifyMessage(null);
+
     try {
       await apiFetch("/api/patients/verify", {
         method: "POST",
         body: JSON.stringify({ cnic: cnicNumber }),
       });
-      alert("Patient verified successfully");
+      setVerifyMessage({
+        type: "success",
+        text: "Patient verified successfully!",
+      });
       setCnicNumber("");
+      // Clear success message after 5 seconds
+      setTimeout(() => setVerifyMessage(null), 5000);
     } catch (error) {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Failed to verify patient. Please try again.";
+      setVerifyMessage({
+        type: "error",
+        text: errorMessage,
+      });
       console.error("Failed to verify patient", error);
-      alert("Failed to verify patient. Please try again.");
     } finally {
       setIsVerifying(false);
     }
@@ -91,7 +114,10 @@ export default function HospitalDashboardPage() {
     id: c.id,
     patientName: getPatientName(c),
     cnic: "—",
-    amount: typeof c.amountClaimed === "string" ? parseFloat(c.amountClaimed) : (c.amountClaimed || 0),
+    amount:
+      typeof c.amountClaimed === "string"
+        ? parseFloat(c.amountClaimed)
+        : c.amountClaimed || 0,
     date: c.createdAt?.split("T")[0] || "—",
     status: c.claimStatus,
   }));
@@ -100,7 +126,7 @@ export default function HospitalDashboardPage() {
     <div className="p-4 lg:p-6">
       {/* Overview Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 mb-6 lg:mb-8">
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="bg-white rounded-xl border border-gray-100 p-6">
           <div className="flex items-center">
             <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
               <svg
@@ -119,7 +145,7 @@ export default function HospitalDashboardPage() {
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">
-                Patients Today
+                Patients
               </p>
               <p className="text-2xl font-bold text-gray-900">
                 {hospitalStats.patientsToday}
@@ -128,7 +154,7 @@ export default function HospitalDashboardPage() {
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="bg-white rounded-xl border border-gray-100 p-6">
           <div className="flex items-center">
             <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
               <svg
@@ -156,7 +182,7 @@ export default function HospitalDashboardPage() {
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="bg-white rounded-xl border border-gray-100 p-6">
           <div className="flex items-center">
             <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
               <svg
@@ -184,7 +210,7 @@ export default function HospitalDashboardPage() {
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="bg-white rounded-xl border border-gray-100 p-6">
           <div className="flex items-center">
             <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
               <svg
@@ -203,7 +229,7 @@ export default function HospitalDashboardPage() {
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">
-                Approved Today
+                Approved
               </p>
               <p className="text-2xl font-bold text-gray-900">
                 {hospitalStats.approvedToday}
@@ -216,7 +242,7 @@ export default function HospitalDashboardPage() {
       {/* Middle Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6 mb-6 lg:mb-8">
         {/* Patient Verification */}
-        <div className="bg-white rounded-lg shadow p-4 lg:p-6">
+        <div className="bg-white rounded-xl border border-gray-100 p-4 lg:p-6">
           <div className="flex items-center mb-4">
             <svg
               className="w-5 h-5 text-gray-600 mr-2"
@@ -244,10 +270,30 @@ export default function HospitalDashboardPage() {
                 type="text"
                 value={cnicNumber}
                 onChange={(e) => setCnicNumber(e.target.value)}
-                placeholder="Enter CNIC (e.g., 42401-1234567-8)"
+                placeholder="Enter CNIC (e.g., 422016789012)"
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-gray-900"
               />
             </div>
+            {verifyMessage && (
+              <div
+                className={`p-4 rounded-lg ${
+                  verifyMessage.type === "success"
+                    ? "bg-green-50 border border-green-200"
+                    : "bg-red-50 border border-red-200"
+                }`}
+              >
+                <p
+                  className={`text-sm font-medium ${
+                    verifyMessage.type === "success"
+                      ? "text-green-800"
+                      : "text-red-800"
+                  }`}
+                >
+                  {verifyMessage.type === "success" ? "✓ " : "✕ "}
+                  {verifyMessage.text}
+                </p>
+              </div>
+            )}
             <button
               onClick={handleVerifyPatient}
               disabled={isVerifying || !cnicNumber.trim()}
@@ -259,7 +305,7 @@ export default function HospitalDashboardPage() {
         </div>
 
         {/* Quick Actions */}
-        <div className="bg-white rounded-lg shadow p-4 lg:p-6">
+        <div className="bg-white rounded-xl border border-gray-100 p-4 lg:p-6">
           <h2 className="text-base lg:text-lg font-semibold text-gray-900 mb-4">
             Quick Actions
           </h2>
@@ -326,7 +372,7 @@ export default function HospitalDashboardPage() {
       </div>
 
       {/* Recent Claims Table */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
+      <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
         <div className="p-4 lg:p-6 border-b border-gray-200">
           <div className="flex items-center justify-between">
             <h2 className="text-base lg:text-lg font-semibold text-gray-900">

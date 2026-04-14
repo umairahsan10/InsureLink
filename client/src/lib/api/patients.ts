@@ -44,6 +44,13 @@ export interface UpdatePatientProfileRequest {
   mobile?: string;
 }
 
+export interface PaginatedPatients {
+  items: Patient[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
 export interface PatientCoverage {
   employeeId?: string;
   fullName?: string;
@@ -104,15 +111,47 @@ export const patientsApi = {
     search?: string;
     status?: string;
     insurance?: string;
-  }): Promise<Patient[]> {
+    page?: number;
+    limit?: number;
+  }): Promise<PaginatedPatients> {
     const queryParams = new URLSearchParams();
     if (filters?.search) queryParams.append("search", filters.search);
     if (filters?.status) queryParams.append("status", filters.status);
     if (filters?.insurance) queryParams.append("insurance", filters.insurance);
+    if (filters?.page) queryParams.append("page", String(filters.page));
+    if (filters?.limit) queryParams.append("limit", String(filters.limit));
 
-    const response = await apiFetch<Patient[]>(
-      `/api/patients?${queryParams.toString()}`,
+    const qs = queryParams.toString();
+    const response = await apiFetch<PaginatedPatients>(
+      `/api/patients${qs ? `?${qs}` : ""}`,
     );
+    return response.data;
+  },
+
+  async getPatientClaims(
+    patientId: string,
+  ): Promise<{
+    items: Array<{
+      id: string;
+      claimNumber: string;
+      status: string;
+      amountClaimed: string;
+      approvedAmount: string;
+      createdAt: string;
+    }>;
+    total: number;
+  }> {
+    const response = await apiFetch<{
+      items: Array<{
+        id: string;
+        claimNumber: string;
+        status: string;
+        amountClaimed: string;
+        approvedAmount: string;
+        createdAt: string;
+      }>;
+      total: number;
+    }>(`/api/patients/${patientId}/claims`);
     return response.data;
   },
 };

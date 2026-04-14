@@ -96,7 +96,7 @@ export default function CorporateDashboard() {
             employeesApi.list({
               corporateId,
               page: 1,
-              limit: 5,
+              limit: 100,
             }),
           ]);
 
@@ -144,17 +144,21 @@ export default function CorporateDashboard() {
 
           return {
             name: fullName || employee.email,
-            cnic: "N/A",
+            cnic: employee.cnic || "N/A",
             department: employee.department || "N/A",
             coverageUsed: percentage,
             totalCoverage: formatPKR(total),
           };
         });
 
+        const topEmployeesByUsage = mappedEmployees
+          .sort((a, b) => b.coverageUsed - a.coverageUsed)
+          .slice(0, 5);
+
         if (active) {
           setStats(statsResponse);
           setRecentClaims(mappedClaims);
-          setEmployeeCoverage(mappedEmployees);
+          setEmployeeCoverage(topEmployeesByUsage);
         }
       } catch (err) {
         if (active) {

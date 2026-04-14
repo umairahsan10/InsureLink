@@ -1,132 +1,68 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useCallback } from "react";
 import PatientDetailsModal from "@/components/modals/PatientDetailsModal";
-import PatientRegistrationModal from "@/components/modals/PatientRegistrationModal";
-import patientsDataRaw from "@/data/patients.json";
-import type { Patient } from "@/types/patient";
-
-const patientsData = patientsDataRaw as Patient[];
+import { patientsApi, Patient } from "@/lib/api/patients";
 
 export default function HospitalPatientsPage() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [insuranceFilter, setInsuranceFilter] = useState("All Insurance Types");
-  const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
-  const [selectedPatientId, setSelectedPatientId] = useState<string | null>(
-    null
-  );
+  const [statusFilter, setStatusFilter] = useState<string>("");
+  const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null);
   const [isPatientDetailsOpen, setIsPatientDetailsOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
-  const [registeredPatients, setRegisteredPatients] = useState<Patient[]>([]);
 
-  const patients = useMemo(() => {
-    const allPatients = [...patientsData, ...registeredPatients];
-    return allPatients.map((patient) => ({
-      ...patient,
-      lastVisitDate: new Date(patient.lastVisitDate),
-    }));
-  }, [registeredPatients]);
+  const [patients, setPatients] = useState<Patient[]>([]);
+  const [totalPatients, setTotalPatients] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  // Get unique insurance types from patients data
-  const insuranceTypes = useMemo(() => {
-    const types = new Set(patients.map((p) => p.insurance));
-    return Array.from(types).sort();
-  }, [patients]);
+  const fetchPatients = useCallback(async () => {
+    setIsLoading(true);
+    setError("");
+    try {
+      const result = await patientsApi.getPatients({
+        search: searchQuery || undefined,
+        status: statusFilter || undefined,
+        page: currentPage,
+        limit: itemsPerPage,
+      });
+      setPatients(result.items);
+      setTotalPatients(result.total);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load patients");
+    } finally {
+      setIsLoading(false);
+    }
+  }, [searchQuery, statusFilter, currentPage, itemsPerPage]);
 
-  // Calculate analytics
-  const analytics = useMemo(() => {
-    const today = new Date("2025-10-06");
-    return {
-      totalPatients: patients.length,
-      todaysVisits: patients.filter(
-        (p) => p.lastVisitDate.toDateString() === today.toDateString()
-      ).length,
-      withInsurance: patients.filter((p) => p.insured).length,
-      activeClaims: patients.filter((p) => p.status === "Active").length,
-    };
-  }, [patients]);
+  useEffect(() => {
+    fetchPatients();
+  }, [fetchPatients]);
 
-  const filteredPatients = useMemo(() => {
-    return patients.filter((patient) => {
-      const matchesSearch =
-        searchQuery.trim() === "" ||
-        patient.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        patient.id.toLowerCase().includes(searchQuery.toLowerCase());
-
-      const matchesFilter =
-        insuranceFilter === "All Insurance Types" ||
-        patient.insurance === insuranceFilter;
-
-      return matchesSearch && matchesFilter;
-    });
-  }, [patients, searchQuery, insuranceFilter]);
-
-  // Reset page when filters or page size change
+  // Debounce search - reset page when search changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, insuranceFilter, itemsPerPage]);
+  }, [searchQuery, statusFilter, itemsPerPage]);
 
-  const totalPages = Math.max(
-    1,
-    Math.ceil(filteredPatients.length / itemsPerPage)
-  );
+  const totalPages = Math.max(1, Math.ceil(totalPatients / itemsPerPage));
 
-  const displayedPatients = useMemo(() => {
-    const start = (currentPage - 1) * itemsPerPage;
-    return filteredPatients.slice(start, start + itemsPerPage);
-  }, [filteredPatients, currentPage, itemsPerPage]);
-
-  const handlePatientRegistration = (newPatientData: any) => {
-    // Generate a unique patient ID based on total existing patients
-    const totalExistingPatients =
-      patientsData.length + registeredPatients.length;
-    const newPatientId = `PAT-${1001 + totalExistingPatients}`;
-
-    // Create new patient object with all required fields
-    const newPatient: Patient = {
-      id: newPatientId,
-      employeeId: null,
-      name: newPatientData.name,
-      age: parseInt(newPatientData.age),
-      gender: newPatientData.gender,
-      dateOfBirth: new Date(
-        new Date().getFullYear() - parseInt(newPatientData.age),
-        0,
-        1
-      )
-        .toISOString()
-        .split("T")[0],
-      email: newPatientData.email,
-      mobile: newPatientData.phone,
-      cnic: newPatientData.cnic,
-      address: newPatientData.address,
-      corporateId: null,
-      corporateName: null,
-      planId: null,
-      designation: null,
-      department: null,
-      coverageStart: null,
-      coverageEnd: null,
-      insured: newPatientData.insurance !== "None",
-      insurance: newPatientData.insurance,
-      status: newPatientData.status,
-      bloodGroup: "Unknown",
-      emergencyContact: {
-        name: "",
-        relation: "",
-        phone: "",
-      },
-      medicalHistory: [],
-      allergies: [],
-      lastVisit: new Date().toISOString().split("T")[0],
-      lastVisitDate: new Date().toISOString().split("T")[0],
-      registrationDate: new Date().toISOString().split("T")[0],
-      hasActiveClaims: false,
+  // Analytics from loaded data
+  const analytics = useMemo(() => {
+    return {
+      totalPatients,
+      activePatients: patients.filter((p) => p.status === "Active").length,
+      withClaims: patients.filter((p) => (p as any).hasActiveClaims).length,
     };
+  }, [patients, totalPatients]);
 
-    setRegisteredPatients([...registeredPatients, newPatient]);
-  };
+  if (isLoading && patients.length === 0) {
+    return (
+      <div className="p-6 flex items-center justify-center min-h-[400px]">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-500" />
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 lg:p-6">
@@ -139,62 +75,53 @@ export default function HospitalPatientsPage() {
             Manage patient information and records
           </p>
         </div>
-        <button
-          onClick={() => setIsRegisterModalOpen(true)}
-          className="bg-green-600 text-white px-3 lg:px-4 py-2 rounded-lg hover:bg-green-700 text-sm lg:text-base"
-        >
-          + Register Patient
-        </button>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <div className="bg-white rounded-lg shadow p-4">
+      {error && (
+        <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-lg text-sm">
+          {error}
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+        <div className="bg-white rounded-xl border border-gray-100 p-4">
           <p className="text-sm text-gray-500">Total Patients</p>
           <p className="text-2xl font-bold text-gray-900">
             {analytics.totalPatients}
           </p>
         </div>
-        <div className="bg-white rounded-lg shadow p-4">
-          <p className="text-sm text-gray-500">Today&apos;s Visits</p>
-          <p className="text-2xl font-bold text-blue-600">
-            {analytics.todaysVisits}
-          </p>
-        </div>
-        <div className="bg-white rounded-lg shadow p-4">
-          <p className="text-sm text-gray-500">With Insurance</p>
+        <div className="bg-white rounded-xl border border-gray-100 p-4">
+          <p className="text-sm text-gray-500">Active Patients</p>
           <p className="text-2xl font-bold text-green-600">
-            {analytics.withInsurance}
+            {analytics.activePatients}
           </p>
         </div>
-        <div className="bg-white rounded-lg shadow p-4">
-          <p className="text-sm text-gray-500">Active Claims</p>
+        <div className="bg-white rounded-xl border border-gray-100 p-4">
+          <p className="text-sm text-gray-500">With Active Claims</p>
           <p className="text-2xl font-bold text-orange-600">
-            {analytics.activeClaims}
+            {analytics.withClaims}
           </p>
         </div>
       </div>
 
-      <div className="bg-white rounded-lg shadow overflow-hidden">
+      <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
         <div className="p-3 lg:p-4 border-b border-gray-200">
           <div className="flex flex-col sm:flex-row gap-2 lg:gap-4">
             <input
               type="text"
-              placeholder="Search by name or patient ID..."
+              placeholder="Search by name, CNIC, or email..."
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
               className="flex-1 px-3 lg:px-4 py-2 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm lg:text-base"
             />
             <select
-              value={insuranceFilter}
-              onChange={(event) => setInsuranceFilter(event.target.value)}
+              value={statusFilter}
+              onChange={(event) => setStatusFilter(event.target.value)}
               className="px-3 lg:px-4 py-2 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm lg:text-base"
             >
-              <option>All Insurance Types</option>
-              {insuranceTypes.map((type) => (
-                <option key={type} value={type}>
-                  {type}
-                </option>
-              ))}
+              <option value="">All Statuses</option>
+              <option value="Active">Active</option>
+              <option value="Inactive">Inactive</option>
             </select>
           </div>
         </div>
@@ -227,20 +154,20 @@ export default function HospitalPatientsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {filteredPatients.length === 0 ? (
+              {patients.length === 0 ? (
                 <tr>
                   <td
                     colSpan={7}
                     className="px-6 py-8 text-center text-sm text-gray-500"
                   >
-                    No patients match your current filters.
+                    {isLoading ? "Loading..." : "No patients match your current filters."}
                   </td>
                 </tr>
               ) : (
-                displayedPatients.map((patient) => (
+                patients.map((patient) => (
                   <tr key={patient.id} className="hover:bg-gray-50">
                     <td className="px-3 lg:px-6 py-4 text-xs lg:text-sm font-medium text-gray-900">
-                      {patient.id}
+                      {patient.id.substring(0, 8)}...
                     </td>
                     <td className="px-3 lg:px-6 py-4 text-xs lg:text-sm text-gray-900">
                       {patient.name}
@@ -249,10 +176,10 @@ export default function HospitalPatientsPage() {
                       {patient.age}
                     </td>
                     <td className="hidden md:table-cell px-3 lg:px-6 py-4 text-xs lg:text-sm text-gray-500">
-                      {patient.lastVisit}
+                      {patient.lastVisit || "—"}
                     </td>
                     <td className="hidden md:table-cell px-3 lg:px-6 py-4 text-xs lg:text-sm text-gray-500">
-                      {patient.insurance}
+                      {patient.insurance || "—"}
                     </td>
                     <td className="px-3 lg:px-6 py-4 text-xs lg:text-sm">
                       <span
@@ -285,33 +212,27 @@ export default function HospitalPatientsPage() {
       </div>
 
       {/* Pagination Info */}
-      {filteredPatients.length > 0 && (
-        <div className="mt-6 bg-white rounded-lg shadow overflow-hidden border border-gray-200 px-6 py-3">
+      {totalPatients > 0 && (
+        <div className="mt-6 bg-white rounded-xl border border-gray-100 overflow-hidden border border-gray-200 px-6 py-3">
           <div className="flex flex-col sm:flex-row items-center sm:justify-between gap-3">
             <div className="flex items-center space-x-4">
               <p className="text-sm text-gray-700">
                 Showing{" "}
                 <span className="font-medium">
-                  {filteredPatients.length === 0
+                  {totalPatients === 0
                     ? 0
                     : (currentPage - 1) * itemsPerPage + 1}
                 </span>{" "}
                 to{" "}
                 <span className="font-medium">
                   {Math.min(
-                    filteredPatients.length,
+                    totalPatients,
                     currentPage * itemsPerPage
                   )}
                 </span>{" "}
                 of{" "}
-                <span className="font-medium">{filteredPatients.length}</span>{" "}
+                <span className="font-medium">{totalPatients}</span>{" "}
                 patients
-                {filteredPatients.length !== patients.length && (
-                  <span className="text-gray-500">
-                    {" "}
-                    (filtered from {patients.length} total)
-                  </span>
-                )}
               </p>
 
               <label className="text-sm text-gray-600">Items per page:</label>
@@ -372,12 +293,6 @@ export default function HospitalPatientsPage() {
         </div>
       )}
 
-      <PatientRegistrationModal
-        isOpen={isRegisterModalOpen}
-        onClose={() => setIsRegisterModalOpen(false)}
-        onSuccess={handlePatientRegistration}
-      />
-
       {selectedPatientId && (
         <PatientDetailsModal
           isOpen={isPatientDetailsOpen}
@@ -387,15 +302,7 @@ export default function HospitalPatientsPage() {
           }}
           patientId={selectedPatientId}
           patientData={
-            patients.find((p) => p.id === selectedPatientId)
-              ? ({
-                  ...patients.find((p) => p.id === selectedPatientId)!,
-                  lastVisitDate: patients
-                    .find((p) => p.id === selectedPatientId)!
-                    .lastVisitDate.toISOString()
-                    .split("T")[0],
-                } as any)
-              : undefined
+            patients.find((p) => p.id === selectedPatientId) as any
           }
         />
       )}

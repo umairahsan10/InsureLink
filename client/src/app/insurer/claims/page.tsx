@@ -289,27 +289,27 @@ export default function InsurerClaimsPage() {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
-          <div className="bg-white rounded-lg shadow p-4">
+          <div className="bg-white rounded-xl border border-gray-100 p-4">
             <p className="text-sm text-gray-500">Total</p>
             <p className="text-2xl font-bold text-gray-900">{stats.totalClaims}</p>
           </div>
-          <div className="bg-white rounded-lg shadow p-4">
+          <div className="bg-white rounded-xl border border-gray-100 p-4">
             <p className="text-sm text-gray-500">Pending</p>
             <p className="text-2xl font-bold text-yellow-600">{stats.pendingCount}</p>
           </div>
-          <div className="bg-white rounded-lg shadow p-4">
+          <div className="bg-white rounded-xl border border-gray-100 p-4">
             <p className="text-sm text-gray-500">On Hold</p>
             <p className="text-2xl font-bold text-amber-600">{stats.onHoldCount}</p>
           </div>
-          <div className="bg-white rounded-lg shadow p-4">
+          <div className="bg-white rounded-xl border border-gray-100 p-4">
             <p className="text-sm text-gray-500">Approved</p>
             <p className="text-2xl font-bold text-green-600">{stats.approvedCount}</p>
           </div>
-          <div className="bg-white rounded-lg shadow p-4">
+          <div className="bg-white rounded-xl border border-gray-100 p-4">
             <p className="text-sm text-gray-500">Rejected</p>
             <p className="text-2xl font-bold text-red-600">{stats.rejectedCount}</p>
           </div>
-          <div className="bg-white rounded-lg shadow p-4">
+          <div className="bg-white rounded-xl border border-gray-100 p-4">
             <p className="text-sm text-gray-500">Paid</p>
             <p className="text-2xl font-bold text-blue-600">{stats.paidCount}</p>
           </div>
@@ -325,7 +325,7 @@ export default function InsurerClaimsPage() {
         )}
 
         {/* Filters */}
-        <div className="bg-white rounded-lg shadow overflow-hidden">
+        <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
           <div className="p-4 border-b border-gray-200">
             <div className="flex flex-col sm:flex-row gap-3">
               <input
@@ -491,7 +491,7 @@ export default function InsurerClaimsPage() {
                             </button>
 
                             {openDropdownId === claim.id && (
-                              <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+                              <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-xl shadow-lg z-50">
                                 <button
                                   onClick={() => {
                                     setViewClaimData(claim.rawClaim);
@@ -646,8 +646,8 @@ export default function InsurerClaimsPage() {
 
         {/* Approve Modal */}
         {approveClaimId && (
-          <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+          <div className="fixed inset-0 modal-backdrop z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 animate-modal-content">
               <h3 className="text-lg font-bold text-gray-900 mb-4">Approve Claim</h3>
               {actionError && (
                 <div className="bg-red-50 border border-red-200 rounded-lg p-2 text-sm text-red-700 mb-3">
@@ -705,8 +705,8 @@ export default function InsurerClaimsPage() {
 
         {/* Reject Modal */}
         {rejectClaimId && (
-          <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+          <div className="fixed inset-0 modal-backdrop z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 animate-modal-content">
               <h3 className="text-lg font-bold text-gray-900 mb-4">Reject Claim</h3>
               {actionError && (
                 <div className="bg-red-50 border border-red-200 rounded-lg p-2 text-sm text-red-700 mb-3">

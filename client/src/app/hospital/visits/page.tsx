@@ -8,61 +8,23 @@ import {
   CreateHospitalVisitRequest,
 } from "@/lib/api/hospitals";
 import { dependentsApi, Dependent } from "@/lib/api/dependents";
-import employeesData from "@/data/employees.json";
-import dependentsData from "@/data/dependents.json";
 
 // Helper function to get patient name (employee or dependent)
 const getPatientName = (visit: HospitalVisit): string => {
-  // If visit is for a dependent, show dependent name
   if (visit.dependent) {
     return `${visit.dependent.firstName} ${visit.dependent.lastName}`;
   }
-
-  // If dependent ID exists but not loaded, look up in demo data
-  if (visit.dependentId) {
-    const demoDependency = dependentsData.find(
-      (dep) => dep.id === visit.dependentId,
-    );
-    if (demoDependency) {
-      return demoDependency.name;
-    }
-  }
-
-  // If employee is in response, show employee name
   if (visit.employee?.user) {
     return `${visit.employee.user.firstName} ${visit.employee.user.lastName}`;
   }
-
-  // If employee ID exists but not loaded, look up in demo data
-  if (visit.employeeId) {
-    const demoEmployee = employeesData.find(
-      (emp) => emp.id === visit.employeeId,
-    );
-    if (demoEmployee) {
-      return demoEmployee.name;
-    }
-  }
-
   return "Unknown Patient";
 };
 
-// Helper function to get dependent name from database or demo data
+// Helper function to get dependent name
 const getDependentName = (visit: HospitalVisit): string => {
-  // Check if dependent is in database response
   if (visit.dependent) {
     return `${visit.dependent.firstName} ${visit.dependent.lastName}`;
   }
-
-  // If no dependent in response but dependentId exists, look up in demo data
-  if (visit.dependentId) {
-    const demoDependency = dependentsData.find(
-      (dep) => dep.id === visit.dependentId,
-    );
-    if (demoDependency) {
-      return demoDependency.name;
-    }
-  }
-
   return "—";
 };
 
@@ -243,19 +205,19 @@ export default function HospitalVisitsPage() {
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div className="bg-white rounded-lg shadow p-4">
+        <div className="bg-white rounded-xl border border-gray-100 p-4">
           <p className="text-sm text-gray-500">Total Visits</p>
           <p className="text-2xl font-bold text-gray-900">{visits.length}</p>
         </div>
-        <div className="bg-white rounded-lg shadow p-4">
+        <div className="bg-white rounded-xl border border-gray-100 p-4">
           <p className="text-sm text-gray-500">Today&apos;s Visits</p>
           <p className="text-2xl font-bold text-green-600">{todayVisits}</p>
         </div>
-        <div className="bg-white rounded-lg shadow p-4">
+        <div className="bg-white rounded-xl border border-gray-100 p-4">
           <p className="text-sm text-gray-500">Currently Admitted</p>
           <p className="text-2xl font-bold text-blue-600">{activeVisits}</p>
         </div>
-        <div className="bg-white rounded-lg shadow p-4">
+        <div className="bg-white rounded-xl border border-gray-100 p-4">
           <p className="text-sm text-gray-500">Discharged</p>
           <p className="text-2xl font-bold text-gray-400">
             {visits.length - activeVisits}
@@ -264,7 +226,7 @@ export default function HospitalVisitsPage() {
       </div>
 
       {/* Filter + Table */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
+      <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
         <div className="p-4 border-b border-gray-200">
           <input
             type="text"
@@ -399,7 +361,7 @@ export default function HospitalVisitsPage() {
 
       {/* Create Visit Modal */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+        <div className="fixed inset-0 z-50 flex items-center justify-center modal-backdrop">
           <div className="bg-white rounded-xl shadow-xl w-full max-w-md mx-4">
             <div className="p-6">
               <h2 className="text-xl font-bold text-gray-900 mb-4">

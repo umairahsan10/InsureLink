@@ -251,7 +251,7 @@ export default function ClaimActionDrawer({
 
   return (
     <div className="fixed inset-0 z-50 flex">
-      <div className="flex-1 bg-black/40 backdrop-blur-sm" onClick={onClose} />
+      <div className="flex-1 modal-backdrop" onClick={onClose} />
       <div className="relative flex h-full max-h-screen w-full max-w-md flex-col bg-white shadow-2xl animate-slide-in-right">
         <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4 bg-gradient-to-r from-slate-50 to-white">
           <div className="space-y-1">

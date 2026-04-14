@@ -68,7 +68,7 @@ export class CorporatesController {
   }
 
   @Auth()
-  @Roles('admin')
+  @Roles('admin', 'insurer')
   @Get()
   async listCorporates(
     @Query() query: ListCorporatesQueryDto,

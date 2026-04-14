@@ -71,7 +71,7 @@ export default function HospitalInfoDrawer({ hospital, isOpen, onClose, onDecisi
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-      <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="absolute inset-0 modal-backdrop" onClick={onClose} />
       <div className="relative flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl animate-fade-in">
         <div className="relative overflow-hidden border-b border-gray-100 px-8 py-6">
           <div className="absolute inset-0 bg-gradient-to-r from-indigo-600/5 via-blue-500/5 to-purple-600/5 pointer-events-none" />

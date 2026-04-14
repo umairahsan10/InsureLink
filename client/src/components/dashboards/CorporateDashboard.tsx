@@ -5,6 +5,8 @@ import { formatPKRShort } from "@/lib/format";
 import { analyticsApi, type CoverageAnalyticsResponse } from "@/lib/api/analytics";
 import type { Analytics } from "@/types/analytics";
 
+import { StaggerContainer, StaggerItem } from "@/components/ui/PageTransition";
+
 export default function CorporateDashboard() {
   const [analytics, setAnalytics] = useState<Analytics | null>(null);
   const [coverage, setCoverage] = useState<CoverageAnalyticsResponse | null>(null);
@@ -25,14 +27,15 @@ export default function CorporateDashboard() {
 
   if (isLoading) {
     return (
-      <div className="p-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-6">Corporate Dashboard</h1>
-        <div className="animate-pulse space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            {[...Array(4)].map((_, i) => (
-              <div key={i} className="bg-white rounded-lg shadow p-6 h-24" />
-            ))}
-          </div>
+      <div className="p-6 md:p-8">
+        <h1 className="text-2xl font-bold text-gray-900 mb-6">Corporate Dashboard</h1>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="bg-white rounded-xl border border-gray-100 p-6">
+              <div className="skeleton-shimmer h-3 w-24 rounded mb-3" />
+              <div className="skeleton-shimmer h-8 w-32 rounded" />
+            </div>
+          ))}
         </div>
       </div>
     );
@@ -53,35 +56,63 @@ export default function CorporateDashboard() {
   const utilizationPct = (coverage.utilizationRate * 100).toFixed(1);
 
   return (
-    <div className="p-8">
-      <h1 className="text-3xl font-bold text-gray-900 mb-6">
+    <div className="p-6 md:p-8">
+      <h1 className="text-2xl font-bold text-gray-900 mb-6">
         Corporate Dashboard
       </h1>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <div className="bg-white rounded-lg shadow p-6">
-          <p className="text-sm text-gray-500 mb-2">Total Employees</p>
-          <p className="text-3xl font-bold text-blue-600">{totalEmployees}</p>
-        </div>
+      <StaggerContainer className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        <StaggerItem>
+          <div className="bg-white rounded-xl border border-gray-100 p-6 card-hover">
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-sm font-medium text-gray-500">Total Employees</p>
+              <div className="w-10 h-10 rounded-lg stat-gradient-blue flex items-center justify-center">
+                <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+              </div>
+            </div>
+            <p className="text-3xl font-bold text-gray-900">{totalEmployees}</p>
+          </div>
+        </StaggerItem>
 
-        <div className="bg-white rounded-lg shadow p-6">
-          <p className="text-sm text-gray-500 mb-2">Active Employees</p>
-          <p className="text-3xl font-bold text-green-600">{activeEmployees}</p>
-        </div>
+        <StaggerItem>
+          <div className="bg-white rounded-xl border border-gray-100 p-6 card-hover">
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-sm font-medium text-gray-500">Active Employees</p>
+              <div className="w-10 h-10 rounded-lg stat-gradient-green flex items-center justify-center">
+                <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+              </div>
+            </div>
+            <p className="text-3xl font-bold text-gray-900">{activeEmployees}</p>
+          </div>
+        </StaggerItem>
 
-        <div className="bg-white rounded-lg shadow p-6">
-          <p className="text-sm text-gray-500 mb-2">Pending Claims</p>
-          <p className="text-3xl font-bold text-orange-600">{activeClaims}</p>
-        </div>
+        <StaggerItem>
+          <div className="bg-white rounded-xl border border-gray-100 p-6 card-hover">
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-sm font-medium text-gray-500">Pending Claims</p>
+              <div className="w-10 h-10 rounded-lg stat-gradient-amber flex items-center justify-center">
+                <svg className="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+              </div>
+            </div>
+            <p className="text-3xl font-bold text-gray-900">{activeClaims}</p>
+          </div>
+        </StaggerItem>
 
-        <div className="bg-white rounded-lg shadow p-6">
-          <p className="text-sm text-gray-500 mb-2">Coverage Utilization</p>
-          <p className="text-3xl font-bold text-purple-600">{utilizationPct}%</p>
-        </div>
-      </div>
+        <StaggerItem>
+          <div className="bg-white rounded-xl border border-gray-100 p-6 card-hover">
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-sm font-medium text-gray-500">Coverage Utilization</p>
+              <div className="w-10 h-10 rounded-lg stat-gradient-purple flex items-center justify-center">
+                <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" /></svg>
+              </div>
+            </div>
+            <p className="text-3xl font-bold text-gray-900">{utilizationPct}%</p>
+          </div>
+        </StaggerItem>
+      </StaggerContainer>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white rounded-lg shadow p-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="bg-white rounded-xl border border-gray-100 p-6">
           <h2 className="text-xl font-semibold text-gray-900 mb-4">
             Claims Overview
           </h2>
@@ -93,21 +124,21 @@ export default function CorporateDashboard() {
             ].map((item) => (
               <div
                 key={item.label}
-                className="flex justify-between items-center p-3 bg-gray-50 rounded"
+                className="flex justify-between items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
               >
                 <p className="font-medium">{item.label}</p>
                 <p className={`text-xl font-bold ${item.color}`}>{item.value}</p>
               </div>
             ))}
-            <div className="flex justify-between items-center p-3 bg-blue-50 rounded">
+            <div className="flex justify-between items-center p-3 rounded-lg stat-gradient-blue">
               <p className="font-medium">Total Claims</p>
               <p className="text-xl font-bold text-blue-600">{analytics.totalClaims}</p>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">
+        <div className="bg-white rounded-xl border border-gray-100 p-6">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">
             Plan Distribution
           </h2>
           <div className="space-y-3">
@@ -141,7 +172,7 @@ export default function CorporateDashboard() {
 
       {/* Coverage by Department */}
       {coverage.coverageByDepartment.length > 0 && (
-        <div className="bg-white rounded-lg shadow p-6 mt-6">
+        <div className="bg-white rounded-xl border border-gray-100 p-6 mt-4">
           <h2 className="text-xl font-semibold text-gray-900 mb-4">
             Coverage by Department
           </h2>

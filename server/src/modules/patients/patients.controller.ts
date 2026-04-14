@@ -1,11 +1,25 @@
-import { Controller, Get, Patch, Param, Query, Body } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Patch,
+  Post,
+  Param,
+  Query,
+  Body,
+} from '@nestjs/common';
 import { Auth } from '../auth/decorators/auth.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { CurrentUserDto } from '../auth/dto/current-user.dto';
 import { ListPatientsQueryDto } from './dto/list-patients-query.dto';
 import { PatientCoverageDto } from './dto/patient-coverage.dto';
 import { UpdatePatientProfileDto } from './dto/patient-profile.dto';
-import { PaginatedPatientsDto, PatientClaimsDto, PatientVisitsDto } from './dto/patient-response.dto';
+import {
+  PaginatedPatientsDto,
+  PatientClaimsDto,
+  PatientVisitsDto,
+} from './dto/patient-response.dto';
+import { VerifyPatientDto } from './dto/verify-patient.dto';
+import { VerifyPatientResponseDto } from './dto/verify-patient-response.dto';
 import { PatientsService } from './patients.service';
 
 @Controller('patients')
@@ -16,6 +30,13 @@ export class PatientsController {
   @Get('me')
   async getMe(@CurrentUser() actor: CurrentUserDto) {
     return this.patientsService.getMe(actor);
+  }
+
+  @Post('verify')
+  async verifyPatient(
+    @Body() dto: VerifyPatientDto,
+  ): Promise<VerifyPatientResponseDto> {
+    return this.patientsService.verifyPatient(dto);
   }
 
   @Auth()
@@ -38,7 +59,10 @@ export class PatientsController {
 
   @Auth()
   @Get(':id')
-  async getPatientById(@Param('id') id: string, @CurrentUser() actor: CurrentUserDto) {
+  async getPatientById(
+    @Param('id') id: string,
+    @CurrentUser() actor: CurrentUserDto,
+  ) {
     return this.patientsService.getPatientById(id, actor);
   }
 
@@ -69,4 +93,3 @@ export class PatientsController {
     return this.patientsService.getPatientVisits(id, actor);
   }
 }
-

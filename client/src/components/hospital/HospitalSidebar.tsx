@@ -31,7 +31,7 @@ export default function HospitalSidebar({ sidebarOpen: externalSidebarOpen, setS
       {/* Overlay for mobile */}
       {sidebarOpen && (
         <div 
-          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+          className="fixed inset-0 modal-backdrop z-40 lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}

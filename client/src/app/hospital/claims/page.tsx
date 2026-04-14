@@ -297,19 +297,19 @@ export default function HospitalClaimsPage() {
           <main className="flex-1 p-4 lg:p-6">
             {/* Stats Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-              <div className="bg-white rounded-lg shadow p-4">
+              <div className="bg-white rounded-xl border border-gray-100 p-4">
                 <p className="text-sm text-gray-500">Total Claims</p>
                 <p className="text-2xl font-bold text-gray-900">
                   {stats.totalClaims}
                 </p>
               </div>
-              <div className="bg-white rounded-lg shadow p-4">
+              <div className="bg-white rounded-xl border border-gray-100 p-4">
                 <p className="text-sm text-gray-500">Approved Claims</p>
                 <p className="text-2xl font-bold text-green-600">
                   {stats.totalApprovedClaims}
                 </p>
               </div>
-              <div className="bg-white rounded-lg shadow p-4">
+              <div className="bg-white rounded-xl border border-gray-100 p-4">
                 <p className="text-sm text-gray-500">Pending Review</p>
                 <p className="text-2xl font-bold text-yellow-600">
                   {stats.pendingClaims}
@@ -318,7 +318,7 @@ export default function HospitalClaimsPage() {
             </div>
 
             {/* Claims Table */}
-            <div className="bg-white rounded-lg shadow overflow-hidden">
+            <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
               <div className="p-3 lg:p-4 border-b border-gray-200">
                 <div className="flex flex-col sm:flex-row gap-2 lg:gap-4">
                   <input
@@ -487,7 +487,7 @@ export default function HospitalClaimsPage() {
                                 </button>
 
                                 {openDropdownId === claim.id && (
-                                  <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+                                  <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-xl shadow-lg z-50">
                                     <button
                                       onClick={() => {
                                         setSelectedClaimData(claim.rawClaim);
@@ -550,7 +550,7 @@ export default function HospitalClaimsPage() {
 
                 {/* Pagination Info */}
                 {!isLoading && apiMeta.total > 0 && (
-                  <div className="mt-6 bg-white rounded-lg shadow-sm border border-gray-200 px-6 py-3">
+                  <div className="mt-6 bg-white rounded-xl border border-gray-100 px-6 py-3">
                     <div className="flex flex-col sm:flex-row items-center sm:justify-between gap-3">
                       <div className="flex items-center space-x-4">
                         <p className="text-sm text-gray-700">
@@ -641,8 +641,8 @@ export default function HospitalClaimsPage() {
 
             {/* Modal for Submit Claim Form */}
             {showSubmitForm && (
-              <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="fixed inset-0 modal-backdrop z-50 flex items-center justify-center p-4">
+                <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
                   <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center">
                     <h2 className="text-xl font-bold text-gray-900">
                       Submit New Claim
@@ -706,8 +706,8 @@ export default function HospitalClaimsPage() {
 
             {/* Delete Claim Confirmation */}
             {deleteClaimId && (
-              <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
-                <div className="bg-white rounded-lg shadow-xl max-w-sm w-full p-6">
+              <div className="fixed inset-0 modal-backdrop z-50 flex items-center justify-center p-4">
+                <div className="bg-white rounded-xl shadow-2xl max-w-sm w-full p-6">
                   <h3 className="text-lg font-bold text-gray-900 mb-2">
                     Delete Claim
                   </h3>
@@ -748,7 +748,7 @@ export default function HospitalClaimsPage() {
 
             {/* Upload Modal */}
             {uploadModalOpen && (
-              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 py-6">
+              <div className="fixed inset-0 z-50 flex items-center justify-center modal-backdrop px-4 py-6">
                 <div className="w-full max-w-3xl rounded-2xl bg-white shadow-2xl">
                   <div className="flex items-center justify-between border-b px-6 py-4">
                     <div>
@@ -1016,7 +1016,7 @@ export default function HospitalClaimsPage() {
 
             {/* Result Modal */}
             {resultModalOpen && verificationResult && (
-              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 py-6">
+              <div className="fixed inset-0 z-50 flex items-center justify-center modal-backdrop px-4 py-6">
                 <div className="w-full max-w-2xl rounded-2xl bg-white shadow-2xl">
                   <div className="flex items-center justify-between border-b px-6 py-4">
                     <div>
@@ -1179,7 +1179,7 @@ export default function HospitalClaimsPage() {
 
             {/* Reset Confirmation Modal */}
             {showResetConfirm && (
-              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 py-6">
+              <div className="fixed inset-0 z-50 flex items-center justify-center modal-backdrop px-4 py-6">
                 <div className="w-full max-w-md rounded-2xl bg-white shadow-2xl">
                   <div className="px-6 py-4 border-b">
                     <h2 className="text-lg font-semibold text-gray-900">

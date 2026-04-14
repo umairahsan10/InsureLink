@@ -150,7 +150,7 @@ export default function PatientClaimsPage() {
     return (
       <div className="p-4 sm:p-6 bg-gray-50 min-h-screen">
         <div className="max-w-4xl mx-auto">
-          <div className="bg-white rounded-lg shadow-sm border border-green-200 p-8 text-center">
+          <div className="bg-white rounded-xl border border-green-200 p-8 text-center">
             <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -191,7 +191,7 @@ export default function PatientClaimsPage() {
         )}
 
         {/* Form */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+        <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
           <form onSubmit={handleSubmit} className="p-6 space-y-8">
             {/* Hospital Information */}
             <div>

@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { useEffect, useMemo, useState, useRef } from 'react';
-import NotificationPanel from '../notifications/NotificationPanel';
-import { AlertNotification } from '@/types';
+import { useEffect, useMemo, useState, useRef } from "react";
+import NotificationPanel from "../notifications/NotificationPanel";
+import { AlertNotification } from "@/types";
 
 const EMPTY_NOTIFICATIONS: AlertNotification[] = [];
 
@@ -15,13 +15,24 @@ interface TopbarProps {
 }
 
 export default function Topbar({
-  userName = 'User',
-  userRole = 'Guest',
+  userName = "User",
+  userRole = "Guest",
   notifications,
   onNotificationSelect,
   onNotificationDismiss,
 }: TopbarProps) {
   const [isPanelOpen, setIsPanelOpen] = useState(false);
+  const [currentDate, setCurrentDate] = useState("");
+  useEffect(() => {
+    setCurrentDate(
+      new Date().toLocaleDateString("en-US", {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      }),
+    );
+  }, []);
   const notificationsArray = notifications || EMPTY_NOTIFICATIONS;
   const [alerts, setAlerts] = useState<AlertNotification[]>(notificationsArray);
   const prevNotificationsRef = useRef<AlertNotification[]>(notificationsArray);
@@ -37,15 +48,17 @@ export default function Topbar({
 
   const unreadCount = useMemo(
     () => alerts.filter((notification) => !notification.isRead).length,
-    [alerts]
+    [alerts],
   );
 
   const handleTogglePanel = () => {
     if (!isPanelOpen) {
       setAlerts((current) =>
         current.map((notification) =>
-          notification.isRead ? notification : { ...notification, isRead: true }
-        )
+          notification.isRead
+            ? notification
+            : { ...notification, isRead: true },
+        ),
       );
     }
     setIsPanelOpen((prev) => !prev);
@@ -55,7 +68,9 @@ export default function Topbar({
     if (onNotificationDismiss) {
       onNotificationDismiss(id);
     } else {
-      setAlerts((current) => current.filter((notification) => notification.id !== id));
+      setAlerts((current) =>
+        current.filter((notification) => notification.id !== id),
+      );
     }
   };
 
@@ -64,11 +79,15 @@ export default function Topbar({
   };
 
   return (
-    <header className="bg-white shadow-sm border-b border-gray-200">
-      <div className="px-12 md:px-6 py-3 md:py-4 flex justify-between items-center">
+    <header className="bg-white/80 backdrop-blur-md shadow-sm border-b border-gray-200/60 sticky top-0 z-30">
+      <div className="px-4 md:px-6 py-3 md:py-4 flex justify-between items-center">
         <div>
-          <h2 className="text-sm md:text-xl font-semibold text-gray-800 truncate">Welcome back, {userName}!</h2>
-          <p className="text-xs md:text-sm text-gray-500 hidden sm:block">{new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+          <h2 className="text-sm md:text-lg font-semibold text-gray-800 truncate">
+            Welcome back, {userName}!
+          </h2>
+          <p className="text-xs md:text-sm text-gray-500 hidden sm:block">
+            {currentDate}
+          </p>
         </div>
 
         <div className="flex items-center space-x-2 md:space-x-4">
@@ -92,7 +111,7 @@ export default function Topbar({
               onClose={handleClose}
               onSelect={(notification) => {
                 onNotificationSelect?.(notification);
-                if (notification.category === 'messaging') {
+                if (notification.category === "messaging") {
                   setIsPanelOpen(false);
                 }
               }}
@@ -113,4 +132,3 @@ export default function Topbar({
     </header>
   );
 }
-

@@ -366,7 +366,7 @@ export default function AdminCreateUserPage() {
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-100 py-12 px-4">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
-        <div className="bg-white rounded-lg shadow-lg p-8 mb-6">
+        <div className="bg-white rounded-2xl border border-gray-100 p-8 mb-6">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
             Create New User
           </h1>
@@ -376,7 +376,7 @@ export default function AdminCreateUserPage() {
         </div>
 
         {/* Progress Steps */}
-        <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
+        <div className="bg-white rounded-2xl border border-gray-100 p-6 mb-6">
           <div className="flex items-center justify-between">
             {STEPS.map((step, index) => {
               const isActive = currentStep === step.id;
@@ -419,7 +419,7 @@ export default function AdminCreateUserPage() {
         </div>
 
         {/* Form Card */}
-        <div className="bg-white rounded-lg shadow-lg p-8">
+        <div className="bg-white rounded-2xl border border-gray-100 p-8">
           {error && (
             <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
               <p className="text-sm text-red-800">{error}</p>
@@ -427,7 +427,7 @@ export default function AdminCreateUserPage() {
           )}
 
           {success && (
-            <div className="mb-6 p-4 bg-green-50 border-2 border-green-500 rounded-lg shadow-md">
+            <div className="mb-6 p-4 bg-green-50 border-2 border-green-500 rounded-xl border border-gray-100">
               <div className="flex items-center gap-3">
                 <span className="text-2xl">✓</span>
                 <div>

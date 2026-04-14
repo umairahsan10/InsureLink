@@ -35,8 +35,10 @@ export default function InsurerHospitalsPage() {
     setIsLoading(true);
     setError("");
     try {
-      const data = await hospitalsApi.getHospitals();
-      const hospitals: Hospital[] = Array.isArray(data) ? data : (data as any).data ?? [];
+      const data = await hospitalsApi.getHospitals({ page: 1, limit: 100 });
+      const hospitals: Hospital[] = Array.isArray(data)
+        ? data
+        : (data as any).hospitals ?? (data as any).data?.hospitals ?? (data as any).data ?? [];
       const mapped: HospitalRow[] = hospitals.map((h) => ({
         id: h.id,
         name: h.hospitalName,
@@ -49,7 +51,8 @@ export default function InsurerHospitalsPage() {
         type: h.hospitalType,
       }));
       setHospitalData(mapped);
-    } catch {
+    } catch (err) {
+      console.error("Failed to load insurer hospitals:", err);
       setError("Failed to load hospitals.");
     } finally {
       setIsLoading(false);
@@ -125,13 +128,13 @@ export default function InsurerHospitalsPage() {
         )}
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <div className="bg-white rounded-lg shadow p-4">
+          <div className="bg-white rounded-xl border border-gray-100 p-4">
             <p className="text-sm text-gray-500">Total Hospitals</p>
             <p className="text-2xl font-bold text-gray-900">
               {hospitalData.length}
             </p>
           </div>
-          <div className="bg-white rounded-lg shadow p-4">
+          <div className="bg-white rounded-xl border border-gray-100 p-4">
             <p className="text-sm text-gray-500">Active Partners</p>
             <p className="text-2xl font-bold text-green-600">
               {
@@ -140,7 +143,7 @@ export default function InsurerHospitalsPage() {
               }
             </p>
           </div>
-          <div className="bg-white rounded-lg shadow p-4">
+          <div className="bg-white rounded-xl border border-gray-100 p-4">
             <p className="text-sm text-gray-500">Pending Approval</p>
             <p className="text-2xl font-bold text-yellow-600">
               {
@@ -149,13 +152,13 @@ export default function InsurerHospitalsPage() {
               }
             </p>
           </div>
-          <div className="bg-white rounded-lg shadow p-4">
+          <div className="bg-white rounded-xl border border-gray-100 p-4">
             <p className="text-sm text-gray-500">Cities Covered</p>
             <p className="text-2xl font-bold text-blue-600">{locations.length}</p>
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow overflow-hidden">
+        <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
           <div className="p-4 border-b border-gray-200">
             <div className="flex gap-4">
               <input
@@ -278,7 +281,7 @@ export default function InsurerHospitalsPage() {
                     setCurrentPage((prev) => Math.max(prev - 1, 1))
                   }
                   disabled={currentPage === 1}
-                  className="px-3 py-1 text-sm border border-gray-300 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                  className="px-3 py-1 text-sm text-gray-700 border border-gray-300 rounded-md disabled:opacity-50 disabled:text-gray-400 disabled:cursor-not-allowed hover:bg-gray-50"
                 >
                   Previous
                 </button>
@@ -291,7 +294,7 @@ export default function InsurerHospitalsPage() {
                         className={`px-3 py-1 text-sm border rounded-md ${
                           currentPage === page
                             ? "bg-blue-500 text-white border-blue-500"
-                            : "border-gray-300 hover:bg-gray-50"
+                            : "text-gray-700 border-gray-300 hover:bg-gray-50"
                         }`}
                       >
                         {page}
@@ -304,7 +307,7 @@ export default function InsurerHospitalsPage() {
                     setCurrentPage((prev) => Math.min(prev + 1, totalPages))
                   }
                   disabled={currentPage === totalPages}
-                  className="px-3 py-1 text-sm border border-gray-300 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                  className="px-3 py-1 text-sm text-gray-700 border border-gray-300 rounded-md disabled:opacity-50 disabled:text-gray-400 disabled:cursor-not-allowed hover:bg-gray-50"
                 >
                   Next
                 </button>

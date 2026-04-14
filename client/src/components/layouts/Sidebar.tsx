@@ -424,7 +424,7 @@ export default function Sidebar({ userRole }: SidebarProps) {
   return (
     <>
       <div
-        className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-40 hidden"
+        className="md:hidden fixed inset-0 modal-backdrop z-40 hidden"
         id="sidebar-overlay"
       ></div>
 
@@ -432,19 +432,30 @@ export default function Sidebar({ userRole }: SidebarProps) {
         id="sidebar"
         className={`fixed left-0 top-0 h-screen w-64 ${
           userRole === "insurer" ? "bg-red-50" : theme.bgColor
-        } shadow-lg flex flex-col transform -translate-x-full md:translate-x-0 transition-transform duration-300 z-50`}
+        } shadow-lg flex flex-col transform -translate-x-full md:translate-x-0 transition-transform duration-300 z-50 border-r border-gray-100`}
       >
         <div className={`p-4 md:p-6 border-b ${theme.borderColor}`}>
           <div className="flex items-center justify-between mb-2">
-            <div>
-              <h1
-                className={`text-xl md:text-2xl font-bold ${theme.logoColor}`}
-              >
-                Insurelink
-              </h1>
-              <p className={`text-xs md:text-sm ${theme.textColor} capitalize`}>
-                {userRole} Portal
-              </p>
+            <div className="flex items-center gap-3">
+              <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${
+                userRole === 'patient' ? 'bg-blue-600' :
+                userRole === 'corporate' ? 'bg-purple-600' :
+                userRole === 'hospital' ? 'bg-green-600' : 'bg-red-600'
+              }`}>
+                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                </svg>
+              </div>
+              <div>
+                <h1
+                  className={`text-lg md:text-xl font-bold ${theme.logoColor}`}
+                >
+                  InsureLink
+                </h1>
+                <p className={`text-xs ${theme.textColor} capitalize`}>
+                  {userRole} Portal
+                </p>
+              </div>
             </div>
             <button
               className="md:hidden text-gray-700 hover:text-gray-900 text-2xl font-bold"
@@ -455,15 +466,15 @@ export default function Sidebar({ userRole }: SidebarProps) {
           </div>
         </div>
 
-        <nav className="p-2 md:p-4 flex-1 overflow-y-auto">
-          <ul className="space-y-1 md:space-y-2">
+        <nav className="p-2 md:p-4 flex-1 overflow-y-auto custom-scrollbar">
+          <ul className="space-y-1">
             {items.map((item) => {
               const isActive = pathname === item.href;
               return (
                 <li key={item.name}>
                   <Link
                     href={item.href}
-                    className={`flex items-center space-x-2 md:space-x-3 px-3 md:px-4 py-2 md:py-3 rounded-lg transition-colors text-sm md:text-base ${
+                    className={`flex items-center space-x-2 md:space-x-3 px-3 md:px-4 py-2.5 md:py-2.5 rounded-lg transition-all duration-200 text-sm md:text-sm font-medium ${
                       isActive
                         ? `${theme.activeBg} ${theme.activeText}`
                         : `${theme.itemTextColor} ${theme.hoverBg} ${theme.hoverText}`

@@ -163,7 +163,7 @@ export default function HospitalProfilePage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
         <div className="lg:col-span-2 space-y-4 lg:space-y-6">
-          <div className="bg-white rounded-lg shadow p-4 lg:p-6">
+          <div className="bg-white rounded-xl border border-gray-100 p-4 lg:p-6">
             <h2 className="text-lg lg:text-xl font-semibold text-gray-900 mb-4">
               Hospital Information
             </h2>
@@ -299,7 +299,7 @@ export default function HospitalProfilePage() {
         </div>
 
         <div className="space-y-6">
-          <div className="bg-white rounded-lg shadow p-6">
+          <div className="bg-white rounded-xl border border-gray-100 p-6">
             <h2 className="text-xl font-semibold text-gray-900 mb-4">Status</h2>
             <div className="space-y-3">
               <div>

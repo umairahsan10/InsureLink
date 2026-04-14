@@ -57,10 +57,10 @@ export default function AdminDashboardPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-100 py-12 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-slate-50 to-indigo-100 py-12 px-4">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
-        <div className="bg-white rounded-lg shadow-lg p-8 mb-6">
+        <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-100 p-8 mb-6">
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold text-gray-900 mb-2">
@@ -71,13 +71,13 @@ export default function AdminDashboardPage() {
             <div className="flex gap-3">
               <Link
                 href="/admin/audit-logs"
-                className="bg-white text-indigo-600 border border-indigo-600 px-6 py-3 rounded-lg hover:bg-indigo-50 transition-colors font-semibold"
+                className="bg-white text-indigo-600 border border-indigo-200 px-6 py-3 rounded-xl hover:bg-indigo-50 transition-all font-semibold"
               >
                 Audit Logs
               </Link>
               <Link
                 href="/admin/create-user"
-                className="bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 transition-colors font-semibold"
+                className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-6 py-3 rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all font-semibold shadow-md shadow-indigo-200"
               >
                 + Create User
               </Link>
@@ -91,7 +91,7 @@ export default function AdminDashboardPage() {
             (role) => {
               const count = users.filter((u) => u.userRole === role).length;
               return (
-                <div key={role} className="bg-white rounded-lg shadow p-6">
+                <div key={role} className="bg-white rounded-xl border border-gray-100 p-6 card-hover">
                   <div
                     className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${getRoleBadgeColor(role)} mb-2`}
                   >
@@ -107,8 +107,8 @@ export default function AdminDashboardPage() {
         </div>
 
         {/* Users Table */}
-        <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-200">
+        <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+          <div className="px-6 py-4 border-b border-gray-100">
             <h2 className="text-xl font-semibold text-gray-800">All Users</h2>
           </div>
 
@@ -119,8 +119,10 @@ export default function AdminDashboardPage() {
           )}
 
           {loading ? (
-            <div className="p-8 text-center text-gray-500">
-              Loading users...
+            <div className="p-6 space-y-3">
+              {[...Array(5)].map((_, i) => (
+                <div key={i} className="h-12 skeleton-shimmer rounded-lg" />
+              ))}
             </div>
           ) : users.length === 0 ? (
             <div className="p-8 text-center text-gray-500">No users found</div>
@@ -151,7 +153,7 @@ export default function AdminDashboardPage() {
                 </thead>
                 <tbody className="divide-y divide-gray-200">
                   {users.map((user) => (
-                    <tr key={user.id} className="hover:bg-gray-50">
+                    <tr key={user.id} className="table-row-hover">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="font-medium text-gray-900">
                           {user.firstName} {user.lastName}

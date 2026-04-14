@@ -8,6 +8,7 @@ export interface Employee {
   employeeNumber: string;
   firstName: string;
   lastName?: string;
+  cnic?: string;
   email: string;
   phone: string;
   designation: string;
@@ -130,7 +131,9 @@ export const employeesApi = {
     if (query.department) params.append("department", query.department);
 
     const qs = params.toString();
-    const response = await apiFetch<PaginatedEmployees>(`/api/employees${qs ? `?${qs}` : ""}`);
+    const response = await apiFetch<PaginatedEmployees>(
+      `/api/employees${qs ? `?${qs}` : ""}`,
+    );
     return response.data;
   },
 
@@ -147,7 +150,10 @@ export const employeesApi = {
     return response.data;
   },
 
-  async update(employeeId: string, payload: UpdateEmployeeRequest): Promise<Employee> {
+  async update(
+    employeeId: string,
+    payload: UpdateEmployeeRequest,
+  ): Promise<Employee> {
     const response = await apiFetch<Employee>(`/api/employees/${employeeId}`, {
       method: "PATCH",
       body: JSON.stringify(payload),
@@ -156,39 +162,63 @@ export const employeesApi = {
   },
 
   async remove(employeeId: string): Promise<{ success: boolean }> {
-    const response = await apiFetch<{ success: boolean }>(`/api/employees/${employeeId}`, {
-      method: "DELETE",
-    });
+    const response = await apiFetch<{ success: boolean }>(
+      `/api/employees/${employeeId}`,
+      {
+        method: "DELETE",
+      },
+    );
     return response.data;
   },
 
   async getCoverage(employeeId: string): Promise<EmployeeCoverage> {
-    const response = await apiFetch<EmployeeCoverage>(`/api/employees/${employeeId}/coverage`);
+    const response = await apiFetch<EmployeeCoverage>(
+      `/api/employees/${employeeId}/coverage`,
+    );
     return response.data;
   },
 
-  async validateBulkImport(corporateId: string, rows: BulkImportEmployeeRow[]): Promise<BulkImportValidationResponse> {
-    const response = await apiFetch<BulkImportValidationResponse>("/api/employees/bulk-import/validate", {
-      method: "POST",
-      body: JSON.stringify({ corporateId, rows }),
-    });
+  async validateBulkImport(
+    corporateId: string,
+    rows: BulkImportEmployeeRow[],
+  ): Promise<BulkImportValidationResponse> {
+    const response = await apiFetch<BulkImportValidationResponse>(
+      "/api/employees/bulk-import/validate",
+      {
+        method: "POST",
+        body: JSON.stringify({ corporateId, rows }),
+      },
+    );
     return response.data;
   },
 
-  async commitBulkImport(importToken: string, mode: "cancel" | "skip_invalid" | "all_or_nothing"): Promise<{ importedCount: number; skippedCount: number }> {
-    const response = await apiFetch<{ importedCount: number; skippedCount: number }>("/api/employees/bulk-import/commit", {
+  async commitBulkImport(
+    importToken: string,
+    mode: "cancel" | "skip_invalid" | "all_or_nothing",
+  ): Promise<{ importedCount: number; skippedCount: number }> {
+    const response = await apiFetch<{
+      importedCount: number;
+      skippedCount: number;
+    }>("/api/employees/bulk-import/commit", {
       method: "POST",
       body: JSON.stringify({ importToken, mode }),
     });
     return response.data;
   },
 
-  async uploadCsv(corporateId: string, file: File): Promise<{ uploadId: string; validCount: number; invalidCount: number }> {
+  async uploadCsv(
+    corporateId: string,
+    file: File,
+  ): Promise<{ uploadId: string; validCount: number; invalidCount: number }> {
     const formData = new FormData();
-    formData.append('file', file);
-    formData.append('corporateId', corporateId);
+    formData.append("file", file);
+    formData.append("corporateId", corporateId);
 
-    const response = await apiFetch<{ uploadId: string; validCount: number; invalidCount: number }>("/api/employees/bulk-import/upload-csv", {
+    const response = await apiFetch<{
+      uploadId: string;
+      validCount: number;
+      invalidCount: number;
+    }>("/api/employees/bulk-import/upload-csv", {
       method: "POST",
       body: formData,
     });
@@ -199,60 +229,92 @@ export const employeesApi = {
     const params = new URLSearchParams();
     params.append("corporateId", corporateId);
     const qs = params.toString();
-    const response = await apiFetch<any[]>(`/api/employees/bulk-import/invalid${qs ? `?${qs}` : ""}`);
+    const response = await apiFetch<any[]>(
+      `/api/employees/bulk-import/invalid${qs ? `?${qs}` : ""}`,
+    );
     return response.data;
   },
 
-  async resubmitInvalidUpload(invalidUploadId: string): Promise<{ success: boolean; message: string }> {
-    const response = await apiFetch<{ success: boolean; message: string }>("/api/employees/bulk-import/resubmit-invalid", {
-      method: "POST",
-      body: JSON.stringify({ invalidUploadId }),
-    });
+  async resubmitInvalidUpload(
+    invalidUploadId: string,
+  ): Promise<{ success: boolean; message: string }> {
+    const response = await apiFetch<{ success: boolean; message: string }>(
+      "/api/employees/bulk-import/resubmit-invalid",
+      {
+        method: "POST",
+        body: JSON.stringify({ invalidUploadId }),
+      },
+    );
     return response.data;
   },
 
-  async updateInvalidUpload(invalidUploadId: string, data: {
-    employeeNumber: string;
-    firstName: string;
-    lastName?: string;
-    email: string;
-    phone: string;
-    password: string;
-    designation: string;
-    department: string;
-    planId: string;
-    coverageStartDate: string;
-    coverageEndDate: string;
-    dob?: string;
-    cnic?: string;
-  }): Promise<{ success: boolean; message: string }> {
-    const response = await apiFetch<{ success: boolean; message: string }>("/api/employees/bulk-import/update-invalid", {
-      method: "POST",
-      body: JSON.stringify({ invalidUploadId, ...data }),
-    });
+  async updateInvalidUpload(
+    invalidUploadId: string,
+    data: {
+      employeeNumber: string;
+      firstName: string;
+      lastName?: string;
+      email: string;
+      phone: string;
+      password: string;
+      designation: string;
+      department: string;
+      planId: string;
+      coverageStartDate: string;
+      coverageEndDate: string;
+      dob?: string;
+      cnic?: string;
+    },
+  ): Promise<{ success: boolean; message: string }> {
+    const response = await apiFetch<{ success: boolean; message: string }>(
+      "/api/employees/bulk-import/update-invalid",
+      {
+        method: "POST",
+        body: JSON.stringify({ invalidUploadId, ...data }),
+      },
+    );
     return response.data;
   },
 
-  async deleteInvalidUpload(invalidUploadId: string): Promise<{ success: boolean; message: string }> {
-    const response = await apiFetch<{ success: boolean; message: string }>(`/api/employees/bulk-import/delete-invalid?invalidUploadId=${invalidUploadId}`, {
-      method: "DELETE",
-    });
+  async deleteInvalidUpload(
+    invalidUploadId: string,
+  ): Promise<{ success: boolean; message: string }> {
+    const response = await apiFetch<{ success: boolean; message: string }>(
+      `/api/employees/bulk-import/delete-invalid?invalidUploadId=${invalidUploadId}`,
+      {
+        method: "DELETE",
+      },
+    );
     return response.data;
   },
 
-  async deleteAllInvalidUploads(corporateId: string): Promise<{ success: boolean; message: string; deletedCount: number }> {
-    const response = await apiFetch<{ success: boolean; message: string; deletedCount: number }>(`/api/employees/bulk-import/delete-all-invalid?corporateId=${corporateId}`, {
-      method: "DELETE",
-    });
+  async deleteAllInvalidUploads(
+    corporateId: string,
+  ): Promise<{ success: boolean; message: string; deletedCount: number }> {
+    const response = await apiFetch<{
+      success: boolean;
+      message: string;
+      deletedCount: number;
+    }>(
+      `/api/employees/bulk-import/delete-all-invalid?corporateId=${corporateId}`,
+      {
+        method: "DELETE",
+      },
+    );
     return response.data;
   },
 
-  async findByEmployeeNumber(corporateId: string, employeeNumber: string): Promise<Employee | null> {
+  async findByEmployeeNumber(
+    corporateId: string,
+    employeeNumber: string,
+  ): Promise<Employee | null> {
     const params = new URLSearchParams();
-    if (corporateId) params.append('corporateId', corporateId);
-    if (employeeNumber) params.append('employeeNumber', employeeNumber);
+    if (corporateId) params.append("corporateId", corporateId);
+    if (employeeNumber) params.append("employeeNumber", employeeNumber);
     const qs = params.toString();
-    const response = await apiFetch<Employee | null>(`/api/employees/find-by-number${qs ? `?${qs}` : ''}`);
+    const response = await apiFetch<Employee | null>(
+      `/api/employees/find-by-number${qs ? `?${qs}` : ""}`,
+    );
     return response.data;
   },
 };

@@ -175,7 +175,7 @@ export function HospitalMap({
   }, [activeHospitalId, hospitalsWithCoords, markerIcon, nearestHospital, onHospitalClick]);
 
   if (!isClient || !markerIcon) {
-    return <div className="h-[440px] w-full animate-pulse rounded-xl bg-slate-100" />;
+    return <div className="h-[440px] w-full skeleton-shimmer rounded-xl bg-slate-100" />;
   }
 
   return (

@@ -84,7 +84,7 @@ export default function ClaimDetailsModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center px-4 py-4">
       <div
-        className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm"
+        className="absolute inset-0 modal-backdrop"
         onClick={onClose}
       />
       <div className="relative w-full max-w-4xl overflow-hidden rounded-2xl bg-white shadow-2xl animate-fade-in max-h-[90vh] overflow-y-auto">

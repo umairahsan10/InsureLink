@@ -258,7 +258,7 @@ export default function InsurerDashboardPage() {
 
         {/* Summary Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6 md:mb-8">
-          <div className="bg-white rounded-lg shadow-sm p-4 md:p-6 border border-gray-200">
+          <div className="bg-white rounded-xl p-4 md:p-6 border border-gray-100">
             <div className="flex items-center justify-between">
               <div className="flex-1 min-w-0">
                 <p className="text-sm text-gray-500 mb-1">Pending Claims</p>
@@ -269,7 +269,7 @@ export default function InsurerDashboardPage() {
                   Requires review
                 </p>
               </div>
-              <div className="w-10 h-10 md:w-12 md:h-12 bg-red-100 rounded-lg flex items-center justify-center flex-shrink-0 ml-2">
+              <div className="w-10 h-10 md:w-12 md:h-12 bg-red-100 rounded-xl flex items-center justify-center flex-shrink-0 ml-2">
                 <svg
                   className="w-5 h-5 md:w-6 md:h-6 text-red-600"
                   fill="none"
@@ -287,7 +287,7 @@ export default function InsurerDashboardPage() {
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow-sm p-4 md:p-6 border border-gray-200">
+          <div className="bg-white rounded-xl p-4 md:p-6 border border-gray-100">
             <div className="flex items-center justify-between">
               <div className="flex-1 min-w-0">
                 <p className="text-sm text-gray-500 mb-1">Rejected Claims</p>
@@ -296,7 +296,7 @@ export default function InsurerDashboardPage() {
                 </p>
                 <p className="text-xs md:text-sm text-gray-500">Need review</p>
               </div>
-              <div className="w-10 h-10 md:w-12 md:h-12 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0 ml-2">
+              <div className="w-10 h-10 md:w-12 md:h-12 bg-green-100 rounded-xl flex items-center justify-center flex-shrink-0 ml-2">
                 <svg
                   className="w-5 h-5 md:w-6 md:h-6 text-green-600"
                   fill="none"
@@ -314,7 +314,7 @@ export default function InsurerDashboardPage() {
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow-sm p-4 md:p-6 border border-gray-200">
+          <div className="bg-white rounded-xl p-4 md:p-6 border border-gray-100">
             <div className="flex items-center justify-between">
               <div className="flex-1 min-w-0">
                 <p className="text-sm text-gray-500 mb-1">Approved Claims</p>
@@ -325,7 +325,7 @@ export default function InsurerDashboardPage() {
                   {stats.paidCount} paid
                 </p>
               </div>
-              <div className="w-10 h-10 md:w-12 md:h-12 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0 ml-2">
+              <div className="w-10 h-10 md:w-12 md:h-12 bg-blue-100 rounded-xl flex items-center justify-center flex-shrink-0 ml-2">
                 <svg
                   className="w-5 h-5 md:w-6 md:h-6 text-blue-600"
                   fill="none"
@@ -343,7 +343,7 @@ export default function InsurerDashboardPage() {
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow-sm p-4 md:p-6 border border-gray-200">
+          <div className="bg-white rounded-xl p-4 md:p-6 border border-gray-100">
             <div className="flex items-center justify-between">
               <div className="flex-1 min-w-0">
                 <p className="text-sm text-gray-500 mb-1">Flagged Claims</p>
@@ -354,7 +354,7 @@ export default function InsurerDashboardPage() {
                   High priority
                 </p>
               </div>
-              <div className="w-10 h-10 md:w-12 md:h-12 bg-orange-100 rounded-lg flex items-center justify-center flex-shrink-0 ml-2">
+              <div className="w-10 h-10 md:w-12 md:h-12 bg-orange-100 rounded-xl flex items-center justify-center flex-shrink-0 ml-2">
                 <svg
                   className="w-5 h-5 md:w-6 md:h-6 text-orange-600"
                   fill="none"
@@ -375,7 +375,7 @@ export default function InsurerDashboardPage() {
 
         {/* Claims Processing Overview */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-6 md:mb-8">
-          <div className="bg-gradient-to-r from-red-500 to-red-600 rounded-lg p-4 md:p-6 text-white">
+          <div className="bg-gradient-to-r from-red-500 to-red-600 rounded-xl p-4 md:p-6 text-white">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-red-100 text-xs md:text-sm mb-1">
@@ -391,7 +391,7 @@ export default function InsurerDashboardPage() {
             </div>
           </div>
 
-          <div className="bg-gradient-to-r from-green-500 to-green-600 rounded-lg p-4 md:p-6 text-white">
+          <div className="bg-gradient-to-r from-green-500 to-green-600 rounded-xl p-4 md:p-6 text-white">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-green-100 text-xs md:text-sm mb-1">
@@ -407,7 +407,7 @@ export default function InsurerDashboardPage() {
             </div>
           </div>
 
-          <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg p-4 md:p-6 text-white">
+          <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl p-4 md:p-6 text-white">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-blue-100 text-xs md:text-sm mb-1">
@@ -423,15 +423,15 @@ export default function InsurerDashboardPage() {
         </div>
 
         {/* Pending Claims Review */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-2 md:mb-2">
-          <div className="p-4 md:p-6 border-b border-gray-200">
+        <div className="bg-white rounded-xl border border-gray-100 mb-2 md:mb-2">
+          <div className="p-4 md:p-6 border-b border-gray-100">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
               <h2 className="text-lg md:text-xl font-semibold text-gray-900">
                 Pending Claims Review
               </h2>
               <button
                 onClick={handleExportReport}
-                className="px-4 md:px-5 py-2.5 text-sm md:text-base font-semibold text-white bg-indigo-600 rounded-lg shadow-sm hover:bg-indigo-500 active:bg-indigo-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-indigo-400 transition-transform duration-150 hover:-translate-y-0.5 active:translate-y-0 whitespace-nowrap"
+                className="px-4 md:px-5 py-2.5 text-sm md:text-base font-semibold text-white bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all shadow-md shadow-indigo-200 whitespace-nowrap"
               >
                 Export Report
               </button>

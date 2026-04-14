@@ -789,7 +789,7 @@ export class ClaimsRepository {
       ...(filters.status && { claimStatus: filters.status as any }),
     };
 
-    const [claims, total] = await this.prisma.$transaction([
+    const [claims, total] = await Promise.all([
       this.prisma.claim.findMany({
         where,
         orderBy: { createdAt: 'desc' },
