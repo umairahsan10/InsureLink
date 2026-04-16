@@ -9,7 +9,7 @@ import {
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { JwtService } from '@nestjs/jwt';
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 
 @Injectable()
 @WebSocketGateway({
@@ -18,6 +18,8 @@ import { Injectable } from '@nestjs/common';
   },
 })
 export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
+  private readonly logger = new Logger(AppGateway.name);
+
   @WebSocketServer()
   server: Server;
 
@@ -56,7 +58,7 @@ export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   sendToUser(userId: string, event: string, payload: any) {
-    console.log(`[WebSocket] Sending event '${event}' to user ${userId}:`, payload);
+    this.logger.debug(`Sending event '${event}' to user ${userId}`);
     this.server.to(`user:${userId}`).emit(event, payload);
   }
 }

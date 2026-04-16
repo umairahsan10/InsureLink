@@ -1,11 +1,4 @@
-import {
-  Controller,
-  Get,
-  Post,
-  UseInterceptors,
-  UploadedFile,
-} from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { Controller, Get } from '@nestjs/common';
 import { AppService } from './app.service';
 
 @Controller()
@@ -23,14 +16,5 @@ export class AppController {
     userCount: number | null;
   }> {
     return this.appService.getDatabaseHealth();
-  }
-
-  @Post('extract-pdf-image')
-  @UseInterceptors(FileInterceptor('pdf'))
-  async extractPdfImage(@UploadedFile() file: any): Promise<Buffer> {
-    if (!file) {
-      throw new Error('No PDF file provided');
-    }
-    return this.appService.extractFirstImageFromPDF(file.buffer);
   }
 }

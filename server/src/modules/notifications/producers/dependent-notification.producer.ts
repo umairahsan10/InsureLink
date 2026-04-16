@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 import { PrismaService } from '../../../common/prisma/prisma.service';
 import { InAppNotificationService } from '../services/in-app-notification.service';
@@ -23,6 +23,8 @@ export interface DependentRejectedEvent {
 
 @Injectable()
 export class DependentNotificationProducer {
+  private readonly logger = new Logger(DependentNotificationProducer.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly inAppNotificationService: InAppNotificationService,
@@ -31,7 +33,9 @@ export class DependentNotificationProducer {
   @OnEvent('dependent.approved')
   async handleDependentApproved(event: DependentApprovedEvent) {
     try {
-      console.log('[DependentApproval] Event received:', event);
+      this.logger.debug(
+        `dependent.approved received: dependentId=${event.dependentId} employeeId=${event.employeeId}`,
+      );
 
       const [employee, approver] = await Promise.all([
         this.prisma.employee.findUnique({
@@ -44,10 +48,10 @@ export class DependentNotificationProducer {
         }),
       ]);
 
-      console.log('[DependentApproval] Employee lookup result:', { employee, approver });
-
       if (!employee?.userId) {
-        console.warn(`Employee not found for dependent approval: ${event.employeeId}`);
+        this.logger.warn(
+          `Employee not found for dependent approval: ${event.employeeId}`,
+        );
         return;
       }
 
@@ -69,7 +73,10 @@ export class DependentNotificationProducer {
         category: 'dependents',
       });
     } catch (err) {
-      console.error('Failed to process dependent approval notification:', err);
+      this.logger.error(
+        'Failed to process dependent approval notification',
+        err instanceof Error ? err.stack : String(err),
+      );
     }
   }
 
@@ -97,7 +104,10 @@ export class DependentNotificationProducer {
         category: 'dependents',
       });
     } catch (err) {
-      console.error('Failed to process dependent rejection notification:', err);
+      this.logger.error(
+        'Failed to process dependent rejection notification',
+        err instanceof Error ? err.stack : String(err),
+      );
     }
   }
 }
