@@ -130,6 +130,14 @@ export class ClaimsService {
   }
 
   /**
+   * Get claim counts by status + high-priority count — single efficient DB round-trip
+   */
+  async getStats(user: CurrentUserDto) {
+    const roleFilter = this.getRoleFilter(user);
+    return this.claimsRepository.getStats(roleFilter);
+  }
+
+  /**
    * Get all claims with filters (role-aware)
    */
   async findAll(filters: ClaimFilterDto, user: CurrentUserDto) {

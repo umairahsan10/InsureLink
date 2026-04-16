@@ -59,18 +59,13 @@ export default function InsurerDashboardPage() {
     flaggedCount: 0,
   });
 
+  // Two parallel requests instead of the previous seven:
+  //  1. getClaims  — the 3 most-recent Pending claims shown in the table
+  //  2. getClaimStats — all status counts + high-priority count in one DB round-trip
   const fetchData = useCallback(async () => {
     setIsLoading(true);
     try {
-      const [
-        pendingRes,
-        totalRes,
-        approvedRes,
-        rejectedRes,
-        onHoldRes,
-        paidRes,
-        highRes,
-      ] = await Promise.all([
+      const [pendingRes, statsRes] = await Promise.all([
         claimsApi.getClaims({
           status: "Pending",
           limit: 3,
@@ -78,22 +73,17 @@ export default function InsurerDashboardPage() {
           sortBy: "createdAt",
           order: "desc",
         }),
-        claimsApi.getClaims({ limit: 1, page: 1 }),
-        claimsApi.getClaims({ status: "Approved", limit: 1, page: 1 }),
-        claimsApi.getClaims({ status: "Rejected", limit: 1, page: 1 }),
-        claimsApi.getClaims({ status: "OnHold", limit: 1, page: 1 }),
-        claimsApi.getClaims({ status: "Paid", limit: 1, page: 1 }),
-        claimsApi.getClaims({ priority: "High", limit: 1, page: 1 }),
+        claimsApi.getClaimStats(),
       ]);
       setPendingClaims((pendingRes.data as Claim[]) || []);
       setStats({
-        totalClaims: totalRes.meta.total,
-        pendingCount: pendingRes.meta.total,
-        approvedCount: approvedRes.meta.total,
-        rejectedCount: rejectedRes.meta.total,
-        onHoldCount: onHoldRes.meta.total,
-        paidCount: paidRes.meta.total,
-        flaggedCount: highRes.meta.total,
+        totalClaims: statsRes.total,
+        pendingCount: statsRes.Pending,
+        approvedCount: statsRes.Approved,
+        rejectedCount: statsRes.Rejected,
+        onHoldCount: statsRes.OnHold,
+        paidCount: statsRes.Paid,
+        flaggedCount: statsRes.highPriority,
       });
     } catch {
       // Non-critical dashboard load

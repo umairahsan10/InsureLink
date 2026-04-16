@@ -32,25 +32,27 @@ export default function HospitalDashboardPage() {
   const { hasUnreadAlert } = useClaimsMessaging();
   const router = useRouter();
 
+  // Two parallel requests instead of the previous three:
+  //  1. getClaims     — the 10 most-recent claims shown in the table
+  //  2. getClaimStats — all status counts in one DB round-trip (no per-status calls)
   const fetchClaims = useCallback(async () => {
     setIsLoadingClaims(true);
     try {
-      const [allRes, pendingRes, approvedRes] = await Promise.all([
+      const [allRes, statsRes] = await Promise.all([
         claimsApi.getClaims({
           limit: 10,
           page: 1,
           sortBy: "createdAt",
           order: "desc",
         }),
-        claimsApi.getClaims({ status: "Pending", limit: 1, page: 1 }),
-        claimsApi.getClaims({ status: "Approved", limit: 1, page: 1 }),
+        claimsApi.getClaimStats(),
       ]);
       setApiClaims((allRes.data as ApiClaim[]) || []);
       setHospitalStats({
-        patientsToday: allRes.meta.total,
-        claimsSubmitted: allRes.meta.total,
-        pendingApproval: pendingRes.meta.total,
-        approvedToday: approvedRes.meta.total,
+        patientsToday: statsRes.total,
+        claimsSubmitted: statsRes.total,
+        pendingApproval: statsRes.Pending,
+        approvedToday: statsRes.Approved,
       });
     } catch (err) {
       console.error("Failed to fetch claims:", err);
@@ -144,9 +146,7 @@ export default function HospitalDashboardPage() {
               </svg>
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">
-                Patients
-              </p>
+              <p className="text-sm font-medium text-gray-600">Patients</p>
               <p className="text-2xl font-bold text-gray-900">
                 {hospitalStats.patientsToday}
               </p>
@@ -228,9 +228,7 @@ export default function HospitalDashboardPage() {
               </svg>
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">
-                Approved
-              </p>
+              <p className="text-sm font-medium text-gray-600">Approved</p>
               <p className="text-2xl font-bold text-gray-900">
                 {hospitalStats.approvedToday}
               </p>

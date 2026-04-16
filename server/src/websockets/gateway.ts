@@ -62,6 +62,3 @@ export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
     this.server.to(`user:${userId}`).emit(event, payload);
   }
 }
-
-
-
