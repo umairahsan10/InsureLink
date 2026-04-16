@@ -7,7 +7,7 @@ import {
   type UnclaimedVisit,
   type UnclaimedVisitEmployee,
 } from "@/lib/api/hospitals";
-import { claimsApi, type CreateClaimRequest } from "@/lib/api/claims";
+import { claimsApi, type CreateClaimRequest, type Claim } from "@/lib/api/claims";
 import ClaimDocumentsSection from "@/components/claims/ClaimDocumentsSection";
 
 // ── Types ────────────────────────────────────────────────────────────────
@@ -15,7 +15,7 @@ import ClaimDocumentsSection from "@/components/claims/ClaimDocumentsSection";
 interface SubmitClaimFormV2Props {
   onSuccess?: (claimId: string) => void;
   onCancel?: () => void;
-  onClaimSubmitted?: (claim: any) => void;
+  onClaimSubmitted?: (claim: Claim) => void;
 }
 
 type FormStep =

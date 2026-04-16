@@ -12,32 +12,7 @@ import ClaimActionDrawer, {
 } from "@/components/claims/ClaimActionDrawer";
 import { claimsApi, type Claim } from "@/lib/api/claims";
 import { formatPKR } from "@/lib/format";
-
-// Helper to safely convert Prisma Decimal values to number
-function toNumber(val: any): number {
-  if (val === null || val === undefined) return 0;
-  if (typeof val === "number") return val;
-  if (typeof val === "string") return parseFloat(val) || 0;
-  if (val && typeof val.toString === "function")
-    return parseFloat(val.toString()) || 0;
-  return 0;
-}
-
-function getPatientName(claim: Claim): string {
-  if (claim.hospitalVisit?.dependent) {
-    const d = claim.hospitalVisit.dependent;
-    return `${d.firstName} ${d.lastName}`;
-  }
-  if (claim.hospitalVisit?.employee?.user) {
-    const u = claim.hospitalVisit.employee.user;
-    return `${u.firstName} ${u.lastName}`;
-  }
-  return "Unknown";
-}
-
-function getHospitalName(claim: Claim): string {
-  return claim.hospitalVisit?.hospital?.hospitalName || "Unknown";
-}
+import { toNumber, getPatientName, getHospitalName } from "@/lib/claimFormatters";
 
 export default function InsurerDashboardPage() {
   const { hasUnreadAlert } = useClaimsMessaging();
