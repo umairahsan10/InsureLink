@@ -6,9 +6,12 @@ import {
 } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../../common/prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { CreateUserWithProfileDto } from './dto/create-user-with-profile.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { BroadcastNotificationDto } from './dto/broadcast-notification.dto';
+import { ClaimStatus } from '@prisma/client';
 
 /** Prisma include for fetching a user with all role-specific profiles */
 const USER_DETAIL_INCLUDE = {
@@ -25,7 +28,10 @@ const USER_DETAIL_INCLUDE = {
 
 @Injectable()
 export class AdminService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private notificationsService: NotificationsService,
+  ) {}
 
   // ---------------------------------------------------------------------------
   // CREATE
@@ -387,5 +393,132 @@ export class AdminService {
       select: { id: true, companyName: true },
       orderBy: { companyName: 'asc' },
     });
+  }
+
+  // ---------------------------------------------------------------------------
+  // BROADCAST NOTIFICATIONS
+  // ---------------------------------------------------------------------------
+
+  async broadcastNotification(dto: BroadcastNotificationDto) {
+    const where: Record<string, unknown> = { isActive: true };
+    if (dto.targetRoles && dto.targetRoles.length > 0) {
+      where.userRole = { in: dto.targetRoles };
+    }
+
+    const users = await this.prisma.user.findMany({
+      where,
+      select: { id: true },
+    });
+
+    if (users.length === 0) {
+      return { sent: 0 };
+    }
+
+    const userIds = users.map((u) => u.id);
+    await this.notificationsService.createBulkNotifications(userIds, {
+      notificationType: 'policy_update',
+      title: dto.title,
+      message: dto.message,
+      severity: (dto.severity as 'info' | 'warning' | 'critical') || 'info',
+      category: 'system',
+    });
+
+    return { sent: userIds.length };
+  }
+
+  // ---------------------------------------------------------------------------
+  // FRAUD DETECTION
+  // ---------------------------------------------------------------------------
+
+  async getFraudAnalysis() {
+    // 1. Duplicate amounts: claims with same amount from same employee in last 30 days
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    const recentClaims = await this.prisma.claim.findMany({
+      where: { createdAt: { gte: thirtyDaysAgo } },
+      select: {
+        id: true,
+        claimNumber: true,
+        amountClaimed: true,
+        claimStatus: true,
+        priority: true,
+        createdAt: true,
+        hospitalVisit: {
+          select: {
+            employeeId: true,
+            hospital: { select: { hospitalName: true } },
+            employee: { select: { user: { select: { firstName: true, lastName: true } } } },
+          },
+        },
+        corporate: { select: { name: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    // Detect duplicate amounts per employee
+    const employeeAmountMap = new Map<string, typeof recentClaims>();
+    for (const claim of recentClaims) {
+      const key = `${claim.hospitalVisit.employeeId}-${Number(claim.amountClaimed)}`;
+      if (!employeeAmountMap.has(key)) employeeAmountMap.set(key, []);
+      employeeAmountMap.get(key)!.push(claim);
+    }
+    const duplicateAmountClaims = Array.from(employeeAmountMap.values())
+      .filter((group) => group.length > 1)
+      .flat();
+
+    // 2. High-frequency claimers: employees with > 3 claims in 30 days
+    const employeeClaimCount = new Map<string, number>();
+    for (const claim of recentClaims) {
+      const empId = claim.hospitalVisit.employeeId;
+      if (empId) {
+        employeeClaimCount.set(empId, (employeeClaimCount.get(empId) || 0) + 1);
+      }
+    }
+    const highFrequencyEmployeeIds = Array.from(employeeClaimCount.entries())
+      .filter(([, count]) => count > 3)
+      .map(([id]) => id);
+
+    const highFrequencyClaims = recentClaims.filter(
+      (c) => c.hospitalVisit.employeeId && highFrequencyEmployeeIds.includes(c.hospitalVisit.employeeId),
+    );
+
+    // 3. High-value claims: top 10 by amount
+    const highValueClaims = [...recentClaims]
+      .sort((a, b) => Number(b.amountClaimed) - Number(a.amountClaimed))
+      .slice(0, 10);
+
+    // 4. Summary stats
+    const totalFlagged = new Set([
+      ...duplicateAmountClaims.map((c) => c.id),
+      ...highFrequencyClaims.map((c) => c.id),
+    ]).size;
+
+    const formatClaim = (c: (typeof recentClaims)[0]) => ({
+      id: c.id,
+      claimNumber: c.claimNumber,
+      amount: Number(c.amountClaimed),
+      status: c.claimStatus,
+      priority: c.priority,
+      date: c.createdAt,
+      hospital: c.hospitalVisit.hospital?.hospitalName || 'Unknown',
+      patient: c.hospitalVisit.employee?.user
+        ? `${c.hospitalVisit.employee.user.firstName} ${c.hospitalVisit.employee.user.lastName}`
+        : 'Unknown',
+      corporate: c.corporate?.name || 'Unknown',
+    });
+
+    return {
+      summary: {
+        totalClaimsAnalyzed: recentClaims.length,
+        flaggedCount: totalFlagged,
+        duplicateAmountCount: duplicateAmountClaims.length,
+        highFrequencyCount: highFrequencyClaims.length,
+        periodDays: 30,
+      },
+      duplicateAmountClaims: duplicateAmountClaims.map(formatClaim),
+      highFrequencyClaims: highFrequencyClaims.map(formatClaim),
+      highValueClaims: highValueClaims.map(formatClaim),
+    };
   }
 }

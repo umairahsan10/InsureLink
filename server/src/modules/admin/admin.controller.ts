@@ -17,6 +17,7 @@ import { CreateUserWithProfileDto } from './dto/create-user-with-profile.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { BulkActionDto } from './dto/bulk-action.dto';
+import { BroadcastNotificationDto } from './dto/broadcast-notification.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
@@ -118,5 +119,21 @@ export class AdminController {
     @CurrentUser() user: CurrentUserDto,
   ) {
     return this.adminService.deleteUser(id, user.id);
+  }
+
+  // ── Broadcast notifications ───────────────────────────────────────────
+
+  @Post('broadcast')
+  @Roles('admin')
+  async broadcastNotification(@Body() dto: BroadcastNotificationDto) {
+    return this.adminService.broadcastNotification(dto);
+  }
+
+  // ── Fraud detection ───────────────────────────────────────────────────
+
+  @Get('fraud')
+  @Roles('admin')
+  async getFraudAnalysis() {
+    return this.adminService.getFraudAnalysis();
   }
 }

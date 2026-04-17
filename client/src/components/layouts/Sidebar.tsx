@@ -338,8 +338,14 @@ const menuItems: Record<string, MenuItem[]> = {
   admin: [
     { name: "Dashboard", href: "/admin/dashboard", icon: <DashboardIcon /> },
     { name: "Users", href: "/admin/users", icon: <EmployeesIcon /> },
-    { name: "Create User", href: "/admin/create-user", icon: <UserPlusIcon /> },
+    { name: "Claims", href: "/admin/claims", icon: <ClaimsIcon /> },
+    { name: "Corporates", href: "/admin/corporates", icon: <CorporatesIcon /> },
+    { name: "Hospitals", href: "/admin/hospitals", icon: <HospitalIcon /> },
+    { name: "Insurers", href: "/admin/insurers", icon: <PlansIcon /> },
+    { name: "Fraud Monitor", href: "/admin/fraud", icon: <ShieldIcon /> },
+    { name: "Settings", href: "/admin/settings", icon: <DocumentIcon /> },
     { name: "Audit Logs", href: "/admin/audit-logs", icon: <AuditIcon /> },
+    { name: "Create User", href: "/admin/create-user", icon: <UserPlusIcon /> },
   ],
 };
 
