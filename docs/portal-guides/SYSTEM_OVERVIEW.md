@@ -876,7 +876,14 @@ What each role can **do** (not just see):
 | Send claim messages             | Yes     | Yes       | Yes      | Yes     | Yes   |
 | View analytics                  | --      | Yes       | Yes      | Yes     | Yes   |
 | View audit logs                 | --      | --        | --       | --      | Yes   |
+| Export audit logs (CSV)         | --      | --        | --       | --      | Yes   |
 | Create organizations            | --      | --        | --       | --      | Yes   |
+| Create/edit/deactivate users    | --      | --        | --       | --      | Yes   |
+| Reset user passwords            | --      | --        | --       | --      | Yes   |
+| Bulk deactivate/delete users    | --      | --        | --       | --      | Yes   |
+| Change corporate status         | --      | --        | --       | --      | Yes   |
+| Broadcast notifications         | --      | --        | --       | --      | Yes   |
+| View fraud detection            | --      | --        | --       | --      | Yes   |
 
 **Data isolation:** Each role can only see data belonging to their organization. A corporate cannot see another corporate's employees. A hospital cannot see another hospital's claims. Enforced at the service layer with `ForbiddenException`.
 
@@ -891,7 +898,7 @@ client/src/
 │   ├── corporate/      → 5 pages (dashboard, employees, claims, plans, profile)
 │   ├── hospital/       → 7 pages (dashboard, claims, patients, patient-details, visits, emergency-contacts, profile)
 │   ├── insurer/        → 8 pages (dashboard, claims, plans, hospitals, corporates, labs, document-extract, profile)
-│   ├── admin/          → 3 pages (dashboard, create-user, audit-logs)
+│   ├── admin/          → 12 pages (dashboard, users, users/[id], create-user, claims, corporates, hospitals, insurers, fraud, settings, audit-logs)
 │   ├── onboard-*/      → 3 onboarding pages (corporate, hospital, insurer)
 │   └── login/          → Login page
 ├── components/
@@ -920,7 +927,7 @@ server/src/
 │   ├── analytics/      → Role-based dashboard metrics, coverage analytics
 │   ├── audit/          → Audit log interceptor and service
 │   ├── file-upload/    → Supabase storage provider
-│   └── admin/          → User+profile creation, audit log queries
+│   └── admin/          → User CRUD, bulk ops, broadcast notifications, fraud detection
 └── common/             → Guards, interceptors, filters, decorators
 ```
 
@@ -931,3 +938,4 @@ server/src/
 - [CORPORATE_PORTAL.md](CORPORATE_PORTAL.md)
 - [HOSPITAL_PORTAL.md](HOSPITAL_PORTAL.md)
 - [INSURER_PORTAL.md](INSURER_PORTAL.md)
+- [ADMIN_PORTAL.md](ADMIN_PORTAL.md)
