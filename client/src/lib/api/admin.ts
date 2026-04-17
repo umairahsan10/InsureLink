@@ -89,6 +89,21 @@ export interface UserListItem {
   lastLoginAt: string | null;
 }
 
+export interface UserListQuery {
+  page?: number;
+  limit?: number;
+  search?: string;
+  role?: string;
+}
+
+export interface PaginatedUsersResponse {
+  users: UserListItem[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
 export const adminApi = {
   /**
    * Create a user with their role-specific profile
@@ -104,10 +119,20 @@ export const adminApi = {
   },
 
   /**
-   * Get all users
+   * Get users with pagination, search, and role filter
    */
-  getAllUsers: async (): Promise<UserListItem[]> => {
-    const response = await apiFetch<UserListItem[]>("/api/admin/users");
+  getAllUsers: async (
+    query: UserListQuery = {},
+  ): Promise<PaginatedUsersResponse> => {
+    const params = new URLSearchParams();
+    if (query.page) params.set("page", String(query.page));
+    if (query.limit) params.set("limit", String(query.limit));
+    if (query.search) params.set("search", query.search);
+    if (query.role) params.set("role", query.role);
+    const qs = params.toString();
+    const response = await apiFetch<PaginatedUsersResponse>(
+      `/api/admin/users${qs ? `?${qs}` : ""}`,
+    );
     return response.data;
   },
 

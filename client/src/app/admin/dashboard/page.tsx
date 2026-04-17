@@ -1,26 +1,14 @@
 "use client";
 
-import { useContext, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { AuthContext } from "@/contexts/AuthContext";
 import { adminApi, UserListItem } from "@/lib/api/admin";
 
 export default function AdminDashboardPage() {
-  const router = useRouter();
-  const auth = useContext(AuthContext);
   const [users, setUsers] = useState<UserListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // Check if user is admin
-  useEffect(() => {
-    if (auth?.user && auth.user.role !== "admin") {
-      router.push("/");
-    }
-  }, [auth, router]);
-
-  // Load users
   useEffect(() => {
     loadUsers();
   }, []);
@@ -28,8 +16,8 @@ export default function AdminDashboardPage() {
   const loadUsers = async () => {
     try {
       setLoading(true);
-      const data = await adminApi.getAllUsers();
-      setUsers(data);
+      const res = await adminApi.getAllUsers({ page: 1, limit: 100 });
+      setUsers(res.users);
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "Failed to load users";
@@ -57,33 +45,32 @@ export default function AdminDashboardPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-slate-50 to-indigo-100 py-12 px-4">
-      <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-100 p-8 mb-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                Admin Dashboard
-              </h1>
-              <p className="text-gray-600">Manage users and system settings</p>
-            </div>
-            <div className="flex gap-3">
-              <Link
-                href="/admin/audit-logs"
-                className="bg-white text-indigo-600 border border-indigo-200 px-6 py-3 rounded-xl hover:bg-indigo-50 transition-all font-semibold"
-              >
-                Audit Logs
-              </Link>
-              <Link
-                href="/admin/create-user"
-                className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-6 py-3 rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all font-semibold shadow-md shadow-indigo-200"
-              >
-                + Create User
-              </Link>
-            </div>
+    <div className="p-6 max-w-7xl mx-auto">
+      {/* Header */}
+      <div className="bg-white rounded-2xl border border-gray-100 p-8 mb-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+              Admin Dashboard
+            </h1>
+            <p className="text-gray-600">Manage users and system settings</p>
+          </div>
+          <div className="flex gap-3">
+            <Link
+              href="/admin/audit-logs"
+              className="bg-white text-indigo-600 border border-indigo-200 px-6 py-3 rounded-xl hover:bg-indigo-50 transition-all font-semibold"
+            >
+              Audit Logs
+            </Link>
+            <Link
+              href="/admin/create-user"
+              className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-6 py-3 rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all font-semibold shadow-md shadow-indigo-200"
+            >
+              + Create User
+            </Link>
           </div>
         </div>
+      </div>
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
@@ -187,7 +174,6 @@ export default function AdminDashboardPage() {
             </div>
           )}
         </div>
-      </div>
     </div>
   );
 }

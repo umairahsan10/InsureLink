@@ -1,9 +1,7 @@
 "use client";
 
-import { useContext, useEffect, useState, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
-import { AuthContext } from "@/contexts/AuthContext";
 import {
   auditApi,
   AuditLogEntry,
@@ -11,8 +9,6 @@ import {
 } from "@/lib/api/audit";
 
 export default function AuditLogsPage() {
-  const router = useRouter();
-  const auth = useContext(AuthContext);
   const [logs, setLogs] = useState<AuditLogEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -21,12 +17,6 @@ export default function AuditLogsPage() {
   const [total, setTotal] = useState(0);
   const [entityTypeFilter, setEntityTypeFilter] = useState("");
   const [actionFilter, setActionFilter] = useState("");
-
-  useEffect(() => {
-    if (auth?.user && auth.user.role !== "admin") {
-      router.push("/");
-    }
-  }, [auth, router]);
 
   const loadLogs = useCallback(async () => {
     try {
@@ -70,8 +60,7 @@ export default function AuditLogsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-100 py-12 px-4">
-      <div className="max-w-7xl mx-auto">
+    <div className="p-6 max-w-7xl mx-auto">
         {/* Header */}
         <div className="bg-white rounded-2xl border border-gray-100 p-8 mb-6">
           <div className="flex items-center justify-between">
@@ -243,7 +232,6 @@ export default function AuditLogsPage() {
             </div>
           )}
         </div>
-      </div>
     </div>
   );
 }

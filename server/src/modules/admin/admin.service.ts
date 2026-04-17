@@ -2,12 +2,10 @@ import {
   Injectable,
   ConflictException,
   BadRequestException,
-  ForbiddenException,
 } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { CreateUserWithProfileDto } from './dto/create-user-with-profile.dto';
-import { UserRole } from '@prisma/client';
 
 @Injectable()
 export class AdminService {
@@ -15,18 +13,9 @@ export class AdminService {
 
   /**
    * Create a user with their role-specific profile in a single transaction.
-   * Only admins can call this.
+   * Role check is enforced at the controller level via @Roles('admin').
    */
-  async createUserWithProfile(adminId: string, dto: CreateUserWithProfileDto) {
-    // Verify the caller is an admin
-    const admin = await this.prisma.user.findUnique({
-      where: { id: adminId },
-    });
-
-    if (!admin || admin.userRole !== 'admin') {
-      throw new ForbiddenException('Only admins can create users');
-    }
-
+  async createUserWithProfile(dto: CreateUserWithProfileDto) {
     const { user, role, hospitalProfile, insurerProfile, corporateProfile } =
       dto;
 
@@ -187,47 +176,66 @@ export class AdminService {
   }
 
   /**
-   * Get all users (for admin listing)
+   * Get users with pagination, search, and role filter.
+   * Role check is enforced at the controller level via @Roles('admin').
    */
-  async getAllUsers(adminId: string) {
-    // Verify the caller is an admin
-    const admin = await this.prisma.user.findUnique({
-      where: { id: adminId },
-    });
+  async getAllUsers(query: {
+    page: number;
+    limit: number;
+    search?: string;
+    role?: string;
+  }) {
+    const { page, limit, search, role } = query;
+    const skip = (page - 1) * limit;
 
-    if (!admin || admin.userRole !== 'admin') {
-      throw new ForbiddenException('Only admins can list users');
+    const where: Record<string, unknown> = {};
+
+    if (role) {
+      where.userRole = role;
     }
 
-    const users = await this.prisma.user.findMany({
-      select: {
-        id: true,
-        email: true,
-        firstName: true,
-        lastName: true,
-        phone: true,
-        userRole: true,
-        createdAt: true,
-        lastLoginAt: true,
-      },
-      orderBy: { createdAt: 'desc' },
-    });
+    if (search) {
+      where.OR = [
+        { firstName: { contains: search, mode: 'insensitive' } },
+        { lastName: { contains: search, mode: 'insensitive' } },
+        { email: { contains: search, mode: 'insensitive' } },
+      ];
+    }
 
-    return users;
+    const [users, total] = await Promise.all([
+      this.prisma.user.findMany({
+        where,
+        select: {
+          id: true,
+          email: true,
+          firstName: true,
+          lastName: true,
+          phone: true,
+          userRole: true,
+          createdAt: true,
+          lastLoginAt: true,
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.user.count({ where }),
+    ]);
+
+    return {
+      users,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
   }
 
   /**
-   * Get all insurers (for dropdown when creating corporate)
+   * Get all active insurers for dropdown when creating corporate.
+   * Role check is enforced at the controller level via @Roles('admin').
    */
-  async getInsurersForDropdown(adminId: string) {
-    const admin = await this.prisma.user.findUnique({
-      where: { id: adminId },
-    });
-
-    if (!admin || admin.userRole !== 'admin') {
-      throw new ForbiddenException('Only admins can access this');
-    }
-
+  async getInsurersForDropdown() {
     return this.prisma.insurer.findMany({
       where: { isActive: true },
       select: {
