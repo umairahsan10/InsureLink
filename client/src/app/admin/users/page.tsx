@@ -1,11 +1,17 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { adminApi, UserListItem, PaginatedUsersResponse } from "@/lib/api/admin";
+import { useRouter } from "next/navigation";
+import {
+  adminApi,
+  UserListItem,
+  PaginatedUsersResponse,
+} from "@/lib/api/admin";
 
 const PAGE_SIZES = [10, 20, 50];
 
 export default function AdminUsersPage() {
+  const router = useRouter();
   const [data, setData] = useState<PaginatedUsersResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -13,12 +19,17 @@ export default function AdminUsersPage() {
   // Filters
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(20);
 
+  // Bulk selection
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkLoading, setBulkLoading] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+
   // Debounced search
   const [debouncedSearch, setDebouncedSearch] = useState("");
-
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(search);
@@ -36,29 +47,78 @@ export default function AdminUsersPage() {
         limit,
         search: debouncedSearch || undefined,
         role: roleFilter || undefined,
+        status: statusFilter || undefined,
       });
       setData(res);
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : "Failed to load users";
-      setError(message);
+      setError(err instanceof Error ? err.message : "Failed to load users");
     } finally {
       setLoading(false);
     }
-  }, [page, limit, debouncedSearch, roleFilter]);
+  }, [page, limit, debouncedSearch, roleFilter, statusFilter]);
 
   useEffect(() => {
     loadUsers();
   }, [loadUsers]);
+
+  // Clear selection when data changes
+  useEffect(() => {
+    setSelectedIds(new Set());
+  }, [data]);
 
   const handleRoleChange = (role: string) => {
     setRoleFilter(role);
     setPage(1);
   };
 
-  const handleLimitChange = (newLimit: number) => {
-    setLimit(newLimit);
+  const handleStatusChange = (status: string) => {
+    setStatusFilter(status);
     setPage(1);
+  };
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (!data) return;
+    if (selectedIds.size === data.users.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(data.users.map((u) => u.id)));
+    }
+  };
+
+  const handleBulkDeactivate = async () => {
+    if (selectedIds.size === 0) return;
+    setBulkLoading(true);
+    try {
+      await adminApi.bulkDeactivate(Array.from(selectedIds));
+      loadUsers();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Bulk deactivate failed");
+    } finally {
+      setBulkLoading(false);
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.size === 0) return;
+    setBulkLoading(true);
+    try {
+      await adminApi.bulkDelete(Array.from(selectedIds));
+      setConfirmDelete(false);
+      loadUsers();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Bulk delete failed");
+    } finally {
+      setBulkLoading(false);
+    }
   };
 
   const getRoleBadgeColor = (role: string) => {
@@ -103,7 +163,6 @@ export default function AdminUsersPage() {
       {/* Filters */}
       <div className="bg-white rounded-xl border border-gray-100 p-4 mb-6">
         <div className="flex flex-col md:flex-row gap-4 items-center">
-          {/* Search */}
           <div className="flex-1 w-full">
             <input
               type="text"
@@ -113,8 +172,6 @@ export default function AdminUsersPage() {
               className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-900 text-sm"
             />
           </div>
-
-          {/* Role filter */}
           <select
             value={roleFilter}
             onChange={(e) => handleRoleChange(e.target.value)}
@@ -127,11 +184,21 @@ export default function AdminUsersPage() {
             <option value="corporate">Corporate</option>
             <option value="patient">Patient</option>
           </select>
-
-          {/* Page size */}
+          <select
+            value={statusFilter}
+            onChange={(e) => handleStatusChange(e.target.value)}
+            className="px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-900 text-sm"
+          >
+            <option value="">All Status</option>
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+          </select>
           <select
             value={limit}
-            onChange={(e) => handleLimitChange(Number(e.target.value))}
+            onChange={(e) => {
+              setLimit(Number(e.target.value));
+              setPage(1);
+            }}
             className="px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-900 text-sm"
           >
             {PAGE_SIZES.map((size) => (
@@ -142,6 +209,52 @@ export default function AdminUsersPage() {
           </select>
         </div>
       </div>
+
+      {/* Bulk action bar */}
+      {selectedIds.size > 0 && (
+        <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-4 mb-6 flex items-center justify-between">
+          <span className="text-sm font-medium text-indigo-800">
+            {selectedIds.size} user{selectedIds.size !== 1 ? "s" : ""} selected
+          </span>
+          <div className="flex gap-3">
+            <button
+              onClick={handleBulkDeactivate}
+              disabled={bulkLoading}
+              className="px-4 py-2 text-sm font-medium bg-amber-500 text-white rounded-lg hover:bg-amber-600 disabled:opacity-50 transition-colors"
+            >
+              Deactivate Selected
+            </button>
+            {!confirmDelete ? (
+              <button
+                onClick={() => setConfirmDelete(true)}
+                disabled={bulkLoading}
+                className="px-4 py-2 text-sm font-medium bg-red-500 text-white rounded-lg hover:bg-red-600 disabled:opacity-50 transition-colors"
+              >
+                Delete Selected
+              </button>
+            ) : (
+              <div className="flex gap-2 items-center">
+                <span className="text-sm text-red-700 font-medium">
+                  Are you sure?
+                </span>
+                <button
+                  onClick={handleBulkDelete}
+                  disabled={bulkLoading}
+                  className="px-4 py-2 text-sm font-medium bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors"
+                >
+                  Confirm Delete
+                </button>
+                <button
+                  onClick={() => setConfirmDelete(false)}
+                  className="px-4 py-2 text-sm font-medium bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Users Table */}
       <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
@@ -159,7 +272,7 @@ export default function AdminUsersPage() {
           </div>
         ) : users.length === 0 ? (
           <div className="p-8 text-center text-gray-500">
-            {debouncedSearch || roleFilter
+            {debouncedSearch || roleFilter || statusFilter
               ? "No users found matching your filters"
               : "No users found"}
           </div>
@@ -168,6 +281,16 @@ export default function AdminUsersPage() {
             <table className="w-full">
               <thead className="bg-gray-50">
                 <tr>
+                  <th className="px-4 py-3 text-left">
+                    <input
+                      type="checkbox"
+                      checked={
+                        users.length > 0 && selectedIds.size === users.length
+                      }
+                      onChange={toggleSelectAll}
+                      className="h-4 w-4 text-indigo-600 border-gray-300 rounded"
+                    />
+                  </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Name
                   </th>
@@ -175,10 +298,10 @@ export default function AdminUsersPage() {
                     Email
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Phone
+                    Role
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Role
+                    Status
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Created
@@ -190,7 +313,22 @@ export default function AdminUsersPage() {
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {users.map((user: UserListItem) => (
-                  <tr key={user.id} className="hover:bg-gray-50 transition-colors">
+                  <tr
+                    key={user.id}
+                    className="hover:bg-gray-50 transition-colors cursor-pointer"
+                    onClick={() => router.push(`/admin/users/${user.id}`)}
+                  >
+                    <td
+                      className="px-4 py-4"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.has(user.id)}
+                        onChange={() => toggleSelect(user.id)}
+                        className="h-4 w-4 text-indigo-600 border-gray-300 rounded"
+                      />
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="font-medium text-gray-900">
                         {user.firstName} {user.lastName}
@@ -199,14 +337,25 @@ export default function AdminUsersPage() {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                       {user.email}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                      {user.phone || "—"}
-                    </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span
                         className={`px-3 py-1 rounded-full text-xs font-medium ${getRoleBadgeColor(user.userRole)}`}
                       >
                         {user.userRole}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span
+                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${
+                          user.isActive
+                            ? "bg-green-100 text-green-800"
+                            : "bg-red-100 text-red-800"
+                        }`}
+                      >
+                        <span
+                          className={`w-1.5 h-1.5 rounded-full ${user.isActive ? "bg-green-500" : "bg-red-500"}`}
+                        />
+                        {user.isActive ? "Active" : "Inactive"}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">

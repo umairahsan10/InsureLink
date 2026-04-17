@@ -2,33 +2,46 @@ import {
   Injectable,
   ConflictException,
   BadRequestException,
+  NotFoundException,
 } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { CreateUserWithProfileDto } from './dto/create-user-with-profile.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
+
+/** Prisma include for fetching a user with all role-specific profiles */
+const USER_DETAIL_INCLUDE = {
+  hospital: true,
+  insurer: { include: { plans: { select: { id: true, planName: true, planCode: true, isActive: true } } } },
+  corporate: { include: { insurer: { select: { id: true, companyName: true } } } },
+  employee: {
+    include: {
+      corporate: { select: { id: true, name: true } },
+      plan: { select: { id: true, planName: true, planCode: true } },
+    },
+  },
+};
 
 @Injectable()
 export class AdminService {
   constructor(private prisma: PrismaService) {}
 
-  /**
-   * Create a user with their role-specific profile in a single transaction.
-   * Role check is enforced at the controller level via @Roles('admin').
-   */
+  // ---------------------------------------------------------------------------
+  // CREATE
+  // ---------------------------------------------------------------------------
+
   async createUserWithProfile(dto: CreateUserWithProfileDto) {
     const { user, role, hospitalProfile, insurerProfile, corporateProfile } =
       dto;
 
-    // Check if email already exists
     const existingUser = await this.prisma.user.findUnique({
       where: { email: user.email },
     });
-
     if (existingUser) {
       throw new ConflictException('Email already registered');
     }
 
-    // Check if CNIC already exists (if provided)
     if (user.cnic) {
       const existingCnic = await this.prisma.user.findUnique({
         where: { cnic: user.cnic },
@@ -38,49 +51,33 @@ export class AdminService {
       }
     }
 
-    // Validate that role-specific profile is provided for non-admin, non-patient roles
     if (role === 'hospital' && !hospitalProfile) {
-      throw new BadRequestException(
-        'Hospital profile is required for hospital role',
-      );
+      throw new BadRequestException('Hospital profile is required for hospital role');
     }
     if (role === 'insurer' && !insurerProfile) {
-      throw new BadRequestException(
-        'Insurer profile is required for insurer role',
-      );
+      throw new BadRequestException('Insurer profile is required for insurer role');
     }
     if (role === 'corporate' && !corporateProfile) {
-      throw new BadRequestException(
-        'Corporate profile is required for corporate role',
-      );
+      throw new BadRequestException('Corporate profile is required for corporate role');
     }
 
-    // Check license number uniqueness for hospital
     if (hospitalProfile) {
-      const existingHospital = await this.prisma.hospital.findFirst({
+      const existing = await this.prisma.hospital.findFirst({
         where: { licenseNumber: hospitalProfile.licenseNumber },
       });
-      if (existingHospital) {
-        throw new ConflictException('Hospital license number already exists');
-      }
+      if (existing) throw new ConflictException('Hospital license number already exists');
     }
 
-    // Check license number uniqueness for insurer
     if (insurerProfile) {
-      const existingInsurer = await this.prisma.insurer.findFirst({
+      const existing = await this.prisma.insurer.findFirst({
         where: { licenseNumber: insurerProfile.licenseNumber },
       });
-      if (existingInsurer) {
-        throw new ConflictException('Insurer license number already exists');
-      }
+      if (existing) throw new ConflictException('Insurer license number already exists');
     }
 
-    // Hash the password
     const passwordHash = await bcrypt.hash(user.password, 10);
 
-    // Create user and profile in a transaction
     const result = await this.prisma.$transaction(async (tx) => {
-      // Create the user
       const newUser = await tx.user.create({
         data: {
           email: user.email,
@@ -98,7 +95,6 @@ export class AdminService {
 
       let profile: object | null = null;
 
-      // Create role-specific profile
       if (role === 'hospital' && hospitalProfile) {
         profile = await tx.hospital.create({
           data: {
@@ -133,13 +129,10 @@ export class AdminService {
           },
         });
       } else if (role === 'corporate' && corporateProfile) {
-        // Verify that the insurer exists
         const insurer = await tx.insurer.findUnique({
           where: { id: corporateProfile.insurerId },
         });
-        if (!insurer) {
-          throw new BadRequestException('Invalid insurer ID');
-        }
+        if (!insurer) throw new BadRequestException('Invalid insurer ID');
 
         profile = await tx.corporate.create({
           data: {
@@ -175,23 +168,30 @@ export class AdminService {
     };
   }
 
-  /**
-   * Get users with pagination, search, and role filter.
-   * Role check is enforced at the controller level via @Roles('admin').
-   */
+  // ---------------------------------------------------------------------------
+  // LIST
+  // ---------------------------------------------------------------------------
+
   async getAllUsers(query: {
     page: number;
     limit: number;
     search?: string;
     role?: string;
+    status?: string;
   }) {
-    const { page, limit, search, role } = query;
+    const { page, limit, search, role, status } = query;
     const skip = (page - 1) * limit;
 
     const where: Record<string, unknown> = {};
 
     if (role) {
       where.userRole = role;
+    }
+
+    if (status === 'active') {
+      where.isActive = true;
+    } else if (status === 'inactive') {
+      where.isActive = false;
     }
 
     if (search) {
@@ -212,6 +212,7 @@ export class AdminService {
           lastName: true,
           phone: true,
           userRole: true,
+          isActive: true,
           createdAt: true,
           lastLoginAt: true,
         },
@@ -222,26 +223,168 @@ export class AdminService {
       this.prisma.user.count({ where }),
     ]);
 
-    return {
-      users,
-      total,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit),
-    };
+    return { users, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
 
-  /**
-   * Get all active insurers for dropdown when creating corporate.
-   * Role check is enforced at the controller level via @Roles('admin').
-   */
+  // ---------------------------------------------------------------------------
+  // GET BY ID
+  // ---------------------------------------------------------------------------
+
+  async getUserById(id: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+      include: USER_DETAIL_INCLUDE,
+    });
+
+    if (!user) throw new NotFoundException('User not found');
+
+    // Strip passwordHash before returning
+    const { passwordHash: _, ...safeUser } = user;
+    return safeUser;
+  }
+
+  // ---------------------------------------------------------------------------
+  // UPDATE
+  // ---------------------------------------------------------------------------
+
+  async updateUser(id: string, dto: UpdateUserDto) {
+    const user = await this.prisma.user.findUnique({ where: { id } });
+    if (!user) throw new NotFoundException('User not found');
+
+    const { hospitalProfile, insurerProfile, corporateProfile, ...userFields } = dto;
+
+    // Build user update data, only including fields that are provided
+    const userData: Record<string, unknown> = {};
+    if (userFields.firstName !== undefined) userData.firstName = userFields.firstName;
+    if (userFields.lastName !== undefined) userData.lastName = userFields.lastName;
+    if (userFields.phone !== undefined) userData.phone = userFields.phone;
+    if (userFields.dob !== undefined) userData.dob = userFields.dob ? new Date(userFields.dob) : null;
+    if (userFields.gender !== undefined) userData.gender = userFields.gender || null;
+    if (userFields.cnic !== undefined) userData.cnic = userFields.cnic || null;
+    if (userFields.address !== undefined) userData.address = userFields.address || null;
+
+    await this.prisma.$transaction(async (tx) => {
+      if (Object.keys(userData).length > 0) {
+        await tx.user.update({ where: { id }, data: userData });
+      }
+
+      if (hospitalProfile && user.userRole === 'hospital') {
+        const { hospitalType, ...restHospital } = hospitalProfile;
+        await tx.hospital.updateMany({
+          where: { userId: id },
+          data: {
+            ...restHospital,
+            ...(hospitalType !== undefined && { hospitalType }),
+          },
+        });
+      }
+
+      if (insurerProfile && user.userRole === 'insurer') {
+        const { status, ...restInsurer } = insurerProfile;
+        await tx.insurer.updateMany({
+          where: { userId: id },
+          data: {
+            ...restInsurer,
+            ...(status !== undefined && { status }),
+          },
+        });
+      }
+
+      if (corporateProfile && user.userRole === 'corporate') {
+        const { status, ...restCorporate } = corporateProfile;
+        await tx.corporate.updateMany({
+          where: { userId: id },
+          data: {
+            ...restCorporate,
+            ...(status !== undefined && { status }),
+          },
+        });
+      }
+    });
+
+    return this.getUserById(id);
+  }
+
+  // ---------------------------------------------------------------------------
+  // TOGGLE ACTIVE
+  // ---------------------------------------------------------------------------
+
+  async toggleUserActive(id: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+      select: { id: true, isActive: true },
+    });
+    if (!user) throw new NotFoundException('User not found');
+
+    const updated = await this.prisma.user.update({
+      where: { id },
+      data: { isActive: !user.isActive },
+      select: { id: true, isActive: true },
+    });
+
+    return updated;
+  }
+
+  // ---------------------------------------------------------------------------
+  // DELETE
+  // ---------------------------------------------------------------------------
+
+  async deleteUser(id: string, requestingUserId: string) {
+    const user = await this.prisma.user.findUnique({ where: { id } });
+    if (!user) throw new NotFoundException('User not found');
+
+    if (id === requestingUserId) {
+      throw new BadRequestException('You cannot delete your own account');
+    }
+
+    await this.prisma.user.delete({ where: { id } });
+    return { message: 'User deleted successfully' };
+  }
+
+  // ---------------------------------------------------------------------------
+  // RESET PASSWORD
+  // ---------------------------------------------------------------------------
+
+  async resetPassword(id: string, dto: ResetPasswordDto) {
+    const user = await this.prisma.user.findUnique({ where: { id } });
+    if (!user) throw new NotFoundException('User not found');
+
+    const passwordHash = await bcrypt.hash(dto.newPassword, 10);
+    await this.prisma.user.update({
+      where: { id },
+      data: { passwordHash },
+    });
+
+    return { message: 'Password reset successfully' };
+  }
+
+  // ---------------------------------------------------------------------------
+  // BULK OPERATIONS
+  // ---------------------------------------------------------------------------
+
+  async bulkDeactivate(userIds: string[]) {
+    const result = await this.prisma.user.updateMany({
+      where: { id: { in: userIds } },
+      data: { isActive: false },
+    });
+    return { count: result.count };
+  }
+
+  async bulkDelete(userIds: string[]) {
+    const result = await this.prisma.user.deleteMany({
+      where: { id: { in: userIds } },
+    });
+    return { count: result.count };
+  }
+
+  // ---------------------------------------------------------------------------
+  // INSURERS DROPDOWN
+  // ---------------------------------------------------------------------------
+
   async getInsurersForDropdown() {
     return this.prisma.insurer.findMany({
       where: { isActive: true },
-      select: {
-        id: true,
-        companyName: true,
-      },
+      select: { id: true, companyName: true },
       orderBy: { companyName: 'asc' },
     });
   }
