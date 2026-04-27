@@ -164,9 +164,7 @@ export default function AdminUserDetailPage({
       setUser((prev) => (prev ? { ...prev, isActive: res.isActive } : prev));
       flash(res.isActive ? "User activated" : "User deactivated");
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to toggle status",
-      );
+      setError(err instanceof Error ? err.message : "Failed to toggle status");
     }
   };
 
@@ -183,9 +181,7 @@ export default function AdminUserDetailPage({
       setNewPassword("");
       flash("Password reset successfully");
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to reset password",
-      );
+      setError(err instanceof Error ? err.message : "Failed to reset password");
     } finally {
       setResetLoading(false);
     }
@@ -216,7 +212,10 @@ export default function AdminUserDetailPage({
   ) =>
     setEditForm((prev) => ({
       ...prev,
-      [profileKey]: { ...((prev[profileKey] as Record<string, unknown>) || {}), [field]: value },
+      [profileKey]: {
+        ...((prev[profileKey] as Record<string, unknown>) || {}),
+        [field]: value,
+      },
     }));
 
   // ─── Render helpers ─────────────────────────────────────────────────────
@@ -289,7 +288,9 @@ export default function AdminUserDetailPage({
     return (
       <div className="p-6 max-w-5xl mx-auto">
         <div className="bg-red-50 border border-red-200 rounded-2xl p-8 text-center">
-          <p className="text-red-800 font-medium">{error || "User not found"}</p>
+          <p className="text-red-800 font-medium">
+            {error || "User not found"}
+          </p>
           <Link
             href="/admin/users"
             className="mt-4 inline-block text-indigo-600 hover:underline"
@@ -317,9 +318,7 @@ export default function AdminUserDetailPage({
     emp && typeof emp.plan === "object" && emp.plan !== null
       ? (emp.plan as Record<string, unknown>)
       : null;
-  const insurerPlans = (Array.isArray(ins?.plans)
-    ? ins.plans
-    : []) as Array<{
+  const insurerPlans = (Array.isArray(ins?.plans) ? ins.plans : []) as Array<{
     planName: string;
     planCode: string;
     isActive: boolean;
@@ -331,7 +330,12 @@ export default function AdminUserDetailPage({
       {error && (
         <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-xl flex items-center justify-between">
           <p className="text-sm text-red-800">{error}</p>
-          <button onClick={() => setError("")} className="text-red-500 text-lg leading-none">&times;</button>
+          <button
+            onClick={() => setError("")}
+            className="text-red-500 text-lg leading-none"
+          >
+            &times;
+          </button>
         </div>
       )}
       {success && (
@@ -457,7 +461,8 @@ export default function AdminUserDetailPage({
               <strong>
                 {user.firstName} {user.lastName}
               </strong>
-              ? This action cannot be undone and will remove all associated data.
+              ? This action cannot be undone and will remove all associated
+              data.
             </p>
             <div className="flex gap-3 justify-end">
               <button
@@ -514,7 +519,11 @@ export default function AdminUserDetailPage({
         </div>
 
         <dl className="grid grid-cols-2 md:grid-cols-4 gap-6 mt-8">
-          <Field label="First Name" value={user.firstName} editKey="firstName" />
+          <Field
+            label="First Name"
+            value={user.firstName}
+            editKey="firstName"
+          />
           <Field label="Last Name" value={user.lastName} editKey="lastName" />
           <Field label="Phone" value={user.phone} editKey="phone" />
           <Field label="Email" value={user.email} />
@@ -564,13 +573,39 @@ export default function AdminUserDetailPage({
             Hospital Profile
           </h3>
           <dl className="grid grid-cols-2 md:grid-cols-3 gap-6">
-            <Field label="Hospital Name" value={hosp.hospitalName as string} editKey="hospitalName" profileKey="hospitalProfile" />
-            <Field label="License Number" value={hosp.licenseNumber as string} />
-            <Field label="City" value={hosp.city as string} editKey="city" profileKey="hospitalProfile" />
-            <Field label="Address" value={hosp.address as string} editKey="address" profileKey="hospitalProfile" />
-            <Field label="Emergency Phone" value={hosp.emergencyPhone as string} editKey="emergencyPhone" profileKey="hospitalProfile" />
+            <Field
+              label="Hospital Name"
+              value={hosp.hospitalName as string}
+              editKey="hospitalName"
+              profileKey="hospitalProfile"
+            />
+            <Field
+              label="License Number"
+              value={hosp.licenseNumber as string}
+            />
+            <Field
+              label="City"
+              value={hosp.city as string}
+              editKey="city"
+              profileKey="hospitalProfile"
+            />
+            <Field
+              label="Address"
+              value={hosp.address as string}
+              editKey="address"
+              profileKey="hospitalProfile"
+            />
+            <Field
+              label="Emergency Phone"
+              value={hosp.emergencyPhone as string}
+              editKey="emergencyPhone"
+              profileKey="hospitalProfile"
+            />
             <Field label="Type" value={hosp.hospitalType as string} />
-            <Field label="Emergency Unit" value={hosp.hasEmergencyUnit as boolean} />
+            <Field
+              label="Emergency Unit"
+              value={hosp.hasEmergencyUnit as boolean}
+            />
             <Field label="Active" value={hosp.isActive as boolean} />
           </dl>
         </div>
@@ -583,21 +618,64 @@ export default function AdminUserDetailPage({
             Insurer Profile
           </h3>
           <dl className="grid grid-cols-2 md:grid-cols-3 gap-6">
-            <Field label="Company Name" value={ins.companyName as string} editKey="companyName" profileKey="insurerProfile" />
+            <Field
+              label="Company Name"
+              value={ins.companyName as string}
+              editKey="companyName"
+              profileKey="insurerProfile"
+            />
             <Field label="License Number" value={ins.licenseNumber as string} />
-            <Field label="City" value={ins.city as string} editKey="city" profileKey="insurerProfile" />
-            <Field label="Province" value={ins.province as string} editKey="province" profileKey="insurerProfile" />
-            <Field label="Address" value={ins.address as string} editKey="address" profileKey="insurerProfile" />
-            <Field label="Max Coverage Limit" value={`PKR ${Number(ins.maxCoverageLimit).toLocaleString()}`} editKey="maxCoverageLimit" profileKey="insurerProfile" type="number" />
-            <Field label="Network Hospitals" value={Number(ins.networkHospitalCount)} editKey="networkHospitalCount" profileKey="insurerProfile" type="number" />
-            <Field label="Corporate Clients" value={Number(ins.corporateClientCount)} editKey="corporateClientCount" profileKey="insurerProfile" type="number" />
+            <Field
+              label="City"
+              value={ins.city as string}
+              editKey="city"
+              profileKey="insurerProfile"
+            />
+            <Field
+              label="Province"
+              value={ins.province as string}
+              editKey="province"
+              profileKey="insurerProfile"
+            />
+            <Field
+              label="Address"
+              value={ins.address as string}
+              editKey="address"
+              profileKey="insurerProfile"
+            />
+            <Field
+              label="Max Coverage Limit"
+              value={`PKR ${Number(ins.maxCoverageLimit).toLocaleString()}`}
+              editKey="maxCoverageLimit"
+              profileKey="insurerProfile"
+              type="number"
+            />
+            <Field
+              label="Network Hospitals"
+              value={Number(ins.networkHospitalCount)}
+              editKey="networkHospitalCount"
+              profileKey="insurerProfile"
+              type="number"
+            />
+            <Field
+              label="Corporate Clients"
+              value={Number(ins.corporateClientCount)}
+              editKey="corporateClientCount"
+              profileKey="insurerProfile"
+              type="number"
+            />
             <Field label="Status" value={ins.status as string} />
             <Field label="Active" value={ins.isActive as boolean} />
-            <Field label="Operating Since" value={fmtDate(ins.operatingSince as string)} />
+            <Field
+              label="Operating Since"
+              value={fmtDate(ins.operatingSince as string)}
+            />
           </dl>
           {insurerPlans.length > 0 && (
             <div className="mt-6 pt-6 border-t border-gray-100">
-              <h4 className="text-sm font-semibold text-gray-700 mb-3">Plans</h4>
+              <h4 className="text-sm font-semibold text-gray-700 mb-3">
+                Plans
+              </h4>
               <div className="flex flex-wrap gap-2">
                 {insurerPlans.map((p) => (
                   <span
@@ -620,17 +698,64 @@ export default function AdminUserDetailPage({
             Corporate Profile
           </h3>
           <dl className="grid grid-cols-2 md:grid-cols-3 gap-6">
-            <Field label="Company Name" value={corp.name as string} editKey="name" profileKey="corporateProfile" />
-            <Field label="City" value={corp.city as string} editKey="city" profileKey="corporateProfile" />
-            <Field label="Province" value={corp.province as string} editKey="province" profileKey="corporateProfile" />
-            <Field label="Address" value={corp.address as string} editKey="address" profileKey="corporateProfile" />
-            <Field label="Employee Count" value={Number(corp.employeeCount)} editKey="employeeCount" profileKey="corporateProfile" type="number" />
-            <Field label="Contact Name" value={corp.contactName as string} editKey="contactName" profileKey="corporateProfile" />
-            <Field label="Contact Email" value={corp.contactEmail as string} editKey="contactEmail" profileKey="corporateProfile" />
-            <Field label="Contact Phone" value={corp.contactPhone as string} editKey="contactPhone" profileKey="corporateProfile" />
+            <Field
+              label="Company Name"
+              value={corp.name as string}
+              editKey="name"
+              profileKey="corporateProfile"
+            />
+            <Field
+              label="City"
+              value={corp.city as string}
+              editKey="city"
+              profileKey="corporateProfile"
+            />
+            <Field
+              label="Province"
+              value={corp.province as string}
+              editKey="province"
+              profileKey="corporateProfile"
+            />
+            <Field
+              label="Address"
+              value={corp.address as string}
+              editKey="address"
+              profileKey="corporateProfile"
+            />
+            <Field
+              label="Employee Count"
+              value={Number(corp.employeeCount)}
+              editKey="employeeCount"
+              profileKey="corporateProfile"
+              type="number"
+            />
+            <Field
+              label="Contact Name"
+              value={corp.contactName as string}
+              editKey="contactName"
+              profileKey="corporateProfile"
+            />
+            <Field
+              label="Contact Email"
+              value={corp.contactEmail as string}
+              editKey="contactEmail"
+              profileKey="corporateProfile"
+            />
+            <Field
+              label="Contact Phone"
+              value={corp.contactPhone as string}
+              editKey="contactPhone"
+              profileKey="corporateProfile"
+            />
             <Field label="Status" value={corp.status as string} />
-            <Field label="Contract Start" value={fmtDate(corp.contractStartDate as string)} />
-            <Field label="Contract End" value={fmtDate(corp.contractEndDate as string)} />
+            <Field
+              label="Contract Start"
+              value={fmtDate(corp.contractStartDate as string)}
+            />
+            <Field
+              label="Contract End"
+              value={fmtDate(corp.contractEndDate as string)}
+            />
             {corporateInsurer && (
               <Field
                 label="Insurer"
@@ -649,7 +774,9 @@ export default function AdminUserDetailPage({
           </h3>
           <dl className="grid grid-cols-2 md:grid-cols-3 gap-6">
             <div>
-              <dt className="text-sm font-medium text-gray-500">Employee Number</dt>
+              <dt className="text-sm font-medium text-gray-500">
+                Employee Number
+              </dt>
               <dd className="mt-1 text-sm text-gray-900 font-mono">
                 {emp.employeeNumber as string}
               </dd>
