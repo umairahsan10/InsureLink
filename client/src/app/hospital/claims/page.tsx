@@ -177,7 +177,7 @@ export default function HospitalClaimsPage() {
   }, [statusFilter, amountFilter, searchQuery, itemsPerPage]);
 
   const handleClaimSubmitted = useCallback(
-    (_claimId?: string) => {
+    (_claim?: unknown) => {
       setShowSubmitForm(false);
       fetchClaims();
       fetchStats();

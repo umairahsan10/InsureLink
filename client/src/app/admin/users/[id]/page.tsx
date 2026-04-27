@@ -305,6 +305,25 @@ export default function AdminUserDetailPage({
   const ins = user.insurer as Record<string, unknown> | null;
   const corp = user.corporate as Record<string, unknown> | null;
   const emp = user.employee as Record<string, unknown> | null;
+  const corporateInsurer =
+    corp && typeof corp.insurer === "object" && corp.insurer !== null
+      ? (corp.insurer as Record<string, unknown>)
+      : null;
+  const employeeCorporate =
+    emp && typeof emp.corporate === "object" && emp.corporate !== null
+      ? (emp.corporate as Record<string, unknown>)
+      : null;
+  const employeePlan =
+    emp && typeof emp.plan === "object" && emp.plan !== null
+      ? (emp.plan as Record<string, unknown>)
+      : null;
+  const insurerPlans = (Array.isArray(ins?.plans)
+    ? ins.plans
+    : []) as Array<{
+    planName: string;
+    planCode: string;
+    isActive: boolean;
+  }>;
 
   return (
     <div className="p-6 max-w-5xl mx-auto">
@@ -576,17 +595,11 @@ export default function AdminUserDetailPage({
             <Field label="Active" value={ins.isActive as boolean} />
             <Field label="Operating Since" value={fmtDate(ins.operatingSince as string)} />
           </dl>
-          {(ins as Record<string, unknown>).plans && (
+          {insurerPlans.length > 0 && (
             <div className="mt-6 pt-6 border-t border-gray-100">
               <h4 className="text-sm font-semibold text-gray-700 mb-3">Plans</h4>
               <div className="flex flex-wrap gap-2">
-                {(
-                  (ins as Record<string, unknown>).plans as Array<{
-                    planName: string;
-                    planCode: string;
-                    isActive: boolean;
-                  }>
-                ).map((p) => (
+                {insurerPlans.map((p) => (
                   <span
                     key={p.planCode}
                     className={`px-3 py-1 rounded-full text-xs font-medium ${p.isActive ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-600"}`}
@@ -618,13 +631,10 @@ export default function AdminUserDetailPage({
             <Field label="Status" value={corp.status as string} />
             <Field label="Contract Start" value={fmtDate(corp.contractStartDate as string)} />
             <Field label="Contract End" value={fmtDate(corp.contractEndDate as string)} />
-            {(corp as Record<string, unknown>).insurer && (
+            {corporateInsurer && (
               <Field
                 label="Insurer"
-                value={
-                  ((corp as Record<string, unknown>).insurer as Record<string, string>)
-                    ?.companyName
-                }
+                value={String(corporateInsurer.companyName ?? "—")}
               />
             )}
           </dl>
@@ -662,25 +672,19 @@ export default function AdminUserDetailPage({
                 {(emp.status as string) || "—"}
               </dd>
             </div>
-            {(emp as Record<string, unknown>).corporate && (
+            {employeeCorporate && (
               <div>
                 <dt className="text-sm font-medium text-gray-500">Corporate</dt>
                 <dd className="mt-1 text-sm text-gray-900">
-                  {
-                    ((emp as Record<string, unknown>).corporate as Record<string, string>)
-                      ?.name
-                  }
+                  {String(employeeCorporate.name ?? "—")}
                 </dd>
               </div>
             )}
-            {(emp as Record<string, unknown>).plan && (
+            {employeePlan && (
               <div>
                 <dt className="text-sm font-medium text-gray-500">Plan</dt>
                 <dd className="mt-1 text-sm text-gray-900">
-                  {
-                    ((emp as Record<string, unknown>).plan as Record<string, string>)
-                      ?.planName
-                  }
+                  {String(employeePlan.planName ?? "—")}
                 </dd>
               </div>
             )}
