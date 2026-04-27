@@ -12,32 +12,7 @@ import ClaimActionDrawer, {
 } from "@/components/claims/ClaimActionDrawer";
 import { claimsApi, type Claim } from "@/lib/api/claims";
 import { formatPKR } from "@/lib/format";
-
-// Helper to safely convert Prisma Decimal values to number
-function toNumber(val: any): number {
-  if (val === null || val === undefined) return 0;
-  if (typeof val === "number") return val;
-  if (typeof val === "string") return parseFloat(val) || 0;
-  if (val && typeof val.toString === "function")
-    return parseFloat(val.toString()) || 0;
-  return 0;
-}
-
-function getPatientName(claim: Claim): string {
-  if (claim.hospitalVisit?.dependent) {
-    const d = claim.hospitalVisit.dependent;
-    return `${d.firstName} ${d.lastName}`;
-  }
-  if (claim.hospitalVisit?.employee?.user) {
-    const u = claim.hospitalVisit.employee.user;
-    return `${u.firstName} ${u.lastName}`;
-  }
-  return "Unknown";
-}
-
-function getHospitalName(claim: Claim): string {
-  return claim.hospitalVisit?.hospital?.hospitalName || "Unknown";
-}
+import { toNumber, getPatientName, getHospitalName } from "@/lib/claimFormatters";
 
 export default function InsurerDashboardPage() {
   const { hasUnreadAlert } = useClaimsMessaging();
@@ -59,18 +34,13 @@ export default function InsurerDashboardPage() {
     flaggedCount: 0,
   });
 
+  // Two parallel requests instead of the previous seven:
+  //  1. getClaims  — the 3 most-recent Pending claims shown in the table
+  //  2. getClaimStats — all status counts + high-priority count in one DB round-trip
   const fetchData = useCallback(async () => {
     setIsLoading(true);
     try {
-      const [
-        pendingRes,
-        totalRes,
-        approvedRes,
-        rejectedRes,
-        onHoldRes,
-        paidRes,
-        highRes,
-      ] = await Promise.all([
+      const [pendingRes, statsRes] = await Promise.all([
         claimsApi.getClaims({
           status: "Pending",
           limit: 3,
@@ -78,22 +48,17 @@ export default function InsurerDashboardPage() {
           sortBy: "createdAt",
           order: "desc",
         }),
-        claimsApi.getClaims({ limit: 1, page: 1 }),
-        claimsApi.getClaims({ status: "Approved", limit: 1, page: 1 }),
-        claimsApi.getClaims({ status: "Rejected", limit: 1, page: 1 }),
-        claimsApi.getClaims({ status: "OnHold", limit: 1, page: 1 }),
-        claimsApi.getClaims({ status: "Paid", limit: 1, page: 1 }),
-        claimsApi.getClaims({ priority: "High", limit: 1, page: 1 }),
+        claimsApi.getClaimStats(),
       ]);
       setPendingClaims((pendingRes.data as Claim[]) || []);
       setStats({
-        totalClaims: totalRes.meta.total,
-        pendingCount: pendingRes.meta.total,
-        approvedCount: approvedRes.meta.total,
-        rejectedCount: rejectedRes.meta.total,
-        onHoldCount: onHoldRes.meta.total,
-        paidCount: paidRes.meta.total,
-        flaggedCount: highRes.meta.total,
+        totalClaims: statsRes.total,
+        pendingCount: statsRes.Pending,
+        approvedCount: statsRes.Approved,
+        rejectedCount: statsRes.Rejected,
+        onHoldCount: statsRes.OnHold,
+        paidCount: statsRes.Paid,
+        flaggedCount: statsRes.highPriority,
       });
     } catch {
       // Non-critical dashboard load

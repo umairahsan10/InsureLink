@@ -421,6 +421,63 @@ export class ClaimsRepository {
   }
 
   /**
+   * Get claim counts grouped by status plus a high-priority count.
+   *
+   * Runs two parallel DB queries (groupBy + count) instead of the previous pattern
+   * of issuing one HTTP → DB round-trip per status from the client dashboard (7 calls
+   * for the insurer dashboard, 3 for the hospital dashboard).
+   *
+   * Role filter mirrors findAll so each role only sees their own data.
+   */
+  async getStats(roleFilter?: {
+    insurerId?: string;
+    corporateId?: string;
+    hospitalId?: string;
+  }): Promise<{
+    total: number;
+    Pending: number;
+    Approved: number;
+    Rejected: number;
+    OnHold: number;
+    Paid: number;
+    highPriority: number;
+  }> {
+    const where: Prisma.ClaimWhereInput = {};
+    if (roleFilter?.insurerId) where.insurerId = roleFilter.insurerId;
+    if (roleFilter?.corporateId) where.corporateId = roleFilter.corporateId;
+    if (roleFilter?.hospitalId)
+      where.hospitalVisit = { hospitalId: roleFilter.hospitalId };
+
+    const [byStatus, highPriority] = await Promise.all([
+      this.prisma.claim.groupBy({
+        by: ['claimStatus'],
+        _count: { id: true },
+        where,
+      }),
+      this.prisma.claim.count({
+        where: { ...where, priority: 'High' },
+      }),
+    ]);
+
+    const statusMap: Record<string, number> = {};
+    let total = 0;
+    for (const row of byStatus) {
+      statusMap[row.claimStatus] = row._count.id;
+      total += row._count.id;
+    }
+
+    return {
+      total,
+      Pending: statusMap['Pending'] || 0,
+      Approved: statusMap['Approved'] || 0,
+      Rejected: statusMap['Rejected'] || 0,
+      OnHold: statusMap['OnHold'] || 0,
+      Paid: statusMap['Paid'] || 0,
+      highPriority,
+    };
+  }
+
+  /**
    * Build where clause for claim queries
    */
   private buildWhereClause(

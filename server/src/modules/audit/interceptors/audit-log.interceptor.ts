@@ -3,6 +3,7 @@ import {
   NestInterceptor,
   ExecutionContext,
   CallHandler,
+  Logger,
 } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
@@ -13,6 +14,8 @@ import { AuditAction } from '@prisma/client';
 
 @Injectable()
 export class AuditLogInterceptor implements NestInterceptor {
+  private readonly logger = new Logger(AuditLogInterceptor.name);
+
   constructor(
     private readonly reflector: Reflector,
     private readonly auditService: AuditService,
@@ -43,7 +46,12 @@ export class AuditLogInterceptor implements NestInterceptor {
             entityId,
             userId,
             responseData,
-          ).catch((err) => console.error('Audit logging failed:', err));
+          ).catch((err) =>
+            this.logger.error(
+              `Audit logging failed for ${entityType} ${entityId ?? ''}`.trim(),
+              err instanceof Error ? err.stack : String(err),
+            ),
+          );
         },
       }),
     );

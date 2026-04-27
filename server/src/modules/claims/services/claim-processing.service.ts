@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { ClaimStatus, ClaimEventStatus } from '@prisma/client';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { ClaimsRepository } from '../repositories/claims.repository';
@@ -12,6 +12,8 @@ import { CurrentUserDto } from '../../auth/dto/current-user.dto';
 
 @Injectable()
 export class ClaimProcessingService {
+  private readonly logger = new Logger(ClaimProcessingService.name);
+
   constructor(
     private readonly claimsRepository: ClaimsRepository,
     private readonly claimEventsRepository: ClaimEventsRepository,
@@ -91,7 +93,12 @@ export class ClaimProcessingService {
           eventNote ||
           `Claim approved. Amount: ${approvedAmount}. Employee used coverage updated.`,
       })
-      .catch((err) => console.error('Failed to create claim event:', err));
+      .catch((err) =>
+        this.logger.error(
+          `Failed to create claim event for claimId=${claimId}`,
+          err instanceof Error ? err.stack : String(err),
+        ),
+      );
 
     this.eventEmitter.emit('claim.status_changed', {
       claimId,
@@ -140,7 +147,12 @@ export class ClaimProcessingService {
         statusTo: ClaimEventStatus.Rejected,
         eventNote,
       })
-      .catch((err) => console.error('Failed to create claim event:', err));
+      .catch((err) =>
+        this.logger.error(
+          `Failed to create claim event for claimId=${claimId}`,
+          err instanceof Error ? err.stack : String(err),
+        ),
+      );
 
     this.eventEmitter.emit('claim.status_changed', {
       claimId,
@@ -194,7 +206,12 @@ export class ClaimProcessingService {
             ? `${eventNote}\nRequired Documents: ${requiredDocuments.join(', ')}`
             : eventNote,
       })
-      .catch((err) => console.error('Failed to create claim event:', err));
+      .catch((err) =>
+        this.logger.error(
+          `Failed to create claim event for claimId=${claimId}`,
+          err instanceof Error ? err.stack : String(err),
+        ),
+      );
 
     this.eventEmitter.emit('claim.status_changed', {
       claimId,
@@ -262,7 +279,12 @@ export class ClaimProcessingService {
         statusTo: ClaimEventStatus.Paid,
         eventNote: note,
       })
-      .catch((err) => console.error('Failed to create claim event:', err));
+      .catch((err) =>
+        this.logger.error(
+          `Failed to create claim event for claimId=${claimId}`,
+          err instanceof Error ? err.stack : String(err),
+        ),
+      );
 
     this.eventEmitter.emit('claim.status_changed', {
       claimId,

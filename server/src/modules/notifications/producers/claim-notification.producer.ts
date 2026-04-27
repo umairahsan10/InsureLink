@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 import { PrismaService } from '../../../common/prisma/prisma.service';
 import { InAppNotificationService } from '../services/in-app-notification.service';
@@ -22,6 +22,8 @@ export interface ClaimStatusChangedEvent {
 
 @Injectable()
 export class ClaimNotificationProducer {
+  private readonly logger = new Logger(ClaimNotificationProducer.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly inAppNotificationService: InAppNotificationService,
@@ -91,7 +93,10 @@ export class ClaimNotificationProducer {
         });
       }
     } catch (err) {
-      console.error('Failed to process claim notification:', err);
+      this.logger.error(
+        `Failed to process claim notification for claimId=${event.claimId}`,
+        err instanceof Error ? err.stack : String(err),
+      );
     }
   }
 

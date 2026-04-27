@@ -1,7 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from './common/prisma/prisma.service';
-// TODO: pdfjs-dist not yet installed — install with: npm install pdfjs-dist
-// import * as pdfjs from 'pdfjs-dist';
 
 @Injectable()
 export class AppService {
@@ -21,12 +19,5 @@ export class AppService {
     } catch {
       return { ok: false, userCount: null };
     }
-  }
-
-  async extractFirstImageFromPDF(pdfBuffer: Buffer): Promise<Buffer> {
-    // TODO: Implement PDF extraction once pdfjs-dist is installed
-    throw new Error(
-      'PDF extraction not yet implemented. Install pdfjs-dist to enable.',
-    );
   }
 }

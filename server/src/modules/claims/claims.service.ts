@@ -3,6 +3,7 @@ import {
   BadRequestException,
   NotFoundException,
   ForbiddenException,
+  Logger,
 } from '@nestjs/common';
 import {
   ClaimStatus,
@@ -29,6 +30,8 @@ import { ClaimAction } from './constants/status-transitions';
 
 @Injectable()
 export class ClaimsService {
+  private readonly logger = new Logger(ClaimsService.name);
+
   constructor(
     private readonly claimsRepository: ClaimsRepository,
     private readonly claimEventsRepository: ClaimEventsRepository,
@@ -124,6 +127,14 @@ export class ClaimsService {
     await this.checkClaimAccess(claim, user);
 
     return claim;
+  }
+
+  /**
+   * Get claim counts by status + high-priority count — single efficient DB round-trip
+   */
+  async getStats(user: CurrentUserDto) {
+    const roleFilter = this.getRoleFilter(user);
+    return this.claimsRepository.getStats(roleFilter);
   }
 
   /**
@@ -385,18 +396,9 @@ export class ClaimsService {
       throw new NotFoundException('Claim not found');
     }
 
-    // Debug logging
-    console.log('GET EVENTS - User:', {
-      role: user.role,
-      orgId: user.organizationId,
-    });
-    console.log('GET EVENTS - Claim:', {
-      id: claim.id,
-      insurerId: claim.insurerId,
-      insurerRelation: (claim as any).insurer?.id,
-      corporateId: claim.corporateId,
-      corporateRelation: (claim as any).corporate?.id,
-    });
+    this.logger.debug(
+      `getEvents: claimId=${claim.id} userRole=${user.role} userOrgId=${user.organizationId}`,
+    );
 
     await this.checkClaimAccess(claim, user);
 
@@ -570,11 +572,9 @@ export class ClaimsService {
       case UserRole.insurer:
         // Check using relation object or foreign key field
         const insurerId = claim.insurer?.id || claim.insurerId;
-        console.log('INSURER ACCESS CHECK:', {
-          insurerId,
-          userOrgId: user.organizationId,
-          match: insurerId === user.organizationId,
-        });
+        this.logger.debug(
+          `insurer access check: claimInsurerId=${insurerId} userOrgId=${user.organizationId}`,
+        );
         if (insurerId !== user.organizationId) {
           throw new ForbiddenException('You do not have access to this claim');
         }

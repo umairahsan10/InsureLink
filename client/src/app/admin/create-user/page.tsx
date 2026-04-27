@@ -1,8 +1,7 @@
 "use client";
 
-import { useState, useEffect, useContext } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { AuthContext } from "@/contexts/AuthContext";
 import { adminApi, InsurerOption } from "@/lib/api/admin";
 
 type UserRole = "admin" | "patient" | "corporate" | "hospital" | "insurer";
@@ -15,7 +14,6 @@ const STEPS = [
 
 export default function AdminCreateUserPage() {
   const router = useRouter();
-  const auth = useContext(AuthContext);
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -77,13 +75,6 @@ export default function AdminCreateUserPage() {
     contractStartDate: "",
     contractEndDate: "",
   });
-
-  // Check if user is admin
-  useEffect(() => {
-    if (auth?.user && auth.user.role !== "admin") {
-      router.push("/");
-    }
-  }, [auth, router]);
 
   // Load insurers for corporate dropdown
   useEffect(() => {
@@ -363,8 +354,7 @@ export default function AdminCreateUserPage() {
     selectedRole === "corporate";
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-100 py-12 px-4">
-      <div className="max-w-4xl mx-auto">
+    <div className="p-6 max-w-4xl mx-auto">
         {/* Header */}
         <div className="bg-white rounded-2xl border border-gray-100 p-8 mb-6">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
@@ -1268,7 +1258,6 @@ export default function AdminCreateUserPage() {
             </div>
           </form>
         </div>
-      </div>
     </div>
   );
 }

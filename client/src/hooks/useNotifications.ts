@@ -110,12 +110,8 @@ export function useNotifications(
       process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3001";
     const token = getAccessToken();
 
-    if (!token) {
-      console.warn('[useNotifications] No auth token found');
-      return;
-    }
+    if (!token) return;
 
-    console.log('[useNotifications] Connecting to socket.io at', baseUrl);
     const socket = io(baseUrl, {
       auth: { token },
       transports: ["websocket", "polling"],
@@ -123,41 +119,38 @@ export function useNotifications(
 
     socketRef.current = socket;
 
-    socket.on("connect", () => {
-      console.log('[useNotifications] Socket connected');
-      setIsConnected(true);
-    });
-
-    socket.on("disconnect", () => {
-      console.log('[useNotifications] Socket disconnected');
-      setIsConnected(false);
-    });
-
-    socket.on("connect_error", (error: any) => {
-      console.error('[useNotifications] Socket connection error:', error);
-    });
+    socket.on("connect", () => setIsConnected(true));
+    socket.on("disconnect", () => setIsConnected(false));
+    socket.on("connect_error", (_err: Error) => setIsConnected(false));
 
     // Listen for real-time notification events
-    socket.on("notification", (notification: any) => {
-      console.log('[useNotifications] Received notification:', notification);
-      const newNotification: AlertNotification = {
-        id: notification.id,
-        title: notification.title,
-        message: notification.message,
-        severity: notification.severity || "info",
-        category: notification.category || "general",
-        isRead: notification.isRead || false,
-        timestamp: notification.timestamp || new Date().toISOString(),
-      };
+    socket.on(
+      "notification",
+      (notification: {
+        id: string;
+        title: string;
+        message: string;
+        severity?: AlertNotification["severity"];
+        category?: AlertNotification["category"];
+        isRead?: boolean;
+        timestamp?: string;
+      }) => {
+        const newNotification: AlertNotification = {
+          id: notification.id,
+          title: notification.title,
+          message: notification.message,
+          severity: notification.severity ?? "info",
+          category: notification.category ?? "general",
+          isRead: notification.isRead ?? false,
+          timestamp: notification.timestamp ?? new Date().toISOString(),
+        };
 
-      // Add new notification to the top of the list
-      setNotifications((current) => [newNotification, ...current]);
-      // Increment unread count
-      setUnreadCount((count) => count + 1);
-    });
+        setNotifications((current) => [newNotification, ...current]);
+        setUnreadCount((count) => count + 1);
+      },
+    );
 
     return () => {
-      console.log('[useNotifications] Cleaning up socket connection');
       socket.disconnect();
       socketRef.current = null;
       setIsConnected(false);

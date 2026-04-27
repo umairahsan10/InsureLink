@@ -258,6 +258,33 @@ export const claimsApi = {
     return response.data;
   },
 
+  /**
+   * Fetch all dashboard stats in one request instead of one request per status.
+   *
+   * The server uses Prisma groupBy so the entire count aggregation happens in the DB,
+   * not in application memory. Role-scoped: each user only sees their own org's data.
+   */
+  async getClaimStats(): Promise<{
+    total: number;
+    Pending: number;
+    Approved: number;
+    Rejected: number;
+    OnHold: number;
+    Paid: number;
+    highPriority: number;
+  }> {
+    const response = await apiFetch<{
+      total: number;
+      Pending: number;
+      Approved: number;
+      Rejected: number;
+      OnHold: number;
+      Paid: number;
+      highPriority: number;
+    }>(`${BASE}/stats`);
+    return response.data;
+  },
+
   async getClaims(filters?: ClaimFilters): Promise<PaginatedResponse<Claim>> {
     const queryParams = new URLSearchParams();
     if (filters?.status) queryParams.append("status", filters.status);

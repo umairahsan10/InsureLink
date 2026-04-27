@@ -45,6 +45,7 @@ model User {
     createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
     updatedAt    DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
     lastLoginAt  DateTime? @map("last_login_at") @db.Timestamptz(6)
+    isActive     Boolean   @default(true) @map("is_active")
 
     // Relations
     corporate            Corporate?
@@ -62,6 +63,7 @@ model User {
     @@index([cnic])
     @@index([userRole])
     @@index([createdAt])
+    @@index([isActive])
     @@map("users")
 }
 

@@ -15,7 +15,7 @@ import ClaimDocumentsSection from "@/components/claims/ClaimDocumentsSection";
 interface SubmitClaimFormV2Props {
   onSuccess?: (claimId: string) => void;
   onCancel?: () => void;
-  onClaimSubmitted?: (claim: any) => void;
+  onClaimSubmitted?: (claim: { id: string; claimNumber: string }) => void;
 }
 
 type FormStep =
@@ -255,7 +255,7 @@ export default function SubmitClaimFormV2({
       if (onSuccess) {
         onSuccess(createdClaimId);
       }
-      if (onClaimSubmitted) {
+      if (onClaimSubmitted && createdClaimNumber) {
         onClaimSubmitted({
           id: createdClaimId,
           claimNumber: createdClaimNumber,

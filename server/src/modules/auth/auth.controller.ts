@@ -5,6 +5,7 @@ import {
   Body,
   BadRequestException,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
@@ -20,8 +21,10 @@ export class AuthController {
 
   /**
    * POST /auth/login
+   * Tighter rate limit: 10 attempts per minute to slow brute-force attacks.
    */
   @Public()
+  @Throttle({ default: { ttl: 60_000, limit: 10 } })
   @Post('login')
   async login(@Body() loginDto: LoginDto): Promise<TokenResponseDto> {
     return this.authService.login(loginDto);
@@ -29,8 +32,10 @@ export class AuthController {
 
   /**
    * POST /auth/register
+   * Tighter rate limit: 5 registrations per minute per IP.
    */
   @Public()
+  @Throttle({ default: { ttl: 60_000, limit: 5 } })
   @Post('register')
   async register(@Body() registerDto: RegisterDto): Promise<TokenResponseDto> {
     return this.authService.register(registerDto);

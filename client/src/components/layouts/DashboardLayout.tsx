@@ -8,7 +8,7 @@ import PageTransition from '@/components/ui/PageTransition';
 
 interface DashboardLayoutProps {
   children: ReactNode;
-  userRole: 'patient' | 'corporate' | 'hospital' | 'insurer';
+  userRole: 'patient' | 'corporate' | 'hospital' | 'insurer' | 'admin';
   userName?: string;
   notifications?: AlertNotification[];
   onNotificationSelect?: (notification: AlertNotification) => void;

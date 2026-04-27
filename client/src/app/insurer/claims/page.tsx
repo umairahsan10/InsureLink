@@ -6,38 +6,13 @@ import DashboardLayout from "@/components/layouts/DashboardLayout";
 import MessageButton from "@/components/messaging/MessageButton";
 import { useClaimsMessaging } from "@/contexts/ClaimsMessagingContext";
 import { useNotifications } from "@/hooks/useNotifications";
-import { AlertNotification } from "@/types";
 import ClaimDetailsModal from "@/components/modals/ClaimDetailsModal";
 import BulkApproveDialog from "@/components/claims/BulkApproveDialog";
 import OnHoldDialog from "@/components/claims/OnHoldDialog";
 import MarkAsPaidDialog from "@/components/claims/MarkAsPaidDialog";
 import { claimsApi, type Claim } from "@/lib/api/claims";
 import { formatPKR } from "@/lib/format";
-
-// Helper to safely convert Prisma Decimal values to number
-function toNumber(val: any): number {
-  if (val === null || val === undefined) return 0;
-  if (typeof val === "number") return val;
-  if (typeof val === "string") return parseFloat(val) || 0;
-  if (val && typeof val.toString === "function") return parseFloat(val.toString()) || 0;
-  return 0;
-}
-
-function getPatientName(claim: Claim): string {
-  if (claim.hospitalVisit?.dependent) {
-    const d = claim.hospitalVisit.dependent;
-    return `${d.firstName} ${d.lastName}`;
-  }
-  if (claim.hospitalVisit?.employee?.user) {
-    const u = claim.hospitalVisit.employee.user;
-    return `${u.firstName} ${u.lastName}`;
-  }
-  return "Unknown";
-}
-
-function getHospitalName(claim: Claim): string {
-  return claim.hospitalVisit?.hospital?.hospitalName || "Unknown";
-}
+import { toNumber, getPatientName, getHospitalName } from "@/lib/claimFormatters";
 
 const statusBadge = (status: string) => {
   switch (status) {

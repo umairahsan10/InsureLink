@@ -53,7 +53,6 @@ export function HospitalMap({
     if (!isClient) return;
 
     const loadIcon = async () => {
-      // @ts-expect-error: Dynamic CSS import for Leaflet styles available only in browser
       await import("leaflet/dist/leaflet.css");
       const leaflet = await import("leaflet");
       if (!isMounted) return;

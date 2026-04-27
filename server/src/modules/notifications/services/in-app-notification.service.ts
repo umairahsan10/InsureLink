@@ -1,10 +1,12 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { NotificationsRepository } from '../repositories/notifications.repository';
 import { AppGateway } from '../../../websockets/gateway';
 import { NotificationType, Severity } from '@prisma/client';
 
 @Injectable()
 export class InAppNotificationService {
+  private readonly logger = new Logger(InAppNotificationService.name);
+
   constructor(
     private readonly notificationsRepository: NotificationsRepository,
     private readonly appGateway: AppGateway,
@@ -29,11 +31,9 @@ export class InAppNotificationService {
       ...data,
     });
 
-    console.log(`[Notification] Sending notification to user ${userId}:`, {
-      id: notification.id,
-      title: notification.title,
-      message: notification.message,
-    });
+    this.logger.debug(
+      `Notification ${notification.id} sent to user ${userId} (type=${data.notificationType})`,
+    );
 
     // Push via WebSocket
     this.appGateway.sendToUser(userId, 'notification', {

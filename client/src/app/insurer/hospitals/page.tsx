@@ -24,7 +24,7 @@ export default function InsurerHospitalsPage() {
   const [statusFilter, setStatusFilter] = useState("All Status");
   const [locationFilter, setLocationFilter] = useState("All Locations");
   const [selectedHospital, setSelectedHospital] = useState<HospitalRow | null>(
-    null
+    null,
   );
   const [hospitalData, setHospitalData] = useState<HospitalRow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -38,7 +38,10 @@ export default function InsurerHospitalsPage() {
       const data = await hospitalsApi.getHospitals({ page: 1, limit: 100 });
       const hospitals: Hospital[] = Array.isArray(data)
         ? data
-        : (data as any).hospitals ?? (data as any).data?.hospitals ?? (data as any).data ?? [];
+        : ((data as any).hospitals ??
+          (data as any).data?.hospitals ??
+          (data as any).data ??
+          []);
       const mapped: HospitalRow[] = hospitals.map((h) => ({
         id: h.id,
         name: h.hospitalName,
@@ -87,7 +90,8 @@ export default function InsurerHospitalsPage() {
       const matchesStatus =
         statusFilter === "All Status" || hospital.status === statusFilter;
       const matchesLocation =
-        locationFilter === "All Locations" || hospital.location === locationFilter;
+        locationFilter === "All Locations" ||
+        hospital.location === locationFilter;
 
       return matchesSearch && matchesStatus && matchesLocation;
     });
@@ -97,7 +101,7 @@ export default function InsurerHospitalsPage() {
   const totalPages = Math.ceil(filteredHospitals.length / hospitalsPerPage);
   const paginatedHospitals = filteredHospitals.slice(
     (currentPage - 1) * hospitalsPerPage,
-    currentPage * hospitalsPerPage
+    currentPage * hospitalsPerPage,
   );
 
   if (isLoading) {
@@ -154,7 +158,9 @@ export default function InsurerHospitalsPage() {
           </div>
           <div className="bg-white rounded-xl border border-gray-100 p-4">
             <p className="text-sm text-gray-500">Cities Covered</p>
-            <p className="text-2xl font-bold text-blue-600">{locations.length}</p>
+            <p className="text-2xl font-bold text-blue-600">
+              {locations.length}
+            </p>
           </div>
         </div>
 
@@ -243,8 +249,8 @@ export default function InsurerHospitalsPage() {
                           hospital.status === "Active"
                             ? "bg-green-100 text-green-800"
                             : hospital.status === "Pending"
-                            ? "bg-yellow-100 text-yellow-800"
-                            : "bg-red-100 text-red-800"
+                              ? "bg-yellow-100 text-yellow-800"
+                              : "bg-red-100 text-red-800"
                         }`}
                       >
                         {hospital.status}
@@ -271,7 +277,7 @@ export default function InsurerHospitalsPage() {
                 Showing {(currentPage - 1) * hospitalsPerPage + 1} to{" "}
                 {Math.min(
                   currentPage * hospitalsPerPage,
-                  filteredHospitals.length
+                  filteredHospitals.length,
                 )}{" "}
                 of {filteredHospitals.length} results
               </div>
@@ -299,7 +305,7 @@ export default function InsurerHospitalsPage() {
                       >
                         {page}
                       </button>
-                    )
+                    ),
                   )}
                 </div>
                 <button
@@ -328,8 +334,8 @@ export default function InsurerHospitalsPage() {
                       ...hospital,
                       status: action === "approve" ? "Active" : "Rejected",
                     }
-                  : hospital
-              )
+                  : hospital,
+              ),
             );
             setSelectedHospital((prev) =>
               prev
@@ -337,7 +343,7 @@ export default function InsurerHospitalsPage() {
                     ...prev,
                     status: action === "approve" ? "Active" : "Rejected",
                   }
-                : prev
+                : prev,
             );
           }}
         />

@@ -111,6 +111,25 @@ export class ClaimsController {
   }
 
   /**
+   * GET /claims/stats
+   *
+   * Returns claim counts by status (Pending / Approved / Rejected / OnHold / Paid)
+   * plus a high-priority count in a single response.
+   *
+   * Replaces the pattern where dashboards fired one request per status just to read
+   * the pagination `meta.total` field (7 calls on the insurer dashboard, 3 on the
+   * hospital dashboard). All those counts now come from two DB groupBy queries on
+   * the server and one HTTP call from the client.
+   *
+   * Must be declared before GET :id so Express doesn't treat "stats" as a claim ID.
+   */
+  @Get('stats')
+  @Roles('hospital', 'insurer', 'corporate', 'admin')
+  async getStats(@CurrentUser() user: CurrentUserDto) {
+    return this.claimsService.getStats(user);
+  }
+
+  /**
    * Get claim by ID with full details
    */
   @Get(':id')
