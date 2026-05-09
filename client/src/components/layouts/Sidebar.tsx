@@ -328,11 +328,11 @@ const menuItems: Record<string, MenuItem[]> = {
     },
     { name: "Plans", href: "/insurer/plans", icon: <PlansIcon /> },
     { name: "Labs", href: "/insurer/labs", icon: <LabsIcon /> },
-    {
-      name: "Document Extract",
-      href: "/insurer/document-extract",
-      icon: <DocumentIcon />,
-    },
+    // {
+    //   name: "Document Extract",
+    //   href: "/insurer/document-extract",
+    //   icon: <DocumentIcon />,
+    // },
     { name: "Profile", href: "/insurer/profile", icon: <ShieldIcon /> },
   ],
   admin: [
