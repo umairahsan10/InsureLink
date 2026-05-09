@@ -210,16 +210,6 @@ function LoginForm() {
             </button>
           </form>
 
-          <div className="mt-6 text-center text-sm text-gray-600">
-            Don&apos;t have an account?{" "}
-            <Link
-              href="/explore"
-              className="text-blue-600 hover:text-blue-800 font-semibold"
-            >
-              Explore roles
-            </Link>
-          </div>
-
           <div className="mt-4 text-center">
             <Link
               href="/"

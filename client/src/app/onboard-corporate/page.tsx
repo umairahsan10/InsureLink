@@ -250,7 +250,7 @@ export default function OnboardCorporatePage() {
 
             <div className="flex gap-4 pt-4">
               <Link
-                href="/explore/corporate"
+                href="/"
                 className="flex-1 px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors text-center font-medium"
               >
                 Back

@@ -11,7 +11,6 @@ const PROTECTED_PREFIXES = [
 
 const PUBLIC_PATHS = [
   "/login",
-  "/explore",
   "/onboard-corporate",
   "/onboard-insurer",
   "/onboard-hospital",
