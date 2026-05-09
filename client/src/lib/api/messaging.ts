@@ -1,5 +1,6 @@
 import { apiFetch } from "./client";
 import { getAccessToken } from "@/lib/auth/session";
+import { API_BASE_URL } from "./config";
 
 // ── Types matching backend response shapes ──────────────────────────────
 
@@ -142,11 +143,9 @@ export const messagingApi = {
     formData.append("file", file);
     formData.append("folder", "chat-attachments");
 
-    const baseUrl =
-      process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3001";
     const token = getAccessToken();
 
-    const response = await fetch(`${baseUrl}/api/v1/upload`, {
+    const response = await fetch(`${API_BASE_URL}/api/v1/upload`, {
       method: "POST",
       credentials: "include",
       headers: {

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { io, Socket } from "socket.io-client";
 import { getAccessToken } from "@/lib/auth/session";
 import { ClaimMessage } from "@/types/messaging";
+import { API_BASE_URL } from "@/lib/api/config";
 
 interface UseClaimSocketOptions {
   claimId: string | null;
@@ -48,8 +49,6 @@ export function useClaimSocket({
   useEffect(() => {
     if (!claimId) return;
 
-    const baseUrl =
-      process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3001";
     const token = getAccessToken();
 
     // Guard against empty token
@@ -58,7 +57,7 @@ export function useClaimSocket({
       return;
     }
 
-    const socket = io(baseUrl, {
+    const socket = io(API_BASE_URL, {
       auth: { token },
       transports: ["websocket", "polling"],
       reconnection: true,

@@ -1,4 +1,5 @@
 import { apiFetch } from './client';
+import { API_BASE_URL } from './config';
 
 export interface Corporate {
   id: string;
@@ -47,7 +48,7 @@ export const insurerApi = {
     if (request.filters?.status) queryParams.append('status', request.filters.status);
 
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001'}/api/reports/export?${queryParams.toString()}`,
+      `${API_BASE_URL}/api/reports/export?${queryParams.toString()}`, 
       {
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },

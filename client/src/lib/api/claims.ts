@@ -1,4 +1,5 @@
 import { apiFetch } from "./client";
+import { API_BASE_URL } from "./config";
 
 // Base path for claims API (v1 versioned)
 const BASE = "/api/v1/claims";
@@ -337,11 +338,9 @@ export const claimsApi = {
     // Note: We need to manually handle this upload to avoid Content-Type override
     // Import getAccessToken dynamically to avoid circular dependencies
     const { getAccessToken } = await import("@/lib/auth/session");
-    const baseUrl =
-      process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3001";
     const token = getAccessToken();
 
-    const response = await fetch(`${baseUrl}${BASE}/${claimId}/documents`, {
+    const response = await fetch(`${API_BASE_URL}${BASE}/${claimId}/documents`, {
       method: "POST",
       credentials: "include",
       headers: {

@@ -1,6 +1,5 @@
 import { getAccessToken } from '@/lib/auth/session';
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+import { API_BASE_URL } from '@/lib/api/config';
 
 interface RequestOptions extends RequestInit {
   data?: unknown;
@@ -10,7 +9,7 @@ class ApiClient {
   private baseUrl: string;
 
   constructor(baseUrl: string) {
-    this.baseUrl = baseUrl;
+    this.baseUrl = `${baseUrl}/api`;
   }
 
   private async request<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {

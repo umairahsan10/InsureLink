@@ -1,4 +1,5 @@
 import { getAccessToken, getRefreshToken, setTokens } from "@/lib/auth/session";
+import { API_BASE_URL } from "./config";
 
 export type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 
@@ -23,9 +24,7 @@ async function refreshAccessToken(): Promise<string> {
         throw new Error("No refresh token available");
       }
 
-      const baseUrl =
-        process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3001";
-      const res = await fetch(`${baseUrl}/api/auth/refresh-token`, {
+      const res = await fetch(`${API_BASE_URL}/api/auth/refresh-token`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ refresh_token: refreshToken }),
@@ -60,9 +59,7 @@ export async function apiFetch<T>(
   path: string,
   options: RequestInit & { method?: HttpMethod } = {},
 ): Promise<ApiResponse<T>> {
-  const baseUrl =
-    process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3001";
-  const url = `${baseUrl}${path}`;
+  const url = `${API_BASE_URL}${path}`;
   let token = getAccessToken();
 
   // Only set Content-Type to application/json if body is not FormData

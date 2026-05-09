@@ -5,6 +5,7 @@ import { AlertNotification } from "@/types";
 import { notificationsApi } from "@/lib/api/notifications";
 import { useAuth } from "./useAuth";
 import { getAccessToken } from "@/lib/auth/session";
+import { API_BASE_URL } from "@/lib/api/config";
 
 interface UseNotificationsOptions {
   autoFetch?: boolean;
@@ -106,13 +107,11 @@ export function useNotifications(
   useEffect(() => {
     if (!listenForRealtime || !user) return;
 
-    const baseUrl =
-      process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3001";
     const token = getAccessToken();
 
     if (!token) return;
 
-    const socket = io(baseUrl, {
+    const socket = io(API_BASE_URL, {
       auth: { token },
       transports: ["websocket", "polling"],
     });
