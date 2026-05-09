@@ -27,6 +27,7 @@ import { BulkApproveClaimDto } from './dto/bulk-approve-claim.dto';
 import { PatientSubmitClaimDto } from './dto/patient-submit-claim.dto';
 import { CurrentUserDto } from '../auth/dto/current-user.dto';
 import { ClaimAction } from './constants/status-transitions';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 @Injectable()
 export class ClaimsService {
@@ -38,6 +39,7 @@ export class ClaimsService {
     private readonly claimDocumentsRepository: ClaimDocumentsRepository,
     private readonly claimProcessingService: ClaimProcessingService,
     private readonly fileUploadService: FileUploadService,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   /**
@@ -109,6 +111,17 @@ export class ClaimsService {
       action: ClaimAction.CLAIM_SUBMITTED,
       statusTo: ClaimEventStatus.Pending,
       eventNote: 'Claim submitted',
+    });
+
+    // Emit notification event
+    this.eventEmitter.emit('claim.status_changed', {
+      claimId: claim.id,
+      claimNumber: claim.claimNumber,
+      statusFrom: ClaimStatus.Pending,
+      statusTo: ClaimStatus.Pending,
+      actorUserId: user.id,
+      actorRole: user.role,
+      eventNote: 'New claim submitted',
     });
 
     return claim;
@@ -661,6 +674,17 @@ export class ClaimsService {
       action: ClaimAction.CLAIM_SUBMITTED,
       statusTo: ClaimEventStatus.Pending,
       eventNote: 'Claim submitted by patient',
+    });
+
+    // Emit notification event
+    this.eventEmitter.emit('claim.status_changed', {
+      claimId: claim.id,
+      claimNumber: claim.claimNumber,
+      statusFrom: ClaimStatus.Pending,
+      statusTo: ClaimStatus.Pending,
+      actorUserId: user.id,
+      actorRole: user.role,
+      eventNote: 'New claim submitted by patient',
     });
 
     return claim;

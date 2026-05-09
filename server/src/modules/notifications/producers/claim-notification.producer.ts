@@ -31,6 +31,12 @@ export class ClaimNotificationProducer {
 
   @OnEvent('claim.status_changed')
   async handleClaimStatusChanged(event: ClaimStatusChangedEvent) {
+    this.logger.log(
+      `[Notification] claim.status_changed received: claimId=${event.claimId}, ` +
+        `claimNumber=${event.claimNumber}, status=${event.statusFrom} -> ${event.statusTo}, ` +
+        `actor=${event.actorUserId}`,
+    );
+
     try {
       // Look up claim relations to find recipient users
       const claim = await this.prisma.claim.findUnique({
@@ -68,10 +74,20 @@ export class ClaimNotificationProducer {
         },
       });
 
-      if (!claim) return;
+      if (!claim) {
+        this.logger.warn(
+          `[Notification] Claim not found for notification: ${event.claimId}`,
+        );
+        return;
+      }
 
       const { title, message, severity, recipientUserIds } =
         this.buildNotificationData(event, claim);
+
+      this.logger.log(
+        `[Notification] Recipients for claim ${event.claimNumber}: ` +
+          `[${recipientUserIds.filter(Boolean).join(', ')}]`,
+      );
 
       // Determine action URL based on claim status
       const actionUrl = event.statusTo === ClaimStatus.OnHold 
@@ -79,19 +95,42 @@ export class ClaimNotificationProducer {
         : `/claims/${event.claimId}`;
 
       // Send notification to each recipient
+      let sentCount = 0;
       for (const userId of recipientUserIds) {
-        if (!userId || userId === event.actorUserId) continue;
-        await this.inAppNotificationService.send(userId, {
-          notificationType: NotificationType.claim_status,
-          title,
-          message,
-          severity,
-          relatedEntityId: event.claimId,
-          relatedEntityType: 'Claim',
-          actionUrl,
-          category: 'claims',
-        });
+        if (!userId || userId === event.actorUserId) {
+          if (userId === event.actorUserId) {
+            this.logger.debug(
+              `[Notification] Skipping actor user ${userId} (self-notification)`,
+            );
+          }
+          continue;
+        }
+        try {
+          await this.inAppNotificationService.send(userId, {
+            notificationType: NotificationType.claim_status,
+            title,
+            message,
+            severity,
+            relatedEntityId: event.claimId,
+            relatedEntityType: 'Claim',
+            actionUrl,
+            category: 'claims',
+          });
+          sentCount++;
+          this.logger.log(
+            `[Notification] Sent to user ${userId} for claim ${event.claimNumber}`,
+          );
+        } catch (sendErr) {
+          this.logger.error(
+            `[Notification] Failed to send to user ${userId} for claim ${event.claimNumber}`,
+            sendErr instanceof Error ? sendErr.stack : String(sendErr),
+          );
+        }
       }
+
+      this.logger.log(
+        `[Notification] Completed: ${sentCount}/${recipientUserIds.length} notifications sent for claim ${event.claimNumber}`,
+      );
     } catch (err) {
       this.logger.error(
         `Failed to process claim notification for claimId=${event.claimId}`,
@@ -125,7 +164,7 @@ export class ClaimNotificationProducer {
             amount: event.approvedAmount ?? Number(claim.approvedAmount),
           }),
           severity: Severity.info,
-          recipientUserIds: [patientUserId, corporateUserId, hospitalUserId],
+          recipientUserIds: [patientUserId, corporateUserId, insurerUserId, hospitalUserId],
         };
 
       case ClaimStatus.Rejected:
@@ -136,7 +175,7 @@ export class ClaimNotificationProducer {
             reason: event.eventNote,
           }),
           severity: Severity.warning,
-          recipientUserIds: [patientUserId, corporateUserId, hospitalUserId],
+          recipientUserIds: [patientUserId, corporateUserId, insurerUserId, hospitalUserId],
         };
 
       case ClaimStatus.OnHold:
@@ -147,7 +186,7 @@ export class ClaimNotificationProducer {
             reason: event.eventNote,
           }),
           severity: Severity.warning,
-          recipientUserIds: [patientUserId, corporateUserId, hospitalUserId],
+          recipientUserIds: [patientUserId, corporateUserId, insurerUserId, hospitalUserId],
         };
 
       case ClaimStatus.Paid:
@@ -157,7 +196,7 @@ export class ClaimNotificationProducer {
             amount: event.approvedAmount ?? Number(claim.approvedAmount),
           }),
           severity: Severity.info,
-          recipientUserIds: [patientUserId, corporateUserId, hospitalUserId],
+          recipientUserIds: [patientUserId, corporateUserId, insurerUserId, hospitalUserId],
         };
 
       case ClaimStatus.Pending:
