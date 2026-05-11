@@ -18,6 +18,7 @@ import {
 } from "@/lib/api/dependents";
 import { Employee } from "@/types/employee";
 import { Dependent } from "@/types/dependent";
+import { parseApiErrorMessage } from "@/lib/errorUtils";
 
 const pageSize = 10;
 const departmentOptions = [
@@ -33,27 +34,6 @@ const departmentOptions = [
   "Design",
   "Customer",
 ];
-
-function parseApiErrorMessage(err: unknown, fallback: string): string {
-  if (!(err instanceof Error)) return fallback;
-
-  try {
-    const raw = JSON.parse(err.message) as {
-      message?: string;
-      errors?: string[];
-    };
-    if (Array.isArray(raw.errors) && raw.errors.length > 0) {
-      return raw.errors.join(", ");
-    }
-    if (typeof raw.message === "string" && raw.message) {
-      return raw.message;
-    }
-  } catch {
-    // ignore parsing errors and use plain message
-  }
-
-  return err.message || fallback;
-}
 
 function splitName(fullName: string): { firstName: string; lastName: string } {
   const parts = fullName.trim().split(/\s+/).filter(Boolean);

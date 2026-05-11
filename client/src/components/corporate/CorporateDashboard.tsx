@@ -7,6 +7,7 @@ import EmployeeCoverageStatus from "@/components/corporate/EmployeeCoverageStatu
 import RecentClaimsOverview from "@/components/corporate/RecentClaimsOverview";
 import { useAuth } from "@/hooks/useAuth";
 import { formatPKR, formatPKRShort } from "@/lib/format";
+import { parseApiErrorMessage } from "@/lib/errorUtils";
 import { corporatesApi, type CorporateStats } from "@/lib/api/corporates";
 import { claimsApi } from "@/lib/api/claims";
 import { employeesApi } from "@/lib/api/employees";
@@ -26,27 +27,6 @@ type DashboardEmployeeCoverage = {
   department: string;
   coverageUsed: number;
   totalCoverage: string;
-};
-
-const parseApiErrorMessage = (err: unknown, fallback: string): string => {
-  if (!(err instanceof Error)) return fallback;
-
-  try {
-    const raw = JSON.parse(err.message) as {
-      message?: string;
-      errors?: string[];
-    };
-    if (Array.isArray(raw.errors) && raw.errors.length > 0) {
-      return raw.errors.join(", ");
-    }
-    if (typeof raw.message === "string" && raw.message) {
-      return raw.message;
-    }
-  } catch {
-    // ignore JSON parse failures and use plain error message
-  }
-
-  return err.message || fallback;
 };
 
 const emptyStats: CorporateStats = {

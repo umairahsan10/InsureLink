@@ -6,7 +6,6 @@ import DashboardLayout from "@/components/layouts/DashboardLayout";
 import MessageButton from "@/components/messaging/MessageButton";
 import { useClaimsMessaging } from "@/contexts/ClaimsMessagingContext";
 import { useNotifications } from "@/hooks/useNotifications";
-import { AlertNotification } from "@/types";
 import ClaimActionDrawer, {
   ClaimRecord,
 } from "@/components/claims/ClaimActionDrawer";
