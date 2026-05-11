@@ -141,6 +141,12 @@ export default function HospitalVisitsPage() {
     setIsSaving(true);
     setFormError("");
 
+    if (form.dischargeDate && form.dischargeDate < form.visitDate) {
+      setFormError("Discharge date must be on or after the visit date.");
+      setIsSaving(false);
+      return;
+    }
+
     try {
       const payload: CreateHospitalVisitRequest = {
         employeeNumber: form.employeeNumber,
