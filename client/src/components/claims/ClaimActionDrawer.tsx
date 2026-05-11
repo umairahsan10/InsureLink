@@ -254,12 +254,12 @@ export default function ClaimActionDrawer({
       <div className="flex-1 modal-backdrop" onClick={onClose} />
       <div className="relative flex h-full max-h-screen w-full max-w-md flex-col bg-white shadow-2xl animate-slide-in-right">
         <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4 bg-gradient-to-r from-slate-50 to-white">
-          <div className="space-y-1">
+          <div className="flex-1 min-w-0 space-y-1">
             <p className="text-xs uppercase tracking-[0.2em] text-gray-500">
               Claim
             </p>
-            <div className="flex items-center gap-3">
-              <h3 className="text-xl font-semibold text-gray-900">
+            <div className="flex items-center gap-3 min-w-0">
+              <h3 className="text-xl font-semibold text-gray-900 truncate">
                 {claim.id}
               </h3>
               <span

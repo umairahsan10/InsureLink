@@ -314,6 +314,7 @@ export default function CorporateEmployeesPage() {
     name: string;
     email: string;
     mobile: string;
+    cnic: string;
     planId: string;
     designation: string;
     department: string;
@@ -349,7 +350,7 @@ export default function CorporateEmployeesPage() {
       coverageEndDate,
       designation: input.designation || "Employee",
       department: input.department || "General",
-      cnic: undefined,
+      cnic: input.cnic || undefined,
       dob: undefined,
       gender: undefined,
       address: undefined,
@@ -694,6 +695,7 @@ export default function CorporateEmployeesPage() {
             name: employeeData.name,
             email: employeeData.email,
             mobile: employeeData.mobile,
+            cnic: employeeData.cnic,
             planId: employeeData.planId,
             designation: employeeData.designation,
             department: employeeData.department,

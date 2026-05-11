@@ -6,6 +6,7 @@ export interface EmployeeFormData {
   name: string;
   email: string;
   mobile: string;
+  cnic: string;
   employeeNumber: string;
   designation: string;
   department: string;
@@ -46,7 +47,7 @@ const defaultDepartmentOptions = [
   'Customer',
 ];
 
-const PAK_MOBILE_REGEX = /^03\d{9}$/;
+const PAK_MOBILE_REGEX = /^\+92\d{10}$/;
 
 export default function EmployeeForm({ 
   initialData = {}, 
@@ -63,6 +64,7 @@ export default function EmployeeForm({
     name: '',
     email: '',
     mobile: '',
+    cnic: '',
     employeeNumber: '',
     designation: '',
     department: '',
@@ -79,8 +81,10 @@ export default function EmployeeForm({
     const { name, value } = e.target;
     const normalizedValue =
       name === 'mobile'
-        ? value.replace(/\D/g, '').slice(0, 11)
-        : value;
+        ? (value.startsWith('+') ? '+' : '') + value.replace(/\D/g, '').slice(0, 12)
+        : name === 'cnic'
+          ? value.replace(/\D/g, '').slice(0, 13)
+          : value;
 
     setFormData(prev => ({
       ...prev,
@@ -104,7 +108,10 @@ export default function EmployeeForm({
     else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = 'Email is invalid';
     if (!formData.mobile.trim()) newErrors.mobile = 'Mobile number is required';
     else if (!PAK_MOBILE_REGEX.test(formData.mobile.trim())) {
-      newErrors.mobile = 'Use 03XXXXXXXXX format with exactly 11 digits';
+      newErrors.mobile = 'Use +92XXXXXXXXXX format (e.g., +923001234567)';
+    }
+    if (formData.cnic.trim() && !/^\d{13}$/.test(formData.cnic.trim())) {
+      newErrors.cnic = 'CNIC must be exactly 13 digits';
     }
     if (!formData.employeeNumber.trim()) newErrors.employeeNumber = 'Employee number is required';
     if (!formData.designation.trim()) newErrors.designation = 'Designation is required';
@@ -211,14 +218,33 @@ export default function EmployeeForm({
               name="mobile"
               value={formData.mobile}
               onChange={handleInputChange}
-              maxLength={11}
-              inputMode="numeric"
+              maxLength={13}
+              inputMode="tel"
               className={`w-full px-4 py-3 border rounded-lg text-gray-900 focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
                 errors.mobile ? 'border-red-500' : 'border-gray-300'
               }`}
-              placeholder="03XXXXXXXXX"
+              placeholder="+923XXXXXXXXX"
             />
             {errors.mobile && <p className="text-red-500 text-sm mt-1">{errors.mobile}</p>}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              CNIC
+            </label>
+            <input
+              type="text"
+              name="cnic"
+              value={formData.cnic}
+              onChange={handleInputChange}
+              maxLength={13}
+              inputMode="numeric"
+              className={`w-full px-4 py-3 border rounded-lg text-gray-900 focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                errors.cnic ? 'border-red-500' : 'border-gray-300'
+              }`}
+              placeholder="13 digits without dashes"
+            />
+            {errors.cnic && <p className="text-red-500 text-sm mt-1">{errors.cnic}</p>}
           </div>
         </div>
       </div>

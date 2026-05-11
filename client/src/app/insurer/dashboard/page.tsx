@@ -140,7 +140,11 @@ export default function InsurerDashboardPage() {
   ) => {
     try {
       if (action === "approve") {
-        await claimsApi.approveClaim({ claimId, eventNote: notes });
+        const approvedAmount =
+          typeof selectedClaim?.amount === "number"
+            ? selectedClaim.amount
+            : Number(selectedClaim?.amount || 0);
+        await claimsApi.approveClaim({ claimId, approvedAmount, eventNote: notes });
       } else {
         await claimsApi.rejectClaim({
           claimId,
